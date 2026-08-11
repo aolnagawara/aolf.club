@@ -20,10 +20,11 @@ describe('AOLF Connect frontend presentation', () => {
 
     expect(page).toContain('<title>AOLF Connect');
     expect(page).toContain('href="/seva"');
+    expect(page).toContain('id="top"');
+    expect(page).toContain('id="google-sign-in"');
     expect(page).toContain('id="programs"');
-    expect(page).toContain('id="participants"');
-    expect(page).toContain('id="about"');
-    expect(page).toContain('id="connect"');
+    expect(page).toContain('id="members"');
+    expect(page).toContain('id="events"');
     expect(page).not.toContain('sevaWorkspace()');
     expect(page).not.toContain('src="./main.ts"');
   });
@@ -40,9 +41,10 @@ describe('AOLF Connect frontend presentation', () => {
     expect(viteConfig).not.toContain(
       "login: resolve(__dirname, 'src/login.html')"
     );
-    expect(vercelConfig.rewrites).toEqual([
-      { source: '/seva', destination: '/seva.html' }
-    ]);
+    expect(vercelConfig.rewrites).toContainEqual({
+      source: '/seva',
+      destination: '/seva.html'
+    });
     expect(vercelConfig.redirects).toContainEqual({
       source: '/login',
       destination: '/seva',

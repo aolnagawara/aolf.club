@@ -61,7 +61,9 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: resolve(__dirname, 'src/index.html'),
-        seva: resolve(__dirname, 'src/seva.html')
+        seva: resolve(__dirname, 'src/seva.html'),
+        privacy: resolve(__dirname, 'src/privacy.html'),
+        terms: resolve(__dirname, 'src/terms.html')
       }
     },
     outDir: '../dist',
