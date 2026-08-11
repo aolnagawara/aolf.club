@@ -86,8 +86,9 @@
 
     <!-- Mobile navigation: md:hidden guarantees it cannot appear on desktop -->
     <nav
-      class="mx-auto hidden w-[min(1160px,calc(100%-36px))] gap-0 pb-4 md:hidden"
-      :class="menuOpen ? 'grid md:hidden' : 'hidden'"
+      class="mx-auto grid w-[min(1160px,calc(100%-36px))] gap-0 pb-4 md:hidden"
+      x-show="menuOpen"
+      style="display: none;"
       aria-label="Mobile navigation"
     >
       <a class="border-t border-black/10 py-[11px] font-bold" href="#programs" @click="menuOpen = false">Programs</a>
