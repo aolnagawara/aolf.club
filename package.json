@@ -1,0 +1,50 @@
+{
+  "name": "aolf-connect",
+  "version": "1.0.0",
+  "description": "AOLF Connect local chapter website and Seva workspace",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "pnpm run typecheck:app && pnpm run typecheck:api",
+    "typecheck:app": "tsc --noEmit -p tsconfig.json",
+    "typecheck:api": "tsc --noEmit -p tsconfig.api.json",
+    "env:check": "node scripts/env-check.mjs",
+    "sheets:doctor": "node scripts/sheets-doctor.mjs",
+    "sheets:doctor:fix": "node scripts/sheets-doctor.mjs --fix",
+    "sheets:template": "node scripts/generate-sheet-template.mjs",
+    "lint": "eslint .",
+    "format": "prettier --check .",
+    "format:write": "prettier --write .",
+    "test": "vitest run"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "alpinejs": "^3.15.12",
+    "google-auth-library": "^10.9.1",
+    "jose": "^6.2.4",
+    "lucide": "^1.27.0",
+    "nanoid": "^6.0.1",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/alpinejs": "^3.13.11",
+    "@types/node": "^26.1.1",
+    "@typescript-eslint/eslint-plugin": "^8.65.0",
+    "@typescript-eslint/parser": "^8.65.0",
+    "autoprefixer": "^10.5.4",
+    "eslint": "^10.8.0",
+    "eslint-config-prettier": "^10.1.8",
+    "postcss": "^8.5.23",
+    "prettier": "^3.9.6",
+    "tailwindcss": "^3.4.19",
+    "typescript": "^5.9.2",
+    "vite": "^8.1.5",
+    "vitest": "^4.1.10",
+    "xlsx": "^0.18.5"
+  }
+}

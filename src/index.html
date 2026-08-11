@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="AOLF Connect brings together local Art of Living programs, weekly practices, community events, and seva opportunities for every stage of life."
+    />
+    <meta name="theme-color" content="#312e81" />
+    <meta
+      property="og:title"
+      content="AOLF Connect | Breathe. Belong. Serve."
+    />
+    <meta
+      property="og:description"
+      content="Discover programs, community gatherings, participant resources, and seva through your local Art of Living chapter."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/assets/aolf-connect-logo.png" />
+    <title>AOLF Connect | Breathe. Belong. Serve.</title>
+    <link rel="icon" type="image/png" href="/assets/aolf-connect-logo.png" />
+    <link rel="apple-touch-icon" href="/assets/aolf-connect-logo.png" />
+    <link rel="preconnect" href="https://images.unsplash.com" />
+    <link rel="stylesheet" href="./styles/main.css" />
+    <style>
+      :root {
+        color-scheme: light;
+      }
+
+      body {
+        background:
+          radial-gradient(
+            circle at 8% 2%,
+            rgba(251, 191, 36, 0.13),
+            transparent 26rem
+          ),
+          radial-gradient(
+            circle at 92% 18%,
+            rgba(99, 102, 241, 0.09),
+            transparent 28rem
+          ),
+          #fffdf8;
+      }
+
+      ::selection {
+        background: #fde68a;
+        color: #312e81;
+      }
+
+      section[id] {
+        scroll-margin-top: 6.5rem;
+      }
+
+      .display-copy {
+        font-family: Georgia, Cambria, 'Times New Roman', serif;
+        letter-spacing: -0.035em;
+      }
+
+      .soft-grid {
+        background-image:
+          linear-gradient(rgba(99, 102, 241, 0.055) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(99, 102, 241, 0.055) 1px, transparent 1px);
+        background-size: 30px 30px;
+      }
+
+      .sun-disc {
+        background: radial-gradient(
+          circle at 35% 30%,
+          #fef3c7 0,
+          #fbbf24 38%,
+          #f97316 72%,
+          #c2410c 100%
+        );
+        box-shadow: 0 0 90px rgba(251, 146, 60, 0.28);
+      }
+
+      .premium-shadow {
+        box-shadow:
+          0 30px 70px -34px rgba(49, 46, 129, 0.38),
+          0 12px 24px -18px rgba(15, 23, 42, 0.18);
+      }
+
+      .card-lift {
+        transition:
+          transform 220ms ease,
+          box-shadow 220ms ease,
+          border-color 220ms ease;
+      }
+
+      .card-lift:hover {
+        transform: translateY(-4px);
+        border-color: rgba(99, 102, 241, 0.3);
+        box-shadow: 0 22px 44px -28px rgba(49, 46, 129, 0.35);
+      }
+
+      .float-slow {
+        animation: float-slow 7s ease-in-out infinite;
+      }
+
+      @keyframes float-slow {
+        0%,
+        100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-8px);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+
+        .float-slow,
+        .card-lift {
+          animation: none;
+          transition: none;
+        }
+      }
+    </style>
+  </head>
+  <body class="min-h-screen overflow-x-hidden font-sans text-slate-800 antialiased">
+    <a href="#main-content" class="fixed left-4 top-3 z-[100] -translate-y-20 rounded-lg bg-indigo-950 px-4 py-2 text-sm font-semibold text-white shadow-lg transition focus:translate-y-0">Skip to content</a>
+
+    <header class="sticky top-0 z-50 border-b border-slate-200/80 bg-[#fffdf8]/95 shadow-sm backdrop-blur-xl">
+      <div class="mx-auto flex h-[68px] max-w-3xl items-center justify-between gap-3 px-4 sm:px-6">
+        <a href="#top" class="flex min-w-0 items-center gap-3" aria-label="AOLF Connect home">
+          <img src="/assets/aolf-connect-logo.png" alt="AOLF Connect" class="h-11 w-11 shrink-0 rounded-xl object-contain" />
+          <span class="min-w-0">
+            <span class="block truncate text-base font-bold tracking-tight text-indigo-950">AOLF Connect</span>
+            <span class="block truncate text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-700">Local community</span>
+          </span>
+        </a>
+
+        <button id="menu-button" type="button" class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-indigo-950 shadow-sm" aria-controls="mobile-menu" aria-expanded="false" aria-label="Open navigation">
+          <svg id="menu-open-icon" aria-hidden="true" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+          <svg id="menu-close-icon" aria-hidden="true" class="hidden h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6 6 18" /></svg>
+        </button>
+      </div>
+
+      <nav id="mobile-menu" class="hidden border-t border-slate-200 bg-[#fffdf8] px-4 pb-4 pt-3" aria-label="Main navigation">
+        <div class="mx-auto grid max-w-3xl gap-1">
+          <a class="rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-indigo-50" href="#programs">Programs</a>
+          <a class="rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-indigo-50" href="#members">For Members</a>
+          <a class="rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-indigo-50" href="#events">Events</a>
+          <a class="rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-indigo-50" href="/seva">Volunteer</a>
+          <div class="my-1 border-t border-slate-200"></div>
+          <a class="rounded-xl px-3 py-2.5 text-sm font-semibold text-green-700 hover:bg-green-50" href="https://wa.me/918884560660" target="_blank" rel="noopener noreferrer">WhatsApp Us</a>
+          <a class="rounded-xl px-3 py-2.5 text-sm font-medium text-slate-500 hover:bg-slate-50" href="https://www.artofliving.org/" target="_blank" rel="noopener noreferrer">About Art of Living</a>
+        </div>
+      </nav>
+    </header>
+
+    <main id="main-content">
+      <section id="top" class="px-4 pb-6 pt-8 sm:px-6 sm:pt-10">
+        <div class="mx-auto max-w-3xl">
+          <p class="text-xs font-bold uppercase tracking-[0.2em] text-orange-600">Your local Art of Living chapter</p>
+          <h1 class="display-copy mt-2 text-4xl font-semibold leading-tight text-indigo-950 sm:text-5xl">Programs, practices and community near you.</h1>
+          <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">Discover what is happening in the chapter now, stay connected after your course, and join seva when you are ready.</p>
+        </div>
+      </section>
+
+      <section id="programs" aria-labelledby="programs-heading" class="px-4 pb-10 sm:px-6">
+        <div class="mx-auto max-w-3xl">
+          <div class="mb-4 flex items-end justify-between gap-4">
+            <div>
+              <p class="text-xs font-bold uppercase tracking-[0.2em] text-amber-700">Top priority</p>
+              <h2 id="programs-heading" class="mt-1 text-2xl font-bold text-indigo-950">Upcoming Programs</h2>
+            </div>
+            <a href="https://wa.me/918884560660" target="_blank" rel="noopener noreferrer" class="text-xs font-bold text-green-700">Ask on WhatsApp →</a>
+          </div>
+
+          <div class="grid gap-3">
+            <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div class="flex items-start justify-between gap-4">
+                <div>
+                  <p class="text-xs font-bold uppercase tracking-wider text-orange-600">Adults</p>
+                  <h3 class="mt-1 text-xl font-bold text-indigo-950">Happiness Program</h3>
+                  <p class="mt-2 text-sm leading-6 text-slate-600">Breath, meditation and practical wisdom for greater energy, clarity and resilience.</p>
+                </div>
+                <span class="rounded-full bg-orange-50 px-2.5 py-1 text-[10px] font-bold text-orange-700">Upcoming</span>
+              </div>
+              <a href="https://wa.me/918884560660" target="_blank" rel="noopener noreferrer" class="mt-4 inline-flex items-center text-sm font-bold text-indigo-800">Get details →</a>
+            </article>
+
+            <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div class="flex items-start justify-between gap-4">
+                <div>
+                  <p class="text-xs font-bold uppercase tracking-wider text-emerald-700">Children &amp; Teens</p>
+                  <h3 class="mt-1 text-xl font-bold text-indigo-950">Intuition Process</h3>
+                  <p class="mt-2 text-sm leading-6 text-slate-600">A joyful program that nurtures intuition, confidence, focus and creativity.</p>
+                </div>
+                <span class="rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-700">Upcoming</span>
+              </div>
+              <a href="https://wa.me/918884560660" target="_blank" rel="noopener noreferrer" class="mt-4 inline-flex items-center text-sm font-bold text-indigo-800">Get details →</a>
+            </article>
+
+            <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div class="flex items-start justify-between gap-4">
+                <div>
+                  <p class="text-xs font-bold uppercase tracking-wider text-sky-700">Meditation</p>
+                  <h3 class="mt-1 text-xl font-bold text-indigo-950">Sahaj Samadhi Meditation</h3>
+                  <p class="mt-2 text-sm leading-6 text-slate-600">A simple mantra-based meditation technique for deep rest and effortless inner calm.</p>
+                </div>
+                <span class="rounded-full bg-sky-50 px-2.5 py-1 text-[10px] font-bold text-sky-700">Upcoming</span>
+              </div>
+              <a href="https://wa.me/918884560660" target="_blank" rel="noopener noreferrer" class="mt-4 inline-flex items-center text-sm font-bold text-indigo-800">Get details →</a>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="members" aria-labelledby="members-heading" class="bg-indigo-950 px-4 py-10 text-white sm:px-6">
+        <div class="mx-auto max-w-3xl">
+          <p class="text-xs font-bold uppercase tracking-[0.2em] text-amber-300">Already completed a program?</p>
+          <h2 id="members-heading" class="mt-1 text-2xl font-bold">For Members</h2>
+          <p class="mt-2 text-sm leading-6 text-indigo-100">Keep your practice alive and stay connected with the chapter.</p>
+
+          <div class="mt-5 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.06]">
+            <a href="#events" class="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-4 hover:bg-white/[0.06]"><span class="font-semibold">🧘 Weekly Follow-up</span><span aria-hidden="true">→</span></a>
+            <a href="#events" class="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-4 hover:bg-white/[0.06]"><span class="font-semibold">🎵 Satsang &amp; Events</span><span aria-hidden="true">→</span></a>
+            <a href="https://wa.me/918884560660" target="_blank" rel="noopener noreferrer" class="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-4 hover:bg-white/[0.06]"><span class="font-semibold">🪷 Advanced Programs</span><span aria-hidden="true">→</span></a>
+            <a href="/seva" class="flex items-center justify-between gap-3 px-4 py-4 hover:bg-white/[0.06]"><span class="font-semibold">❤️ Seva / Volunteer</span><span aria-hidden="true">→</span></a>
+          </div>
+        </div>
+      </section>
+
+      <section id="events" aria-labelledby="events-heading" class="px-4 py-10 sm:px-6">
+        <div class="mx-auto max-w-3xl">
+          <div class="mb-4">
+            <p class="text-xs font-bold uppercase tracking-[0.2em] text-orange-600">Stay connected</p>
+            <h2 id="events-heading" class="mt-1 text-2xl font-bold text-indigo-950">This Week</h2>
+          </div>
+
+          <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div class="flex items-center gap-4 border-b border-slate-100 px-4 py-4">
+              <div class="w-20 shrink-0 text-xs font-bold uppercase tracking-wide text-orange-600">Weekly</div>
+              <div class="min-w-0"><p class="font-bold text-indigo-950">Community Follow-up</p><p class="mt-0.5 text-xs text-slate-500">Practice together and refresh your techniques.</p></div>
+            </div>
+            <div class="flex items-center gap-4 px-4 py-4">
+              <div class="w-20 shrink-0 text-xs font-bold uppercase tracking-wide text-sky-700">Community</div>
+              <div class="min-w-0"><p class="font-bold text-indigo-950">Satsang &amp; Chapter Events</p><p class="mt-0.5 text-xs text-slate-500">Music, meditation, knowledge and celebrations.</p></div>
+            </div>
+          </div>
+
+          <a href="https://wa.me/918884560660" target="_blank" rel="noopener noreferrer" class="mt-4 inline-flex items-center text-sm font-bold text-indigo-800">Ask for this week’s schedule →</a>
+        </div>
+      </section>
+
+      <section class="px-4 pb-12 sm:px-6">
+        <div class="mx-auto max-w-3xl rounded-2xl border border-green-100 bg-green-50 p-5">
+          <div class="flex items-center gap-4">
+            <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-green-600 text-xl text-white">✆</span>
+            <div class="min-w-0 flex-1">
+              <h2 class="font-bold text-green-950">Need help choosing?</h2>
+              <p class="mt-1 text-xs leading-5 text-green-800">Message the chapter for program dates, venue, eligibility or the right next step.</p>
+            </div>
+          </div>
+          <a href="https://wa.me/918884560660" target="_blank" rel="noopener noreferrer" class="mt-4 inline-flex w-full items-center justify-center rounded-xl bg-green-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-green-700">Chat with us on WhatsApp</a>
+        </div>
+      </section>
+    </main>
+
+    <a href="https://wa.me/918884560660" target="_blank" rel="noopener noreferrer" aria-label="Chat with us on WhatsApp" class="fixed bottom-5 right-4 z-40 inline-flex h-13 w-13 items-center justify-center rounded-full bg-green-600 text-xl text-white shadow-xl ring-4 ring-white/80">✆</a>
+
+    <footer class="border-t border-slate-200 bg-white px-4 py-8 sm:px-6">
+      <div class="mx-auto max-w-3xl">
+        <div class="flex items-center gap-3">
+          <img src="/assets/aolf-connect-logo.png" alt="AOLF Connect" class="h-10 w-10 rounded-xl object-contain" />
+          <div><p class="font-bold text-indigo-950">AOLF Connect</p><p class="text-[10px] font-bold uppercase tracking-[0.18em] text-amber-700">Breathe • Belong • Serve</p></div>
+        </div>
+        <div class="mt-6 flex flex-wrap gap-x-5 gap-y-3 text-sm font-medium text-slate-600">
+          <a href="#programs" class="hover:text-indigo-800">Programs</a>
+          <a href="#members" class="hover:text-indigo-800">For Members</a>
+          <a href="#events" class="hover:text-indigo-800">Events</a>
+          <a href="/seva" class="hover:text-indigo-800">Volunteer</a>
+          <a href="https://www.artofliving.org/" target="_blank" rel="noopener noreferrer" class="hover:text-indigo-800">Official Art of Living site</a>
+        </div>
+        <p class="mt-6 text-xs text-slate-400">© <span id="current-year">2026</span> AOLF Connect. Built in the spirit of seva.</p>
+      </div>
+    </footer>
+
+    <script>
+      (function () {
+        try {
+          if (sessionStorage.getItem('aolf-connect-return-to-seva') === '1') {
+            sessionStorage.removeItem('aolf-connect-return-to-seva');
+            window.location.replace('/seva');
+            return;
+          }
+        } catch {}
+
+        const menuButton = document.getElementById('menu-button');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const openIcon = document.getElementById('menu-open-icon');
+        const closeIcon = document.getElementById('menu-close-icon');
+        const currentYear = document.getElementById('current-year');
+
+        if (currentYear) currentYear.textContent = String(new Date().getFullYear());
+        if (!menuButton || !mobileMenu || !openIcon || !closeIcon) return;
+
+        function setMenu(open) {
+          menuButton.setAttribute('aria-expanded', String(open));
+          menuButton.setAttribute('aria-label', open ? 'Close navigation' : 'Open navigation');
+          mobileMenu.classList.toggle('hidden', !open);
+          openIcon.classList.toggle('hidden', open);
+          closeIcon.classList.toggle('hidden', !open);
+        }
+
+        menuButton.addEventListener('click', function () { setMenu(menuButton.getAttribute('aria-expanded') !== 'true'); });
+        mobileMenu.querySelectorAll('a').forEach(function (link) { link.addEventListener('click', function () { setMenu(false); }); });
+        document.addEventListener('keydown', function (event) { if (event.key === 'Escape') setMenu(false); });
+      })();
+    </script>
+  </body>
+</html>

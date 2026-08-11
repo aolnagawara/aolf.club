@@ -1,0 +1,15 @@
+{
+  "redirects": [
+    {
+      "source": "/login",
+      "destination": "/seva",
+      "permanent": false
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/seva",
+      "destination": "/seva.html"
+    }
+  ]
+}
