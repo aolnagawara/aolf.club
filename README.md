@@ -1,175 +1,117 @@
-# AOLF Connect
+# AOLF Connect — Fresh Installation Guide
 
-AOLF Connect provides a public local-chapter website at `/` and a private volunteer workspace at `/seva`. It runs on Vite, TypeScript, Alpine.js, and Tailwind CSS with pnpm-managed dependencies.
+This README is only for setting up a **new AOLF Connect installation on Vercel**.
 
-## What is migrated now
+AOLF Connect uses:
 
-- Public chapter website implemented in `src/index.html`.
-- Authenticated Seva workspace implemented in `src/seva.html`.
-- Core dependencies moved from CDN to npm and bundled by Vite.
-- Frontend no longer depends on `google.script.run` directly.
-- Bootstrap and lead-save behavior now go through runtime -> service -> repository boundaries.
-- Mock mode implemented for local development without Google OAuth/Sheets.
-- Manual volunteer email entry replaced by authenticated identity flow entry point.
-- Vercel API routes implemented for auth/session/bootstrap/lead update.
-- Google OAuth callback now validates ID token server-side before creating session cookie.
+- **GitHub** for the application source code
+- **Vercel** for hosting the website and backend
+- **Google OAuth** for volunteer sign-in
+- **Google Sheets** for application data
+- **Meta WhatsApp Cloud API** for WhatsApp lead capture
 
-## Project structure
+---
 
-- `src/main.ts`: Alpine and Lucide initialization, runtime wiring.
-- `src/features/seva/`: private workspace state and UI behavior.
-- `src/services/`: API client, auth service, lead service, runtime facade.
-- `src/repositories/contracts.ts`: repository and auth interfaces.
-- `src/repositories/mock/`: mock auth and mock lead repository.
-- `src/repositories/http/`: HTTP repositories for `/api` endpoints.
-- `api/_lib/`: backend implementation grouped by auth, sheets, storage, WhatsApp, HTTP, and configuration domains.
-- `shared/contracts/`: contracts shared by the frontend, API, and operational scripts.
-- `tests/api/`: API and backend domain tests.
-- `tests/contracts/`: shared contract validation tests.
-- `tests/frontend/`: public/private page presentation tests.
-- `docs/templates/`: generated and importable spreadsheet templates.
+## 1. Prerequisites
 
-## Modes
+Before starting, prepare the following accounts:
 
-Set mode using `.env`:
+- GitHub account
+- Vercel account
+- Google account
+- Meta/Facebook account
 
-- `VITE_APP_MODE=mock`: uses in-memory mock auth and repository.
-- `VITE_APP_MODE=api`: uses HTTP endpoints for auth/bootstrap/update.
+### Recommended ownership
 
-Optional base URL:
+For an organization or community installation, it is best to use:
 
-- `VITE_API_BASE_URL=` (empty means same origin)
+- a **dedicated organization email address**
+- a **dedicated Meta/Facebook Business setup**
+- a **dedicated WhatsApp phone number**
 
-Backend mode:
+Avoid making the installation depend permanently on one volunteer's personal email, Facebook account, or personal WhatsApp number.
 
-- `APP_DATA_MODE=mock` (current implemented data mode)
-- `APP_DATA_MODE=sheets` (Google Sheets API via backend Service Account)
+### Dedicated WhatsApp number
 
-## Implemented API endpoints in `api` mode
+A **dedicated WhatsApp number is required** for this setup.
 
-- `GET /api/auth/session`
-- `GET /api/auth/signin`
-- `GET /api/auth/callback`
-- `GET /api/bootstrap?campaignId=<optional>`
-- `PUT /api/leads/:id`
-- `GET /api/health/sheets` (authenticated, allowlisted runtime diagnostics)
-- `GET /api/whatsapp/webhook` (Meta webhook verification)
-- `POST /api/whatsapp/webhook` (WhatsApp lead capture events)
+Do not use a volunteer's normal personal WhatsApp number.
 
-Frontend routes:
+The dedicated number should remain under the control of the organization so that the setup can be handed over later if administrators or volunteers change.
 
-- `GET /` (public chapter website)
-- `GET /seva` (Google sign-in or authenticated volunteer workspace)
+Meta's onboarding and verification requirements can change. Follow the requirements shown in your Meta dashboard for the number and account you are connecting.
 
-Runtime request and response contracts are defined in `shared/contracts/appContracts.ts`.
+You do not need to complete extra optional verification simply because this guide mentions WhatsApp. If Meta specifically marks a verification step as required for your account, number, messaging limit, region, or production feature, complete that step.
 
-## OAuth/session environment variables
+---
 
-Set these server-side variables in Vercel:
+## 2. Architecture
 
-- `GOOGLE_CLIENT_ID`
-- `GOOGLE_CLIENT_SECRET`
-- `GOOGLE_REDIRECT_URI` (or rely on `VERCEL_URL` fallback)
-- `SESSION_SECRET` (minimum 32 chars)
-- `SESSION_COOKIE_NAME` (optional, defaults to `aolf_session`)
-- `GOOGLE_SHEETS_DATA_SPREADSHEET_ID` (required when `APP_DATA_MODE=sheets`)
-- `GOOGLE_SHEETS_ACCESS_SPREADSHEET_ID` (optional; for single-file setup, keep empty)
-- `GOOGLE_SHEETS_LAYOUT_JSON` (optional tab/range map override)
-- `GOOGLE_SERVICE_ACCOUNT_EMAIL` (required when `APP_DATA_MODE=sheets`)
-- `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY` (required when `APP_DATA_MODE=sheets`)
-- `META_VERIFY_TOKEN` (required for WhatsApp webhook verification)
-- `META_ACCESS_TOKEN` (required for WhatsApp message replies)
-- `META_PHONE_NUMBER_ID` (required for WhatsApp Cloud API send endpoint)
-- `META_APP_SECRET` (required for `X-Hub-Signature-256` verification)
+```mermaid
+flowchart TD
+    U[Volunteer / Website User]
+    W[WhatsApp Volunteer]
+    V[Vercel<br/>AOLF Connect Website + API]
+    G[Google OAuth<br/>Volunteer Sign-in]
+    S[Google Sheets<br/>Campaigns / Leads / Members / Config / AllowedUsers]
+    M[Meta WhatsApp Cloud API]
 
-Optional:
+    U -->|Open website / Seva workspace| V
+    V -->|Sign in| G
+    G -->|Verified identity| V
+    V <-->|Read / update data| S
 
-- `META_API_VERSION` (default `v21.0`)
-- `WHATSAPP_PENDING_TTL_SECONDS` (default `300` for 5-minute pending confirmation)
+    W -->|Send lead message| M
+    M -->|Webhook| V
+    V -->|Confirmation / reply| M
+    M -->|WhatsApp message| W
+    V -->|Save confirmed lead| S
+```
 
-### Single spreadsheet vs separate spreadsheets
+In simple terms:
 
-With Service Account mode, it is safe to use a single spreadsheet file for all tabs (`Campaigns`, `Leads`, `Members`, `Config`, `AllowedUsers`).
+**Vercel runs the app, Google signs volunteers in, Google Sheets stores the data, and Meta connects the dedicated WhatsApp number to AOLF Connect.**
 
-- If using one spreadsheet file: set only `GOOGLE_SHEETS_DATA_SPREADSHEET_ID`.
-- Leave `GOOGLE_SHEETS_ACCESS_SPREADSHEET_ID` unset. The backend automatically falls back to `GOOGLE_SHEETS_DATA_SPREADSHEET_ID`.
-- If you later split files, set `GOOGLE_SHEETS_ACCESS_SPREADSHEET_ID` to the file containing `AllowedUsers`.
+---
 
-### How to get Service Account key values
+## 3. Prepare the GitHub repository
 
-1. Open Google Cloud Console and select your project.
-2. Enable Google Sheets API for that project.
-3. Go to IAM & Admin -> Service Accounts.
-4. Create a service account (or use an existing one).
-5. Open the service account -> Keys -> Add Key -> Create new key -> JSON.
-6. Download the JSON key file securely.
-
-From the downloaded JSON:
-
-- `client_email` -> use as `GOOGLE_SERVICE_ACCOUNT_EMAIL`
-- `private_key` -> use as `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY`
-
-Important formatting for `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY`:
-
-- In Vercel UI env var, paste the full key including BEGIN/END lines.
-- Keep newline escapes as `\n` if your environment collapses line breaks.
-- Never commit the JSON file or private key into the repository.
-
-Example key format (redacted):
+Open the AOLF Connect repository:
 
 ```text
------BEGIN PRIVATE KEY-----\nMIIE...\n...\n-----END PRIVATE KEY-----\n
+https://github.com/aolnagawara/aolf.club
 ```
 
-### Spreadsheet sharing
+If this is a new independent installation, use **Fork** in GitHub so the new installation has its own copy of the code.
 
-Share your spreadsheet with `GOOGLE_SERVICE_ACCOUNT_EMAIL`:
+If you already own and manage the repository, you can continue using it directly.
 
-- Editor: required for `Leads`/`Members` updates.
-- Viewer is sufficient only for read-only access.
+You do not need to download the source code to your computer.
 
-If you use one spreadsheet for everything, grant Editor once on that file.
+Vercel will deploy directly from GitHub.
 
-## Multi-select handling
+---
 
-- Google Sheets stores multi-select values as comma-separated strings.
-- On UI load, multi-select fields are normalized to arrays.
-- On save, arrays are normalized back to comma-separated strings.
-- Whitespace is trimmed and empty values are ignored in both directions.
+## 4. Create the Google Sheet
 
-Current multi-select fields:
+The easiest setup is to use **one Google spreadsheet** for everything.
 
-- `wishlistPrograms`
-- `donePrograms`
+In the GitHub repository, locate:
 
-Example `GOOGLE_SHEETS_LAYOUT_JSON` value:
-
-```json
-{
-  "campaignsRange": "Campaigns!A:F",
-  "leadsRange": "Leads!A:Z",
-  "membersRange": "Members!A:Z",
-  "configRange": "Config!A:B",
-  "allowedUsersRange": "AllowedUsers!A:Z"
-}
+```text
+docs/templates/aolf-sheets-template.xlsx
 ```
 
-## Google OAuth and Google Sheets notes
+Download that Excel template from GitHub.
 
-- Frontend now expects volunteer identity from authenticated session.
-- Do not trust volunteer email from browser payload.
-- Keep OAuth and Google Sheets credentials server-side in Vercel env vars.
-- Use documented sheet-column mapping + Zod validation strategy to handle schema drift.
-- Sheets access uses backend Service Account credentials, not end-user OAuth tokens.
-- User OAuth remains identity-only (`openid`, `email`, `profile`).
-- `AllowedUsers` validation is applied after OAuth callback; login is denied if email is not allowed.
-- Share both spreadsheet files with the Service Account email.
+Then:
 
-## Testing Checklist
+1. Open Google Drive.
+2. Upload `aolf-sheets-template.xlsx`.
+3. Open it using Google Sheets.
+4. Save/convert it as a Google Sheet if required.
 
-### 1) Prepare sheet tabs and headers
-
-Create these tabs in your spreadsheet:
+The spreadsheet should contain these tabs:
 
 - `Campaigns`
 - `Leads`
@@ -177,258 +119,492 @@ Create these tabs in your spreadsheet:
 - `Config`
 - `AllowedUsers`
 
-Set header rows:
+### Add the first volunteer
 
-- `Campaigns` header:
-  - `id,name,type,message,showDonePrograms`
-- `Leads` and `Members` headers:
-  - `id,name,quality,followUp,lastUpdated,status,notes,campaignId,campaignType,assignedVolunteerEmail,wishlistPrograms,donePrograms,mobile`
-- `AllowedUsers` header:
-  - `email,name,mobile`
-- `Config` key/value rows:
-  - Column A = key
-  - Column B = value
+Open the `AllowedUsers` tab.
 
-Minimum `Config` keys for first run:
+The header is:
 
-- `id` -> 21-character Nano ID
-- `campaignId` -> 21-character Nano ID matching one campaign
-- `programs` -> JSON array
-- `programDisplayOrder` -> JSON array
-
-### 2) Add at least one allowed user
-
-In `AllowedUsers` tab, add your login email in the `email` column.
-
-Each lead/member record must include `assignedVolunteerEmail` matching the signed-in volunteer email. `id` is the stable record identity; `mobile` is the contact number used for search, calling, WhatsApp, and campaign-scoped duplicate detection. Legacy rows that stored a phone number in `id` remain readable, but new WhatsApp-created rows use a Nano ID plus the dedicated `mobile` field.
-Only records assigned to the signed-in volunteer and selected campaign are returned by `/api/bootstrap`. Updates are matched by campaign plus normalized record ID/mobile before assignment is verified. Campaign details live in the `Campaigns` sheet, while `Config` keeps only sheet-level runtime settings.
-
-### 3) Configure env vars locally (example)
-
-Copy `.env.example` to `.env` and update values:
-
-```bash
-cp .env.example .env
+```text
+email,name,mobile
 ```
 
-Then edit `.env`:
+Add the Google email address of the first volunteer who should be allowed to sign in.
 
-```bash
-VITE_APP_MODE=api
-APP_DATA_MODE=sheets
-GOOGLE_CLIENT_ID=...
-GOOGLE_CLIENT_SECRET=...
-GOOGLE_REDIRECT_URI=http://localhost:5173/api/auth/callback
-SESSION_SECRET=replace-with-a-long-random-secret
-SESSION_COOKIE_NAME=aolf_session
-GOOGLE_SHEETS_DATA_SPREADSHEET_ID=your_spreadsheet_id
-GOOGLE_SERVICE_ACCOUNT_EMAIL=service-account@project.iam.gserviceaccount.com
-GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n
+At minimum, enter the volunteer's email address.
+
+### Save the Spreadsheet ID
+
+The Google Sheet URL looks similar to:
+
+```text
+https://docs.google.com/spreadsheets/d/SPREADSHEET_ID/edit
 ```
 
-Optional only if access list is in a different file:
+Copy the value between `/d/` and `/edit`.
 
-```bash
-GOOGLE_SHEETS_ACCESS_SPREADSHEET_ID=another_spreadsheet_id
+You will later save this in Vercel as:
+
+```text
+GOOGLE_SHEETS_DATA_SPREADSHEET_ID
 ```
 
-### 3.1) Validate env quickly
+---
 
-```bash
-pnpm run env:check
-```
-
-This reports missing required variables and basic diagnostics.
-
-### 4) Run validation commands
-
-```bash
-pnpm run typecheck
-pnpm run build
-pnpm run sheets:template
-pnpm run dev
-```
-
-`pnpm run sheets:template` generates an importable Excel file at `docs/templates/aolf-sheets-template.xlsx`.
-
-### 5) Functional test flow
-
-1. Open app and click sign-in.
-2. Complete Google login with an allowed email.
-3. Confirm `/api/bootstrap` returns data and UI loads leads/members.
-4. Update a lead and confirm corresponding row changes in the sheet.
-5. Test with a non-allowed email and confirm login is denied (`403 FORBIDDEN`).
-
-### 6) Vercel deployment test
-
-1. Add all server env vars in Vercel Project Settings.
-2. Redeploy.
-3. Verify sign-in + bootstrap + lead update in production.
-4. Check Vercel function logs if any `UPSTREAM_ERROR` appears (usually share/permission or key formatting issues).
-
-## Google Cloud and Service Account setup
-
-### 1) Create/select a Google Cloud project
+## 5. Create the Google Cloud project
 
 1. Open Google Cloud Console.
-2. Select project `aolfclub` (or your target project).
+2. Create a new project for AOLF Connect.
+3. Open **APIs & Services → Library**.
+4. Search for **Google Sheets API**.
+5. Enable it.
 
-### 2) Enable required API
+It is recommended that the Google Cloud project is owned by the dedicated organization Google account rather than a volunteer's personal account.
 
-1. Open APIs & Services -> Library.
-2. Enable `Google Sheets API`.
+---
 
-### 3) Configure OAuth consent and client
+## 6. Create the Google Service Account
 
-1. Open APIs & Services -> OAuth consent screen.
-2. Configure app information and test users.
-3. Create OAuth client credentials (`Web application`).
-4. Add redirect URI:
-   - Local: `http://localhost:5173/api/auth/callback`
-   - Production: `https://<your-domain>/api/auth/callback`
+The Service Account allows the AOLF Connect backend on Vercel to read and update Google Sheets.
 
-### 4) Create Service Account
+1. In Google Cloud Console, open **IAM & Admin → Service Accounts**.
+2. Click **Create Service Account**.
+3. Give it a recognizable name such as:
 
-1. Open IAM & Admin -> Service Accounts.
-2. Create account (example: `aolf-club@aolfclub.iam.gserviceaccount.com`).
-3. Open the service account -> Keys -> Add key -> Create new key -> JSON.
-4. Download and store the JSON key securely.
-
-Map JSON fields to env vars:
-
-- `client_email` -> `GOOGLE_SERVICE_ACCOUNT_EMAIL`
-- `private_key` -> `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY`
-
-### 5) Share spreadsheet with Service Account
-
-1. Open the target Google Sheet.
-2. Share with `GOOGLE_SERVICE_ACCOUNT_EMAIL`.
-3. Grant Editor for write access (required for lead/member updates).
-
-## Automation and diagnostics
-
-## WhatsApp Lead Capture (Phase I)
-
-Phase I uses a deterministic rule-based parser (no AI/LLM) to parse volunteer WhatsApp text messages and show interactive confirmation buttons before saving.
-
-Flow:
-
-1. Volunteer sends message.
-2. Server parses: mobile, name, course, quality, month, notes.
-3. Server sends interactive buttons:
-   - `confirm_save`
-   - `edit_lead`
-4. Save/update in Google Sheets on `confirm_save`, or automatically when the
-   confirmation timeout expires without an explicit Confirm/Edit response.
-
-Rules implemented:
-
-- Supported mobile formats: `9876543210`, `+91 98765 43210`, `91XXXXXXXXXX`.
-- Mobile is normalized to 10 digits.
-- Month supports short and long forms (for example `Aug` / `August`).
-- Multiple course codes are supported with spaces or commas (for example `HP DSN` or `HP,DSN`) and are normalized to a comma-separated value.
-- If quality is missing, it defaults to `Hot`; if month is missing, it defaults to the current month. Both defaults are shown in the confirmation and editable draft.
-- Confirmation responses show only extracted fields; the original inbound message is not repeated.
-- Duplicate detection is month-scoped by mobile and updates existing row in place.
-- Notes are appended when updating duplicates.
-- Non-allowed volunteer numbers are ignored.
-- Unsupported WhatsApp payload types are ignored.
-- Selecting Edit sends an instruction followed by a copyable draft containing only `Name Mobile Courses Quality Month Notes`. The preview is discarded after both messages are delivered, and the edited reply is parsed as a fresh lead that may use a different mobile number.
-- Pending confirmations and message de-duplication state are kept only in application memory; no WhatsApp message or transaction history is written to Google Sheets.
-- Pending confirmations automatically save when `WHATSAPP_PENDING_TTL_SECONDS` expires. Their timers and processed-message de-duplication are instance-local and disappear on a restart or cold start; they are not shared across concurrent server instances.
-- The webhook waits for lead Sheet writes and outbound Meta work before returning success. There is no durable queue or outbox.
-
-### Check environment
-
-```bash
-pnpm run env:check
+```text
+aolf-connect
 ```
 
-### Validate Sheets connectivity and structure
+4. Open the newly created Service Account.
+5. Open **Keys**.
+6. Choose **Add Key → Create new key**.
+7. Select **JSON**.
+8. Download the JSON file and keep it private.
 
-```bash
-pnpm run sheets:doctor
+Inside the JSON file you need two values:
+
+```text
+client_email
+private_key
 ```
 
-Optional runtime endpoint check (requires an authenticated session cookie):
+They will become:
 
-```bash
-curl http://localhost:5173/api/health/sheets
+```text
+GOOGLE_SERVICE_ACCOUNT_EMAIL
+GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
 ```
 
-This checks:
+> Never upload this JSON file or the private key to GitHub.
 
-- required environment variables
-- Google Sheets connectivity via Service Account
-- required tabs existence (`Campaigns`, `Leads`, `Members`, `Config`, `AllowedUsers`)
-- required headers
-- required base config keys
+### Share the Google Sheet
 
-Row counts are bounded probes (up to 200 rows per tab); the response includes `truncated` flags instead of making the health endpoint scan unbounded columns.
+Return to the Google Sheet.
 
-### Auto-fix missing sheets/headers/config keys
+1. Click **Share**.
+2. Paste the Service Account `client_email`.
+3. Give it **Editor** access.
 
-```bash
-pnpm run sheets:doctor:fix
+Without this sharing permission, Vercel will not be able to read or update the Sheet.
+
+---
+
+## 7. Configure Google sign-in
+
+Google OAuth is used to identify the volunteer signing in to the private `/seva` workspace.
+
+AOLF Connect only needs basic identity information such as:
+
+- name
+- email
+- Google profile identity
+
+### Create the OAuth client
+
+1. In the same Google Cloud project, open **Google Auth Platform**.
+2. Configure the app information.
+3. Configure the audience appropriate for your users.
+4. Create an **OAuth Client ID**.
+5. Choose **Web application**.
+6. Add your production callback URL:
+
+```text
+https://YOUR-DOMAIN/api/auth/callback
 ```
 
-This can automatically:
+For example:
 
-- create missing sheets
-- write missing header rows
-- append missing config keys with blank values
-
-Run this once before deploying the updated code. It appends the backward-compatible `mobile` header; legacy headerless `Config` data is preserved by inserting its header above the existing rows.
-
-### Generate sample Google Sheets template
-
-```bash
-pnpm run sheets:template
+```text
+https://aolf.club/api/auth/callback
 ```
 
-Then import `docs/templates/aolf-sheets-template.xlsx` into Google Sheets.
+Save these two values:
 
-### Config sheet shape
+```text
+GOOGLE_CLIENT_ID
+GOOGLE_CLIENT_SECRET
+```
 
-Keep `Config` as simple key/value rows for runtime settings. Campaign definitions live in the separate `Campaigns` sheet.
+You will add them to Vercel later.
 
-- `id`: 21-character Nano ID for the config record
-- `campaignId`: default campaign Nano ID
-- `programs`, `programDisplayOrder`: JSON arrays
-- `allowedUsers`: JSON string array of emails (fallback if `AllowedUsers` tab has no rows)
+### Important: OAuth branding
 
-### Leads/Members sheet shape
+**OAuth brand verification is not a must just to set up and test the application with a limited group of users.**
 
-Header-first sheets with at least:
+Do not add unnecessary Google API permissions.
 
-- `id` (stable Nano ID / record key)
-- `mobile` (contact number; legacy rows may temporarily fall back to a phone stored in `id`)
-- `name`
-- `quality`
-- `followUp`
-- `lastUpdated`
-- `status`
-- `notes`
-- `campaignId`
-- `campaignType`
-- `assignedVolunteerEmail`
-- `wishlistPrograms`
-- `donePrograms`
+AOLF Connect should use only the basic identity permissions it needs.
 
-## Scripts
+If you later make the OAuth application broadly public, Google's current production or brand-verification requirements may apply.
 
-- `npm run dev` - start local development server.
-- `npm run typecheck` - strict TypeScript check.
-- `npm run env:check` - validate required env vars and diagnostics.
-- `npm run sheets:doctor` - validate Sheets access and structure.
-- `npm run sheets:doctor:fix` - auto-create/fix missing sheets and base structure.
-- `npm run sheets:template` - generate importable `.xlsx` template for Google Sheets.
-- `npm run lint` - lint checks.
-- `npm run test` - Vitest tests.
-- `npm run build` - production build.
-- `npm run preview` - preview production build.
+Keep the following information accurate:
 
-## Next implementation steps
+- application name
+- support email
+- homepage
+- privacy policy
+- terms
+- authorized domain
 
-- Add scheduled backup/export for sheet-based records.
-- Consider audit columns (`updatedBy`, `updatedAt`) for lead/member updates.
+---
+
+## 8. Create the Meta / WhatsApp setup
+
+Use the **dedicated WhatsApp number** prepared earlier.
+
+It is also best to use a dedicated organization-owned Meta/Facebook Business setup.
+
+### Create the Meta app
+
+1. Open Meta for Developers.
+2. Create a new app suitable for WhatsApp.
+3. Add or configure the **WhatsApp** product.
+4. Follow Meta's current WhatsApp Cloud API onboarding.
+5. Connect the dedicated WhatsApp phone number.
+
+Record these values:
+
+```text
+META_ACCESS_TOKEN
+META_PHONE_NUMBER_ID
+META_APP_SECRET
+```
+
+Create your own long random verification value for:
+
+```text
+META_VERIFY_TOKEN
+```
+
+Keep all of these values private.
+
+### Meta business verification note
+
+Do not assume that every optional Meta Business verification step must be completed before starting.
+
+Set up the app, WhatsApp Cloud API, and dedicated number first.
+
+Meta may require additional verification depending on:
+
+- account type
+- production use
+- messaging limits
+- region
+- number
+- features enabled
+
+If Meta specifically marks a verification step as required for your setup, complete that step.
+
+---
+
+## 9. Create the Vercel project
+
+1. Sign in to Vercel.
+2. Click **Add New → Project**.
+3. Connect GitHub if it is not already connected.
+4. Select the AOLF Connect repository or your fork.
+5. Import the project.
+
+Vercel should detect the project from the repository.
+
+Do not deploy permanently until the environment variables below are added.
+
+---
+
+## 10. Add the Vercel environment variables
+
+In Vercel:
+
+1. Open the AOLF Connect project.
+2. Open **Settings → Environment Variables**.
+3. Add the following values.
+
+### Application mode
+
+```text
+VITE_APP_MODE=api
+APP_DATA_MODE=sheets
+```
+
+### Google OAuth
+
+```text
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GOOGLE_REDIRECT_URI=https://YOUR-DOMAIN/api/auth/callback
+```
+
+### Session
+
+Create a long random value of at least 32 characters for `SESSION_SECRET`.
+
+```text
+SESSION_SECRET=
+SESSION_COOKIE_NAME=aolf_session
+```
+
+Do not reuse your Google, Meta, Facebook, or email password.
+
+### Google Sheets
+
+```text
+GOOGLE_SHEETS_DATA_SPREADSHEET_ID=
+GOOGLE_SERVICE_ACCOUNT_EMAIL=
+GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY=
+```
+
+For the recommended single-spreadsheet installation, leave this unset:
+
+```text
+GOOGLE_SHEETS_ACCESS_SPREADSHEET_ID
+```
+
+### WhatsApp / Meta
+
+```text
+META_VERIFY_TOKEN=
+META_ACCESS_TOKEN=
+META_PHONE_NUMBER_ID=
+META_APP_SECRET=
+```
+
+Optional:
+
+```text
+META_API_VERSION=
+WHATSAPP_PENDING_TTL_SECONDS=300
+```
+
+### Service Account private key
+
+Paste the complete Google Service Account private key.
+
+It begins and ends similar to:
+
+```text
+-----BEGIN PRIVATE KEY-----
+...
+-----END PRIVATE KEY-----
+```
+
+If the environment-variable screen stores it as one line, preserve the line breaks using `\n`.
+
+---
+
+## 11. Connect the domain in Vercel
+
+1. Open the Vercel project.
+2. Open **Settings → Domains**.
+3. Add your domain.
+4. Follow the DNS instructions shown by Vercel.
+5. Wait until Vercel confirms that the domain is correctly configured.
+
+Once the final domain works, update/check:
+
+### Google callback
+
+```text
+https://YOUR-DOMAIN/api/auth/callback
+```
+
+This exact URL must be configured in:
+
+- Google Cloud OAuth Client
+- `GOOGLE_REDIRECT_URI` in Vercel
+
+### WhatsApp webhook
+
+Your Meta webhook will be:
+
+```text
+https://YOUR-DOMAIN/api/whatsapp/webhook
+```
+
+---
+
+## 12. Configure the WhatsApp webhook
+
+After the Vercel production deployment is available:
+
+1. Open the WhatsApp configuration in Meta.
+2. Enter:
+
+```text
+https://YOUR-DOMAIN/api/whatsapp/webhook
+```
+
+as the webhook/callback URL.
+
+3. Enter the same value you stored in Vercel as:
+
+```text
+META_VERIFY_TOKEN
+```
+
+4. Complete Meta's webhook verification.
+5. Subscribe to the WhatsApp message events required by the app.
+
+The app also uses `META_APP_SECRET` to verify that incoming webhook requests really came from Meta.
+
+---
+
+## 13. Deploy on Vercel
+
+After all environment variables are configured:
+
+1. Open **Deployments** in Vercel.
+2. Redeploy the latest version.
+3. Wait until the production deployment shows:
+
+```text
+Ready
+```
+
+No local build or local testing is required.
+
+If Vercel reports a deployment error, open that deployment and read the build/function logs.
+
+---
+
+## 14. Test the live installation
+
+All testing should be done on the Vercel production URL.
+
+### Test 1 — Public website
+
+Open:
+
+```text
+https://YOUR-DOMAIN/
+```
+
+The public website should load normally.
+
+### Test 2 — Volunteer sign-in
+
+Open:
+
+```text
+https://YOUR-DOMAIN/seva
+```
+
+1. Click **Continue with Google**.
+2. Sign in with an email already present in `AllowedUsers`.
+3. Confirm that the Seva workspace opens.
+
+Then test with a Google email that is not in `AllowedUsers`.
+
+It should not receive volunteer access.
+
+### Test 3 — Google Sheets
+
+From the live Seva workspace:
+
+1. Open a campaign.
+2. Edit a test lead.
+3. Save it.
+4. Open Google Sheets.
+5. Confirm that the corresponding row changed.
+
+### Test 4 — WhatsApp
+
+Using an allowed volunteer phone number:
+
+1. Send a test lead message to the dedicated AOLF Connect WhatsApp number.
+2. Confirm that AOLF Connect responds.
+3. Confirm/save the lead.
+4. Open Google Sheets.
+5. Confirm that the lead was added or updated correctly.
+
+---
+
+## 15. Troubleshooting from Vercel
+
+No local debugging is required.
+
+If something does not work, start with **Vercel → Project → Deployments / Logs**.
+
+### Google Sheets not loading
+
+Check:
+
+- `GOOGLE_SHEETS_DATA_SPREADSHEET_ID`
+- `GOOGLE_SERVICE_ACCOUNT_EMAIL`
+- `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY`
+- that the Google Sheet is shared with the Service Account as **Editor**
+
+### Google sign-in not working
+
+Check:
+
+- `GOOGLE_CLIENT_ID`
+- `GOOGLE_CLIENT_SECRET`
+- `GOOGLE_REDIRECT_URI`
+- the Authorized Redirect URI in Google Cloud
+
+The URLs must match exactly.
+
+### WhatsApp not working
+
+Check:
+
+- `META_ACCESS_TOKEN`
+- `META_PHONE_NUMBER_ID`
+- `META_APP_SECRET`
+- `META_VERIFY_TOKEN`
+- Meta webhook URL
+- webhook subscription in Meta
+
+### Environment variable changed but app still behaves the old way
+
+Redeploy the application in Vercel after changing environment variables.
+
+---
+
+## 16. Final installation checklist
+
+- [ ] Dedicated organization email/account prepared
+- [ ] Dedicated Meta/Facebook Business setup prepared
+- [ ] Dedicated WhatsApp number prepared and controlled by the organization
+- [ ] GitHub repository or fork prepared
+- [ ] Google Sheet created from the supplied template
+- [ ] First volunteer added to `AllowedUsers`
+- [ ] Google Sheets API enabled
+- [ ] Google Service Account created
+- [ ] Google Sheet shared with the Service Account as Editor
+- [ ] Google OAuth client created
+- [ ] OAuth production callback URL configured
+- [ ] Meta app created
+- [ ] WhatsApp Cloud API configured
+- [ ] Dedicated WhatsApp number connected
+- [ ] Vercel project created from GitHub
+- [ ] All required Vercel environment variables added
+- [ ] Domain connected to Vercel
+- [ ] Latest Vercel production deployment shows **Ready**
+- [ ] WhatsApp webhook verified in Meta
+- [ ] Google sign-in tested with an allowed user
+- [ ] Non-allowed Google user denied access
+- [ ] Google Sheet read/write tested from the live app
+- [ ] WhatsApp lead capture tested from the live app
+
+Once all items above pass, the fresh AOLF Connect installation is ready for use.

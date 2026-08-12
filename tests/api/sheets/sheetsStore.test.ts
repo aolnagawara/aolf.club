@@ -99,8 +99,20 @@ function createFixture(leadRows: string[][], leadHeaders = LEAD_HEADERS) {
       void rowValues;
     }
   );
+  const deleteSheetRow = vi.fn(
+    async (
+      target: SpreadsheetTarget,
+      sheetName: string,
+      rowNumber: number
+    ): Promise<void> => {
+      void target;
+      void sheetName;
+      void rowNumber;
+    }
+  );
   const store = createSheetsStore({
     appendSheetRow,
+    deleteSheetRow,
     readSheetValues,
     readSheetValuesBatch,
     updateSheetValuesBatch,
@@ -110,6 +122,7 @@ function createFixture(leadRows: string[][], leadHeaders = LEAD_HEADERS) {
 
   return {
     appendSheetRow,
+    deleteSheetRow,
     readSheetValues,
     readSheetValuesBatch,
     store,
@@ -438,7 +451,7 @@ describe('Sheets store campaign and access scoping', () => {
     expect(row[7]).toBe(CAMPAIGN_B);
   });
 
-  it('persists deletion by clearing the stable-id row', async () => {
+  it('persists deletion by removing the physical Sheet row', async () => {
     const fixture = createFixture([
       [
         'stable-delete-id',
@@ -465,14 +478,10 @@ describe('Sheets store campaign and access scoping', () => {
       allowed: true,
       value: { success: true, lead: { id: 'stable-delete-id' } }
     });
-    expect(fixture.updateSheetValuesBatch).toHaveBeenCalledWith(
+    expect(fixture.deleteSheetRow).toHaveBeenCalledWith(
       'data',
-      [
-        {
-          range: 'Leads!A2:L2',
-          values: [Array(LEAD_HEADERS.length).fill('')]
-        }
-      ],
+      'Leads',
+      2,
       expect.anything()
     );
   });

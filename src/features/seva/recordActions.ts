@@ -23,7 +23,9 @@ function getAllowedVolunteers(context: SevaWorkspaceContext) {
     }));
   }
   return [...new Set(context.appConfig.allowedUsers || [])].map((email) => ({
-    email: String(email || '').trim().toLowerCase(),
+    email: String(email || '')
+      .trim()
+      .toLowerCase(),
     name: String(email || '').split('@')[0] || 'Volunteer'
   }));
 }
@@ -148,7 +150,7 @@ export function createRecordActionMethods() {
           campaign.id !== this.selectedCampaignId
       );
       if (!destinations.length) {
-        this.authError = 'No other campaign is available for these records.';
+        this.authError = 'No other Seva is available for these records.';
         return;
       }
       this.optionSheetMode = 'moveCampaign';
@@ -200,6 +202,7 @@ export function createRecordActionMethods() {
       }
       this.isBulkActionPending = true;
       this.authError = '';
+      this.actionMessage = '';
       try {
         if (!(await this.flushPendingSaves())) {
           this.authError = 'Save pending edits before moving these records.';
@@ -226,6 +229,14 @@ export function createRecordActionMethods() {
           this.authError =
             'Some records could not be moved. The remaining records stay selected.';
         } else {
+          const movedNoun = movedIds.size === 1 ? 'record' : 'records';
+          this.actionMessage =
+            String(movedIds.size) +
+            ' ' +
+            movedNoun +
+            ' moved to ' +
+            campaign.name +
+            '.';
           this.clearSelection();
         }
       } finally {
@@ -245,19 +256,24 @@ export function createRecordActionMethods() {
       }
       this.isBulkActionPending = true;
       this.authError = '';
+      this.actionMessage = '';
       try {
         if (!(await this.flushPendingSaves())) {
           this.authError = 'Save pending edits before deleting these records.';
           return;
         }
-        const results = await Promise.allSettled(
-          records.map((lead) =>
-            window.appRuntime.deleteLead({
+        const results: PromiseSettledResult<unknown>[] = [];
+        for (const lead of records) {
+          try {
+            const value = await window.appRuntime.deleteLead({
               id: lead.id,
               campaignType: lead.campaignType
-            })
-          )
-        );
+            });
+            results.push({ status: 'fulfilled', value });
+          } catch (reason) {
+            results.push({ status: 'rejected', reason });
+          }
+        }
         const deletedIds = new Set(
           records
             .filter((_, index) => results[index].status === 'fulfilled')
@@ -274,6 +290,9 @@ export function createRecordActionMethods() {
           this.authError =
             'Some records could not be deleted. The remaining records stay selected.';
         } else {
+          const deletedNoun = deletedIds.size === 1 ? 'record' : 'records';
+          this.actionMessage =
+            String(deletedIds.size) + ' ' + deletedNoun + ' deleted.';
           this.clearSelection();
         }
       } finally {
@@ -304,6 +323,7 @@ export function createRecordActionMethods() {
 
       this.isBulkActionPending = true;
       this.authError = '';
+      this.actionMessage = '';
       try {
         if (!(await this.flushPendingSaves())) {
           this.authError =
@@ -329,9 +349,7 @@ export function createRecordActionMethods() {
           }
         });
         if (normalizedEmail !== this.volunteerEmail.toLowerCase()) {
-          this.leads = this.leads.filter(
-            (lead) => !reassignedIds.has(lead.id)
-          );
+          this.leads = this.leads.filter((lead) => !reassignedIds.has(lead.id));
           if (reassignedIds.has(this.activeCardId)) {
             this.activeCardId = '';
           }
@@ -343,6 +361,18 @@ export function createRecordActionMethods() {
           this.authError =
             'Some records could not be reassigned. The remaining records stay selected.';
         } else {
+          const volunteer = getAllowedVolunteers(this).find(
+            (item) => item.email === normalizedEmail
+          );
+          const reassignedNoun =
+            reassignedIds.size === 1 ? 'record' : 'records';
+          this.actionMessage =
+            String(reassignedIds.size) +
+            ' ' +
+            reassignedNoun +
+            ' reassigned to ' +
+            (volunteer?.name || normalizedEmail) +
+            '.';
           this.clearSelection();
         }
       } finally {
@@ -359,9 +389,7 @@ export function createRecordActionMethods() {
       const campaigns = this.getCreateCampaigns(type);
       if (!campaigns.length) {
         this.authError =
-          'No ' +
-          type.toLowerCase() +
-          ' campaign is available for this record.';
+          'No ' + type.toLowerCase() + ' Seva is available for this record.';
         return;
       }
       const preferred = campaigns.find(
@@ -386,11 +414,12 @@ export function createRecordActionMethods() {
       const name = this.createRecordDraft.name.trim();
       const mobile = this.createRecordDraft.mobile.trim();
       if (!name || !mobile || !this.createRecordDraft.campaignId) {
-        this.authError = 'Name, mobile, and destination campaign are required.';
+        this.authError = 'Name, mobile, and destination Seva are required.';
         return;
       }
       this.isCreateRecordSaving = true;
       this.authError = '';
+      this.actionMessage = '';
       try {
         const response = await window.appRuntime.createLead({
           name,
@@ -403,6 +432,9 @@ export function createRecordActionMethods() {
           this.leads = [this.normalizeLead(response.lead), ...this.leads];
         }
         this.isCreateRecordModalOpen = false;
+        this.actionMessage =
+          (this.createRecordType === 'Members' ? 'Member' : 'Lead') +
+          ' added successfully.';
       } catch (error) {
         this.authError =
           error instanceof Error ? error.message : 'Unable to add the record.';

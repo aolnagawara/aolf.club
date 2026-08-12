@@ -24,6 +24,7 @@ export type ParsedLeadMessage = {
 type Token = {
   original: string;
   normalized: string;
+  line: number;
 };
 
 type Span = {
@@ -75,14 +76,22 @@ function toTokens(message: string): Token[] {
     return [];
   }
 
-  return message.split(' ').map((part) => ({
-    original: part,
-    normalized: trimTokenForMatching(part)
-  }));
+  return message.split(/\r?\n/).flatMap((line, lineIndex) =>
+    normalizeWhitespace(line)
+      .split(' ')
+      .filter(Boolean)
+      .map((part) => ({
+        original: part,
+        normalized: trimTokenForMatching(part),
+        line: lineIndex
+      }))
+  );
 }
 
 function isPhoneLikeToken(token: string): boolean {
-  const value = String(token || '').trim();
+  const value = String(token || '')
+    .trim()
+    .replace(/^[,;:.]+|[,;:.]+$/g, '');
   if (!value) {
     return false;
   }
@@ -248,79 +257,52 @@ function matchCommaSeparatedCourses(
   return courses;
 }
 
-function isSimpleNameToken(token: string): boolean {
-  if (!token) {
-    return false;
+function collectNameBefore(tokens: Token[], mobileSpan: Span): Span | null {
+  const mobileLine = tokens[mobileSpan.start]?.line;
+  let start = mobileSpan.start;
+  while (start > 0 && tokens[start - 1].line === mobileLine) {
+    start -= 1;
   }
 
-  for (let i = 0; i < token.length; i += 1) {
-    const code = token.charCodeAt(i);
-    const isUpper = code >= 65 && code <= 90;
-    const isLower = code >= 97 && code <= 122;
-    if (!isUpper && !isLower) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-function collectNameBefore(
-  tokens: Token[],
-  mobileSpan: Span,
-  used: boolean[]
-): Span | null {
-  const indices: number[] = [];
-  for (let i = mobileSpan.start - 1; i >= 0 && indices.length < 2; i -= 1) {
-    if (used[i]) {
-      break;
-    }
-    if (!isSimpleNameToken(tokens[i].normalized)) {
-      break;
-    }
-
-    indices.push(i);
-  }
-
-  if (!indices.length) {
+  if (start === mobileSpan.start) {
     return null;
   }
 
-  return {
-    start: indices[indices.length - 1],
-    end: indices[0]
-  };
+  return { start, end: mobileSpan.start - 1 };
 }
 
 function collectNameAfter(
   tokens: Token[],
   mobileSpan: Span,
-  used: boolean[]
+  aliasEntries: AliasEntry[]
 ): Span | null {
-  const indices: number[] = [];
+  const start = mobileSpan.end + 1;
+  const mobileLine = tokens[mobileSpan.end]?.line;
+  let end = start - 1;
+
   for (
-    let i = mobileSpan.end + 1;
-    i < tokens.length && indices.length < 2;
+    let i = start;
+    i < tokens.length && tokens[i].line === mobileLine;
     i += 1
   ) {
-    if (used[i]) {
+    const commaSeparatedCourses = matchCommaSeparatedCourses(
+      tokens[i],
+      aliasEntries
+    );
+    const startsTag =
+      commaSeparatedCourses.length > 0 ||
+      aliasEntries.some((entry) => matchAliasAt(tokens, i, entry.aliasTokens));
+    if (startsTag) {
       break;
     }
-    if (!isSimpleNameToken(tokens[i].normalized)) {
-      break;
-    }
-
-    indices.push(i);
+    end = i;
   }
 
-  if (!indices.length) {
+  if (end < start) {
     return null;
   }
 
-  return {
-    start: indices[0],
-    end: indices[indices.length - 1]
-  };
+  return { start, end };
 }
 
 function spanToText(tokens: Token[], span: Span | null): string {
@@ -335,12 +317,11 @@ function spanToText(tokens: Token[], span: Span | null): string {
     .trim();
 }
 
-function spanLength(span: Span | null): number {
-  if (!span) {
-    return 0;
-  }
-
-  return span.end - span.start + 1;
+function cleanName(value: string): string {
+  return normalizeWhitespace(value.replace(/[:\-–—]+/g, ' ')).replace(
+    /^[,;.\s]+|[,;.\s]+$/g,
+    ''
+  );
 }
 
 export function parseLeadMessage(
@@ -348,8 +329,7 @@ export function parseLeadMessage(
   catalog: LeadParserCatalog
 ): ParsedLeadMessage {
   const originalMessage = String(rawMessage || '').trim();
-  const normalizedMessage = normalizeWhitespace(originalMessage);
-  const tokens = toTokens(normalizedMessage);
+  const tokens = toTokens(originalMessage);
 
   const used = new Array(tokens.length).fill(false);
   const mobileMatch = findMobile(tokens);
@@ -364,6 +344,16 @@ export function parseLeadMessage(
   };
 
   const aliasEntries = buildAliasEntries(catalog);
+  let nameSpan: Span | null = null;
+  if (mobileMatch.span) {
+    nameSpan =
+      collectNameBefore(tokens, mobileMatch.span) ||
+      collectNameAfter(tokens, mobileMatch.span, aliasEntries);
+    if (nameSpan) {
+      markSpan(used, nameSpan.start, nameSpan.end);
+    }
+  }
+
   for (let i = 0; i < tokens.length; i += 1) {
     if (used[i]) {
       continue;
@@ -409,31 +399,6 @@ export function parseLeadMessage(
     }
   }
 
-  let nameSpan: Span | null = null;
-  if (mobileMatch.span) {
-    const before = collectNameBefore(tokens, mobileMatch.span, used);
-    const after = collectNameAfter(tokens, mobileMatch.span, used);
-
-    if (before && after) {
-      const beforeCount = spanLength(before);
-      const afterCount = spanLength(after);
-
-      // If text before mobile looks like longer context and text after looks like a compact name,
-      // prefer the post-mobile candidate; otherwise keep before-mobile preference.
-      if (beforeCount > 1 && afterCount === 1) {
-        nameSpan = after;
-      } else {
-        nameSpan = before;
-      }
-    } else {
-      nameSpan = before || after;
-    }
-
-    if (nameSpan) {
-      markSpan(used, nameSpan.start, nameSpan.end);
-    }
-  }
-
   const notes = tokens
     .map((token, index) => ({ token, index }))
     .filter((item) => !used[item.index])
@@ -443,7 +408,7 @@ export function parseLeadMessage(
 
   return {
     mobile: mobileMatch.mobile,
-    name: spanToText(tokens, nameSpan),
+    name: cleanName(spanToText(tokens, nameSpan)),
     course: extracted.courses.join(','),
     leadQuality: extracted.leadQuality,
     month: extracted.month,

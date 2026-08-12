@@ -36,6 +36,7 @@ import {
 import {
   appendSheetRow as defaultAppendSheetRow,
   createSheetsOperation,
+  deleteSheetRow as defaultDeleteSheetRow,
   readSheetValues as defaultReadSheetValues,
   readSheetValuesBatch as defaultReadSheetValuesBatch,
   updateSheetValuesBatch as defaultUpdateSheetValuesBatch,
@@ -83,12 +84,19 @@ type AppendSheetRow = (
   rowValues: string[],
   operation?: SheetsOperation
 ) => Promise<void>;
+type DeleteSheetRow = (
+  target: SpreadsheetTarget,
+  sheetName: string,
+  rowNumber: number,
+  operation?: SheetsOperation
+) => Promise<void>;
 
 export type SheetsStoreDependencies = {
   readSheetValues?: ReadSheetValues;
   readSheetValuesBatch?: ReadSheetValuesBatch;
   updateSheetValuesBatch?: UpdateSheetValuesBatch;
   appendSheetRow?: AppendSheetRow;
+  deleteSheetRow?: DeleteSheetRow;
   getSheetLayout?: () => SheetLayout;
   now?: () => Date;
 };
@@ -413,6 +421,7 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
   const updateSheetValuesBatch =
     dependencies.updateSheetValuesBatch || defaultUpdateSheetValuesBatch;
   const appendSheetRow = dependencies.appendSheetRow || defaultAppendSheetRow;
+  const deleteSheetRow = dependencies.deleteSheetRow || defaultDeleteSheetRow;
   const getSheetLayout = dependencies.getSheetLayout || defaultGetSheetLayout;
   const now = dependencies.now || (() => new Date());
 
@@ -709,7 +718,6 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
       payload.campaignType === 'Members'
         ? layout.membersRange
         : layout.leadsRange;
-    const tabName = getTabName(baseRange);
     const rows = await readSheetValues('data', baseRange, operation);
     const headers = (rows[0] || []).map((value) => String(value || '').trim());
     const columns = resolveLeadColumns(headers);
@@ -730,22 +738,7 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
       throw new Error('FORBIDDEN_LEAD_ASSIGNMENT');
     }
     const rowNumber = rowIndex + 1;
-    await updateSheetValuesBatch(
-      'data',
-      [
-        {
-          range:
-            tabName +
-            '!A' +
-            String(rowNumber) +
-            ':' +
-            columnLabel(headers.length) +
-            String(rowNumber),
-          values: [Array<string>(headers.length).fill('')]
-        }
-      ],
-      operation
-    );
+    await deleteSheetRow('data', getTabName(baseRange), rowNumber, operation);
     return DeleteLeadResponseSchema.parse({
       success: true,
       lead: { id: payload.id }

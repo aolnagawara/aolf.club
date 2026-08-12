@@ -107,6 +107,14 @@ function buildBatchUpdateUrl(target: SpreadsheetTarget) {
   );
 }
 
+function buildSpreadsheetBatchUpdateUrl(target: SpreadsheetTarget) {
+  return (
+    'https://sheets.googleapis.com/v4/spreadsheets/' +
+    getSpreadsheetId(target) +
+    ':batchUpdate'
+  );
+}
+
 async function parseResponseJson(res: Response): Promise<unknown> {
   const text = await res.text();
   if (!text) {
@@ -295,6 +303,51 @@ export async function appendSheetRow(
     {
       method: 'POST',
       body: JSON.stringify({ values: [rowValues] })
+    },
+    operation
+  );
+}
+
+export async function deleteSheetRow(
+  target: SpreadsheetTarget,
+  sheetName: string,
+  rowNumber: number,
+  operation?: SheetsOperation
+) {
+  const spreadsheet = (await callSheetsApi(
+    'https://sheets.googleapis.com/v4/spreadsheets/' +
+      getSpreadsheetId(target) +
+      '?fields=sheets.properties',
+    { method: 'GET' },
+    operation
+  )) as {
+    sheets?: Array<{ properties?: { sheetId?: number; title?: string } }>;
+  };
+  const sheetId = spreadsheet.sheets?.find(
+    (sheet) => sheet.properties?.title === sheetName
+  )?.properties?.sheetId;
+  if (sheetId === undefined) {
+    throw new Error('Sheet not found: ' + sheetName);
+  }
+
+  await callSheetsApi(
+    buildSpreadsheetBatchUpdateUrl(target),
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        requests: [
+          {
+            deleteDimension: {
+              range: {
+                sheetId,
+                dimension: 'ROWS',
+                startIndex: rowNumber - 1,
+                endIndex: rowNumber
+              }
+            }
+          }
+        ]
+      })
     },
     operation
   );

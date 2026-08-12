@@ -21,10 +21,9 @@ describe('AOLF Connect frontend presentation', () => {
     expect(page).toContain('<title>AOLF Connect');
     expect(page).toContain('href="/seva"');
     expect(page).toContain('id="top"');
-    expect(page).toContain('id="google-sign-in"');
     expect(page).toContain('id="programs"');
-    expect(page).toContain('id="members"');
-    expect(page).toContain('id="events"');
+    expect(page).toContain('id="schedule"');
+    expect(page).toContain('id="community"');
     expect(page).not.toContain('sevaWorkspace()');
     expect(page).not.toContain('src="./main.ts"');
   });
@@ -62,23 +61,17 @@ describe('AOLF Connect frontend presentation', () => {
     expect(page).toContain('x-show="!isVolunteerModalOpen"');
     expect(page).toContain('x-cloak');
     expect(page).toContain('Continue with Google');
-    expect(page).toContain('await startAuthFlow()');
+    expect(page).toContain('@click="startAuthFlow()"');
     expect(page).not.toContain('Featured Programs');
     expect(page).not.toContain('Upcoming Events');
   });
 
-  it('uses the supplied logo without changing the workspace header images', () => {
+  it('uses the supplied local logo across public and workspace pages', () => {
     const publicPage = readText(publicPageUrl);
     const sevaPage = readText(sevaPageUrl);
-    const leftHeaderImage =
-      'https://virtualgallery.ssrvm.org/assets/x3c522afe-a827-4fc7-b0ea-9685495d4a56.png.pagespeed.ic.IbyWpMz_OF.png';
-    const centerHeaderImage =
-      'https://www.artofliving.org/ca-en/iimg/2252/i.webp';
 
     expect(publicPage).toContain('/assets/aolf-connect-logo.png');
     expect(sevaPage).toContain('/assets/aolf-connect-logo.png');
-    expect(sevaPage).toContain(leftHeaderImage);
-    expect(sevaPage).toContain(centerHeaderImage);
     expect(statSync(logoUrl).size).toBeGreaterThan(1_000_000);
   });
 
@@ -93,5 +86,13 @@ describe('AOLF Connect frontend presentation', () => {
     expect(sevaPage).toContain('data-icon="whatsapp"');
     expect(sevaPage).not.toContain('data-lucide="message-circle"');
     expect(mainModule).not.toContain('MessageCircle');
+  });
+
+  it('shows a notification icon in the workspace header', () => {
+    const sevaPage = readText(sevaPageUrl);
+
+    expect(sevaPage).toContain('aria-label="Notifications"');
+    expect(sevaPage).toContain('data-lucide="bell"');
+    expect(sevaPage).not.toContain('aria-label="Contact via WhatsApp"');
   });
 });

@@ -197,7 +197,7 @@ export function createAuthAndBootstrapMethods() {
         const saved = await this.flushPendingSaves();
         if (!saved) {
           this.authError =
-            'Some changes could not be saved. Please retry before switching campaigns.';
+            'Some changes could not be saved. Please retry before switching Seva.';
           return;
         }
         await this.loadBootstrap(targetCampaignId);
@@ -210,7 +210,7 @@ export function createAuthAndBootstrapMethods() {
         return this.selectedCampaign.name;
       }
       const firstCampaign = this.campaigns[0];
-      return firstCampaign ? firstCampaign.name : 'Select Campaign';
+      return firstCampaign ? firstCampaign.name : 'Select Seva';
     },
     openCampaignSheet(this: SevaWorkspaceContext): void {
       if (this.isLoadingBootstrap) {
@@ -218,7 +218,7 @@ export function createAuthAndBootstrapMethods() {
       }
 
       this.optionSheetMode = 'campaign';
-      this.optionSheetTitle = 'Switch Campaign';
+      this.optionSheetTitle = 'Switch Seva';
       this.optionSheetOptions = this.campaigns.map(
         (campaign: Campaign): OptionItem => ({
           value: campaign.id,
@@ -267,7 +267,7 @@ export function createAuthAndBootstrapMethods() {
           campaignId || this.selectedCampaignId || null
         );
         if (!response || !response.success) {
-          throw new Error('Campaign data could not be loaded.');
+          throw new Error('Seva data could not be loaded.');
         }
 
         const responseConfig = response.config || {};
@@ -349,9 +349,9 @@ export function createAuthAndBootstrapMethods() {
           ? this.filterOptions[0].id
           : 'all';
         this.programFilter = '';
-        this.leads = (response.leads || []).map((lead: unknown) =>
-          this.normalizeLead(lead)
-        );
+        this.leads = (response.leads || [])
+          .map((lead: unknown) => this.normalizeLead(lead))
+          .reverse();
         if (!this.appConfig.programs.length) {
           const inferredPrograms = this.inferProgramsFromLeads(this.leads);
           if (inferredPrograms.length) {
@@ -379,7 +379,7 @@ export function createAuthAndBootstrapMethods() {
         }
         this.authError = toAuthErrorMessage(
           error,
-          'Unable to load campaign data. Please try again.'
+          'Unable to load Seva data. Please try again.'
         );
         if (
           isApiClientError(error) &&

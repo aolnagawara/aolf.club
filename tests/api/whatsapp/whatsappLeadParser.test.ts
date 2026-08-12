@@ -22,18 +22,18 @@ const catalog: LeadParserCatalog = {
 };
 
 describe('parseLeadMessage', () => {
-  it('extracts all fields from flexible ordering', () => {
+  it('treats text before the mobile on the same line as the name', () => {
     const parsed = parseLeadMessage(
       'Need intro 9876543210 Sandip HP Hot Aug',
       catalog
     );
 
     expect(parsed.mobile).toBe('9876543210');
-    expect(parsed.name).toBe('Sandip');
+    expect(parsed.name).toBe('Need intro');
     expect(parsed.course).toBe('HP');
     expect(parsed.leadQuality).toBe('Hot');
     expect(parsed.month).toBe('Aug');
-    expect(parsed.notes).toBe('Need intro');
+    expect(parsed.notes).toBe('Sandip');
   });
 
   it('normalizes +91 and spaces in mobile', () => {
@@ -49,6 +49,47 @@ describe('parseLeadMessage', () => {
 
     expect(parsed.name).toBe('Rajesh');
     expect(parsed.notes).toBe('Kumar');
+  });
+
+  it.each([
+    ['Apoorva +919449713514 HP', 'Apoorva'],
+    ['Apoorva Shetty +919449713514 HP', 'Apoorva Shetty'],
+    ['Rajath: 96391 46920, HP', 'Rajath'],
+    ['Murgeshan- 99625 74446 HP from Chennai', 'Murgeshan']
+  ])('extracts and cleans the name in %s', (message, name) => {
+    const parsed = parseLeadMessage(message, catalog);
+
+    expect(parsed.name).toBe(name);
+    expect(parsed.course).toBe('HP');
+  });
+
+  it('uses text between a leading mobile and the first tag as the name', () => {
+    const parsed = parseLeadMessage(
+      '9123456789 Apoorva Shetty HP Hot Please call',
+      catalog
+    );
+
+    expect(parsed.name).toBe('Apoorva Shetty');
+    expect(parsed.course).toBe('HP');
+    expect(parsed.leadQuality).toBe('Hot');
+    expect(parsed.notes).toBe('Please call');
+  });
+
+  it('keeps surrounding lines as notes while using the mobile line for the name', () => {
+    const parsed = parseLeadMessage(
+      'Interested to connect for future programs\nYash : 82172 99639\nInterested for IP',
+      {
+        ...catalog,
+        courses: [...catalog.courses, { canonical: 'IP', aliases: [] }]
+      }
+    );
+
+    expect(parsed.name).toBe('Yash');
+    expect(parsed.mobile).toBe('8217299639');
+    expect(parsed.course).toBe('IP');
+    expect(parsed.notes).toBe(
+      'Interested to connect for future programs Interested for'
+    );
   });
 
   it.each([

@@ -1,5 +1,8 @@
 import type { Campaign } from '../../../shared/contracts/appContracts.js';
-import { getDefaultQualityOptionsForCampaignType } from '../../../src/config/campaignDefaults.js';
+import {
+  DEFAULT_PROGRAMS,
+  getDefaultQualityOptionsForCampaignType
+} from '../../../src/config/campaignDefaults.js';
 import { nanoid } from 'nanoid';
 import {
   normalizeEmail,
@@ -107,7 +110,8 @@ async function loadParserCatalogAndCampaigns(): Promise<{
   );
   const campaigns = rowsToCampaigns(campaignsRows);
 
-  const courseTerms: ParserTerm[] = programs
+  const configuredPrograms = programs.length ? programs : DEFAULT_PROGRAMS;
+  const courseTerms: ParserTerm[] = configuredPrograms
     .map((program) => {
       const code = normalizeSpaces(program.code || '');
       const label = normalizeSpaces(program.label || '');
@@ -299,8 +303,7 @@ export async function upsertLeadByMobileAndCampaign(
   if (targetRowNumber) {
     const rowRange = `${tabName}!A${targetRowNumber}:${endColumn}${targetRowNumber}`;
     const existingValues = (await readSheetValues('data', rowRange))[0] || [];
-    const row =
-      rowsToTable([headers, existingValues]).records[0]?.record || {};
+    const row = rowsToTable([headers, existingValues]).records[0]?.record || {};
     const merged: Record<string, string> = {
       name: parsed.name || row.name || '',
       quality: parsed.leadQuality || row.quality || 'Quality',
@@ -396,6 +399,21 @@ export function buildEditableLeadMessage(parsed: ParsedLeadMessage): string {
     .map((value) => normalizeSpaces(value))
     .filter(Boolean)
     .join(' ');
+}
+
+export function buildShareableLeadMessage(parsed: ParsedLeadMessage): string {
+  return [
+    'Lead added 👍',
+    '',
+    'Name: ' + parsed.name,
+    'Mobile: ' + parsed.mobile,
+    parsed.course ? 'Course: ' + parsed.course : '',
+    parsed.leadQuality ? 'Quality: ' + parsed.leadQuality : '',
+    parsed.month ? 'Month: ' + parsed.month : '',
+    parsed.notes ? 'Notes: ' + parsed.notes : ''
+  ]
+    .filter((line, index) => index < 2 || Boolean(line))
+    .join('\n');
 }
 
 export async function handleIncomingText(
@@ -532,6 +550,6 @@ export async function handleButtonReply(
 
   return {
     action: 'send_text',
-    message: '✅ Lead saved successfully.\n\nThank you.'
+    message: buildShareableLeadMessage(pending.parsed)
   };
 }

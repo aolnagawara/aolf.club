@@ -38,6 +38,7 @@ vi.mock('../../../api/_lib/sheets/layout.js', () => ({
 }));
 
 import {
+  buildShareableLeadMessage,
   handleButtonReply,
   handleIncomingText,
   upsertLeadByMobileAndCampaign
@@ -75,6 +76,20 @@ const parsedLead = {
 };
 
 describe('WhatsApp lead Sheet upsert', () => {
+  it('builds an informal plain-text lead summary for team sharing', () => {
+    expect(buildShareableLeadMessage(parsedLead)).toBe(
+      [
+        'Lead added 👍',
+        '',
+        'Name: Sandip',
+        'Mobile: 9876543210',
+        'Course: HP',
+        'Quality: Hot',
+        'Month: Aug',
+        'Notes: Call tomorrow'
+      ].join('\n')
+    );
+  });
   beforeEach(() => {
     vi.clearAllMocks();
     delete process.env.WHATSAPP_PENDING_TTL_SECONDS;
@@ -403,7 +418,10 @@ describe('WhatsApp lead Sheet upsert', () => {
       parsedLead.originalMessage,
       'source-message-confirmed'
     );
-    const confirmation = await handleButtonReply('919876543210', 'confirm_save');
+    const confirmation = await handleButtonReply(
+      '919876543210',
+      'confirm_save'
+    );
     expect(mockAppendSheetRow).toHaveBeenCalledTimes(1);
     expect(confirmation).toMatchObject({ action: 'send_text' });
     await expect(getPendingLead('919876543210')).resolves.toBeNull();

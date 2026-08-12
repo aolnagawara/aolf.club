@@ -81,6 +81,7 @@ export interface SevaWorkspaceState {
   volunteerEmail: string;
   authenticatedUser: AuthenticatedUser | null;
   authError: string;
+  actionMessage: string;
   isVolunteerModalOpen: boolean;
   filterOptions: Array<{ id: string; label: string }>;
   isFilterPanelOpen: boolean;
