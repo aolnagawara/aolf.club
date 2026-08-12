@@ -183,10 +183,12 @@ export function createRecordActionMethods() {
       this.optionSheetMode = 'reassignVolunteer';
       this.optionSheetTitle =
         'Reassign ' + String(this.selectedCount()) + ' selected';
-      this.optionSheetOptions = volunteers.map((volunteer) => ({
-        value: volunteer.email,
-        label: volunteer.name
-      }));
+      this.optionSheetOptions = volunteers
+        .map((volunteer) => ({
+          value: volunteer.email,
+          label: volunteer.name
+        }))
+        .sort((a, b) => a.label.localeCompare(b.label));
       this.currentOptionValue = '';
       this.activeOptionLead = null;
       this.isOptionSheetOpen = true;
