@@ -29,14 +29,6 @@
     menuOpen: false,
     activeDay: 'all',
     year: new Date().getFullYear(),
-    init() {
-      try {
-        if (sessionStorage.getItem('aolf-connect-return-to-seva') === '1') {
-          sessionStorage.removeItem('aolf-connect-return-to-seva');
-          window.location.replace('/seva');
-        }
-      } catch (e) {}
-    },
     scrollPrograms(direction) {
       const slider = this.$refs.programSlider;
       const amount = Math.min(slider.clientWidth * 0.78, 430);
@@ -104,16 +96,7 @@
       >WhatsApp us</a>
     </nav>
   </header>
-
-  <!-- Branding-verification copy retained in source but removed from visible UI. -->
-  <section class="sr-only" aria-hidden="true" id="google-sign-in">
-    <h2>Why Sign In with Google?</h2>
-    <p>AOLF Connect uses Google Sign-In to securely authenticate authorized Art of Living volunteers and participants.</p>
-    <p>Data Usage Disclosure: AOLF Connect accesses basic Google account information, including your name and email address, to create and verify your account, authenticate your access, and personalize your workspace. This information is not sold.</p>
-    <a href="/privacy.html">AOLF Connect Privacy Policy</a>
-  </section>
-
-  <main>
+<main>
     <section id="top" class="px-0 pb-[14px] pt-[34px] md:pb-[42px] md:pt-[74px]">
       <div class="mx-auto grid w-[min(1160px,calc(100%-36px))] grid-cols-1 items-center gap-7 md:grid-cols-[1.08fr_.92fr] md:gap-[62px]">
         <div>
@@ -299,14 +282,11 @@
         <a href="#programs">Programs</a>
         <a href="#schedule">Schedule</a>
         <a href="/seva">Volunteer</a>
+        <a href="/privacy.html">Privacy Policy</a>
+        <a href="/terms.html">Terms of Service</a>
+        <a href="https://www.artofliving.org/" target="_blank" rel="noopener noreferrer">Official Art of Living site</a>
       </div>
     </div>
   </footer>
-
-  <div class="sr-only" aria-hidden="true">
-    <a href="https://www.artofliving.org/">Official Art of Living site</a>
-    <a href="/privacy.html">Privacy Policy</a>
-    <a href="/terms.html">Terms of Service</a>
-  </div>
 </body>
 </html>

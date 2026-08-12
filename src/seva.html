@@ -31,21 +31,13 @@
       >
         <div class="flex items-center">
           <img
-            src="https://virtualgallery.ssrvm.org/assets/x3c522afe-a827-4fc7-b0ea-9685495d4a56.png.pagespeed.ic.IbyWpMz_OF.png"
-            class="h-8 w-auto object-contain"
-            alt="Logo"
+            src="/assets/aolf-connect-logo.png"
+            class="h-8 w-8 rounded-lg object-contain"
+            alt="AOLF Connect"
           />
         </div>
         <div class="flex flex-col items-center justify-center">
-          <img
-            src="https://www.artofliving.org/ca-en/iimg/2252/i.webp"
-            class="h-10 w-auto object-contain"
-            alt="Center Logo"
-            onerror="
-              this.src =
-                'https://virtualgallery.ssrvm.org/assets/x3c522afe-a827-4fc7-b0ea-9685495d4a56.png.pagespeed.ic.IbyWpMz_OF.png'
-            "
-          />
+          <span class="text-xs font-semibold text-slate-800">AOLF Connect</span>
           <span
             class="mt-0.5 text-[9px] font-semibold uppercase tracking-wide text-slate-500"
             >Seva Workspace</span
@@ -182,7 +174,7 @@
             ></div>
             <button
               type="button"
-              @click="sessionStorage.setItem('aolf-connect-return-to-seva', '1'); await startAuthFlow(); sessionStorage.removeItem('aolf-connect-return-to-seva')"
+              @click="startAuthFlow()"
               class="w-full inline-flex items-center justify-center gap-3 rounded-xl bg-indigo-700 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
             >
               <svg viewBox="0 0 24 24" class="w-5 h-5" aria-hidden="true">
@@ -208,12 +200,18 @@
               </svg>
               Continue with Google
             </button>
-            <a
-              href="/"
-              class="inline-flex text-xs font-medium text-slate-500 hover:text-indigo-700"
-            >
-              Back to the chapter website
-            </a>
+            <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-left space-y-1.5">
+              <p class="text-xs font-semibold text-slate-700">Secure Google authentication</p>
+              <p class="text-[11px] leading-relaxed text-slate-500">
+                Google handles the sign-in process directly. AOLF Connect never asks for, receives, or stores your Google password.
+                We only use the basic account information needed to verify access for authorized volunteers.
+              </p>
+            </div>
+            <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs font-medium">
+              <a href="/" class="text-slate-500 hover:text-indigo-700">Back to the chapter website</a>
+              <a href="/privacy.html" class="text-slate-500 hover:text-indigo-700">Privacy Policy</a>
+              <a href="/terms.html" class="text-slate-500 hover:text-indigo-700">Terms of Service</a>
+            </div>
           </div>
         </section>
 

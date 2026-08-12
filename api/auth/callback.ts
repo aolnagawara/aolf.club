@@ -64,7 +64,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     await setSessionCookie(res, sessionUser);
     clearOAuthStateCookie(res);
     res.status(302);
-    res.setHeader('Location', '/');
+    res.setHeader('Location', '/seva');
     return res.end();
   } catch (error) {
     clearOAuthStateCookie(res);
