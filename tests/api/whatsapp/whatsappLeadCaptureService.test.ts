@@ -39,6 +39,7 @@ import {
   getPendingLead,
   upsertPendingLead
 } from '../../../api/_lib/whatsapp/pendingStore.js';
+import { buildConfirmationButtonId } from '../../../api/_lib/whatsapp/confirmationToken.js';
 
 const headers = [
   'id',
@@ -83,6 +84,7 @@ describe('WhatsApp lead Sheet upsert', () => {
   });
   beforeEach(() => {
     vi.clearAllMocks();
+    process.env.META_APP_SECRET = 'test-meta-app-secret';
     delete process.env.WHATSAPP_PENDING_TTL_SECONDS;
     __resetWhatsAppStateForTests();
   });
@@ -91,6 +93,7 @@ describe('WhatsApp lead Sheet upsert', () => {
     __resetWhatsAppStateForTests();
     vi.useRealTimers();
     delete process.env.WHATSAPP_PENDING_TTL_SECONDS;
+    delete process.env.META_APP_SECRET;
   });
 
   it('preserves the physical Sheet row number across blank rows and matches campaignId', async () => {
@@ -206,10 +209,11 @@ describe('WhatsApp lead Sheet upsert', () => {
       'source-message-1'
     );
 
-    expect(result).toEqual({
+    expect(result).toMatchObject({
       action: 'show_confirmation',
       parsed: parsedLead
     });
+    expect(result.confirmationToken).toEqual(expect.any(String));
   });
 
   it('defaults a missing lead quality and month before showing confirmation', async () => {
@@ -236,7 +240,7 @@ describe('WhatsApp lead Sheet upsert', () => {
       }
       throw new Error(`Unexpected Sheet read: ${target} ${range}`);
     });
-    const message = 'Saurabh 9845702929 HP Need More info';
+    const message = 'Saurabh 9845702929 Need More info';
 
     const result = await handleIncomingText(
       '919876543210',
@@ -244,7 +248,7 @@ describe('WhatsApp lead Sheet upsert', () => {
       'source-message-defaults'
     );
 
-    expect(result).toEqual({
+    expect(result).toMatchObject({
       action: 'show_confirmation',
       parsed: {
         mobile: '9845702929',
@@ -256,6 +260,7 @@ describe('WhatsApp lead Sheet upsert', () => {
         originalMessage: message
       }
     });
+    expect(result.confirmationToken).toEqual(expect.any(String));
     await expect(getPendingLead('919876543210')).resolves.toMatchObject({
       parsed: {
         leadQuality: 'Hot',
@@ -327,7 +332,7 @@ describe('WhatsApp lead Sheet upsert', () => {
       'source-message-new'
     );
 
-    expect(nextResult).toEqual({
+    expect(nextResult).toMatchObject({
       action: 'show_confirmation',
       parsed: {
         mobile: '9123456789',
@@ -339,10 +344,60 @@ describe('WhatsApp lead Sheet upsert', () => {
         originalMessage: newMessage
       }
     });
+    expect(nextResult.confirmationToken).toEqual(expect.any(String));
     expect(await getPendingLead('919876543210')).toMatchObject({
       id: 'source-message-new',
       parsed: { mobile: '9123456789' }
     });
+  });
+
+  it('confirms from the signed button payload after in-memory state is lost', async () => {
+    mockReadSheetValues.mockImplementation(async (target, range) => {
+      if (target === 'access' && range === 'AllowedUsers!A:Z') {
+        return [
+          ['email', 'name', 'mobile'],
+          ['volunteer@example.com', 'Volunteer', '919876543210']
+        ];
+      }
+      if (target === 'data' && range === 'Config!A:B') {
+        return [
+          ['key', 'value'],
+          [
+            'programs',
+            JSON.stringify([{ code: 'HP', label: 'Happiness Program' }])
+          ]
+        ];
+      }
+      if (target === 'data' && range === 'Campaigns!A:F') {
+        return [
+          ['id', 'name', 'type'],
+          ['leads-aug', 'August Leads', 'Leads']
+        ];
+      }
+      if (target === 'data' && range === 'Leads!A:Z') {
+        return [headers];
+      }
+      throw new Error(`Unexpected Sheet read: ${target} ${range}`);
+    });
+
+    const incoming = await handleIncomingText(
+      '919876543210',
+      parsedLead.originalMessage,
+      'source-message-before-cold-start'
+    );
+    expect(incoming.confirmationToken).toBeTruthy();
+    __resetWhatsAppStateForTests();
+
+    const confirmation = await handleButtonReply(
+      '919876543210',
+      buildConfirmationButtonId(
+        'confirm_save',
+        incoming.confirmationToken || ''
+      )
+    );
+
+    expect(confirmation).toMatchObject({ action: 'send_text' });
+    expect(mockAppendSheetRow).toHaveBeenCalledTimes(1);
   });
 
   it('discards an extracted lead when confirmation times out without a response', async () => {

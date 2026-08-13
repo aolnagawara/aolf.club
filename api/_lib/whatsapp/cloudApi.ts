@@ -6,6 +6,7 @@ import {
 } from '../config/env.js';
 import type { ApiRequest } from '../http/responses.js';
 import type { ParsedLeadMessage } from './leadParser.js';
+import { buildConfirmationButtonId } from './confirmationToken.js';
 
 const META_REQUEST_TIMEOUT_MS = 10_000;
 const MAX_META_ERROR_BODY_CHARS = 1_000;
@@ -312,7 +313,8 @@ export async function sendTextMessage(
 
 export async function sendConfirmationButtons(
   to: string,
-  parsed: ParsedLeadMessage
+  parsed: ParsedLeadMessage,
+  confirmationToken = ''
 ): Promise<void> {
   const details = [
     '📋 Please confirm the extracted details',
@@ -339,14 +341,14 @@ export async function sendConfirmationButtons(
           {
             type: 'reply',
             reply: {
-              id: 'confirm_save',
+              id: buildConfirmationButtonId('confirm_save', confirmationToken),
               title: '✅ Confirm & Save'
             }
           },
           {
             type: 'reply',
             reply: {
-              id: 'edit_lead',
+              id: buildConfirmationButtonId('edit_lead', confirmationToken),
               title: '✏️ Edit'
             }
           }

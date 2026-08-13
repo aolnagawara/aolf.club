@@ -141,19 +141,26 @@ describe('whatsappCloudApi verification helpers', () => {
     } as Response);
     vi.stubGlobal('fetch', fetchMock);
 
-    await sendConfirmationButtons('919876543210', {
-      name: 'Sandip',
-      mobile: '9876543210',
-      course: 'HP',
-      leadQuality: 'Hot',
-      month: 'Aug',
-      notes: 'Call tomorrow',
-      originalMessage: 'RAW SOURCE MESSAGE THAT MUST STAY HIDDEN'
-    });
+    await sendConfirmationButtons(
+      '919876543210',
+      {
+        name: 'Sandip',
+        mobile: '9876543210',
+        course: 'HP',
+        leadQuality: 'Hot',
+        month: 'Aug',
+        notes: 'Call tomorrow',
+        originalMessage: 'RAW SOURCE MESSAGE THAT MUST STAY HIDDEN'
+      },
+      'signed-token'
+    );
 
     const request = fetchMock.mock.calls[0]?.[1] as RequestInit;
     const payload = JSON.parse(String(request.body)) as {
-      interactive: { body: { text: string } };
+      interactive: {
+        body: { text: string };
+        action: { buttons: Array<{ reply: { id: string } }> };
+      };
     };
     expect(payload.interactive.body.text).toBe(
       [
@@ -169,5 +176,8 @@ describe('whatsappCloudApi verification helpers', () => {
     );
     expect(payload.interactive.body.text).not.toContain('Original Message');
     expect(payload.interactive.body.text).not.toContain('RAW SOURCE MESSAGE');
+    expect(
+      payload.interactive.action.buttons.map((button) => button.reply.id)
+    ).toEqual(['confirm_save.signed-token', 'edit_lead.signed-token']);
   });
 });

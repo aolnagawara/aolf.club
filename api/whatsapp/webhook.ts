@@ -51,7 +51,11 @@ async function processEventOnce(
       );
 
       if (result.action === 'show_confirmation' && result.parsed) {
-        await sendConfirmationButtons(event.from, result.parsed);
+        await sendConfirmationButtons(
+          event.from,
+          result.parsed,
+          result.confirmationToken
+        );
       } else if (result.action === 'send_text' && result.message) {
         await sendTextMessage(event.from, result.message);
       }

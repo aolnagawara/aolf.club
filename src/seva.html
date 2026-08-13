@@ -232,8 +232,9 @@
 
           <div
             x-show="actionMessage"
+            x-transition.opacity
             role="status"
-            class="flex items-start justify-between gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700"
+            class="fixed left-1/2 top-20 z-40 flex w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 items-start justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50/95 px-4 py-3 text-xs text-emerald-700 shadow-lg backdrop-blur"
           >
             <span x-text="actionMessage"></span>
             <button

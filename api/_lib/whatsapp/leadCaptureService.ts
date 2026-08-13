@@ -37,6 +37,11 @@ import {
   type ParsedLeadMessage,
   type ParserTerm
 } from './leadParser.js';
+import {
+  createConfirmationToken,
+  parseConfirmationButtonId,
+  readConfirmationToken
+} from './confirmationToken.js';
 
 const DEFAULT_MONTH_TERMS = [
   ['Jan', ['January']],
@@ -54,6 +59,7 @@ const DEFAULT_MONTH_TERMS = [
 ] as const;
 
 const DEFAULT_LEAD_QUALITY = 'Hot';
+const DEFAULT_LEAD_PROGRAM = 'HP';
 
 type VolunteerInfo = {
   email: string;
@@ -406,6 +412,7 @@ export async function handleIncomingText(
   action: 'ignore' | 'show_confirmation' | 'send_text';
   parsed?: ParsedLeadMessage;
   message?: string;
+  confirmationToken?: string;
 }> {
   const volunteer = await findVolunteerByPhone(volunteerPhone);
   if (!volunteer) {
@@ -421,7 +428,8 @@ export async function handleIncomingText(
     if (messageId && pending.sourceMessageId === messageId) {
       return {
         action: 'show_confirmation',
-        parsed: pending.parsed
+        parsed: pending.parsed,
+        confirmationToken: createConfirmationToken(pending) || undefined
       };
     }
     return {
@@ -436,6 +444,7 @@ export async function handleIncomingText(
     parsed = parseAndValidateLead(text, catalog);
     parsed = {
       ...parsed,
+      course: parsed.course || DEFAULT_LEAD_PROGRAM,
       leadQuality: parsed.leadQuality || DEFAULT_LEAD_QUALITY,
       month: parsed.month || getCurrentShortMonth()
     };
@@ -475,7 +484,8 @@ export async function handleIncomingText(
 
   return {
     action: 'show_confirmation',
-    parsed
+    parsed,
+    confirmationToken: createConfirmationToken(createdPending) || undefined
   };
 }
 
@@ -487,7 +497,13 @@ export async function handleButtonReply(
   message?: string;
   messages?: string[];
 }> {
-  const pending = await getPendingLead(volunteerPhone);
+  const parsedButton = parseConfirmationButtonId(buttonId);
+  const action = parsedButton?.action || buttonId;
+  const pending =
+    (await getPendingLead(volunteerPhone)) ||
+    (parsedButton?.token
+      ? readConfirmationToken(parsedButton.token, volunteerPhone)
+      : null);
   if (!pending) {
     return {
       action: 'send_text',
@@ -496,7 +512,7 @@ export async function handleButtonReply(
     };
   }
 
-  if (buttonId === 'edit_lead') {
+  if (action === 'edit_lead') {
     await removePendingLead(volunteerPhone, pending.id);
     return {
       action: 'send_text',
@@ -507,7 +523,7 @@ export async function handleButtonReply(
     };
   }
 
-  if (buttonId !== 'confirm_save') {
+  if (action !== 'confirm_save') {
     return { action: 'ignore' };
   }
 

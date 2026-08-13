@@ -105,4 +105,11 @@ describe('AOLF Connect frontend presentation', () => {
     expect(sevaPage).not.toContain('data-lucide="bell"');
     expect(sevaPage).not.toContain('aria-label="Contact via WhatsApp"');
   });
+
+  it('shows action feedback as a viewport-floating status', () => {
+    const sevaPage = readText(sevaPageUrl);
+
+    expect(sevaPage).toContain('x-show="actionMessage"');
+    expect(sevaPage).toContain('class="fixed left-1/2 top-20 z-40');
+  });
 });
