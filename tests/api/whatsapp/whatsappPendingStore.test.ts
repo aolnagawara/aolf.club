@@ -96,6 +96,22 @@ describe('WhatsApp pending confirmation store', () => {
     await expect(getPendingLead('919876543210')).resolves.toBeNull();
   });
 
+  it('does not return an expired lead before a delayed timeout runs', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-08-05T12:00:00.000Z'));
+    process.env.WHATSAPP_PENDING_TTL_SECONDS = '1';
+    await upsertPendingLead(
+      '919876543210',
+      'volunteer@example.com',
+      parsedLead,
+      'source-expired-on-read'
+    );
+
+    vi.setSystemTime(new Date('2026-08-05T12:00:01.001Z'));
+
+    await expect(getPendingLead('919876543210')).resolves.toBeNull();
+  });
+
   it('keeps processed-message de-duplication bounded by the in-memory TTL', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-08-05T12:00:00.000Z'));

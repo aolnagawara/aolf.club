@@ -83,8 +83,7 @@ const configRows = [
   ['programDisplayOrder', '["HP","VTP","DSN","IP","IP2","Sahaj","YES+"]'],
   ['showDonePrograms', 'true'],
   ['defaultCampaignMessage', 'Hi {name}, greetings from Art of Living.'],
-  ['whatsappCountryCode', '91'],
-  ['allowedUsers', 'volunteer@example.com,admin@example.com']
+  ['whatsappCountryCode', '91']
 ];
 
 const allowedUsersRows = [

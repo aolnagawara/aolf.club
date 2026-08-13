@@ -13,4 +13,8 @@ export class MockAuthProvider implements AuthProvider {
     this.currentUser = mockBootstrapData.user;
     return this.currentUser;
   }
+
+  async signOut(): Promise<void> {
+    this.currentUser = null;
+  }
 }

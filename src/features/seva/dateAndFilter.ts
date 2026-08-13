@@ -90,24 +90,6 @@ export function createDateAndFilterMethods() {
         date.getDate()
       ).getTime();
     },
-    getDateBucket(
-      this: SevaWorkspaceContext,
-      valueOrDate: Date | number | string | null | undefined
-    ): 'invalid' | 'today' | 'due' | 'upcoming' {
-      const date =
-        Object.prototype.toString.call(valueOrDate) === '[object Date]'
-          ? (valueOrDate as Date)
-          : this.parseDate(valueOrDate);
-      if (!date) {
-        return 'invalid';
-      }
-      const dayTs = this.getDateOnlyTimestampFromDate(date);
-      const todayTs = this.getTodayDateOnlyTimestamp();
-      if (dayTs === todayTs) {
-        return 'today';
-      }
-      return dayTs < todayTs ? 'due' : 'upcoming';
-    },
     formatRelativeDate(
       this: SevaWorkspaceContext,
       value: Date | number | string | null | undefined,
@@ -282,7 +264,8 @@ export function createDateAndFilterMethods() {
           lead._phoneRawLower.includes(searchTerm) ||
           (searchDigits && lead._phoneDigits.includes(searchDigits));
 
-        if (!this.programFilter) return modeMatch && metricMatch && matchesSearch;
+        if (!this.programFilter)
+          return modeMatch && metricMatch && matchesSearch;
         const allPrograms2 = [
           ...this.parsePrograms(lead.wishlistPrograms),
           ...this.parsePrograms(lead.donePrograms)

@@ -19,5 +19,8 @@ export const authService = {
   },
   signIn() {
     return authProvider.signIn();
+  },
+  signOut() {
+    return authProvider.signOut();
   }
 };

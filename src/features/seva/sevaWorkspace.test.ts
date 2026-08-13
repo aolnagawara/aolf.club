@@ -96,6 +96,82 @@ describe('Seva workspace lead lifecycle', () => {
     });
   });
 
+  it('keeps an edit made during a save dirty until a later flush saves it', async () => {
+    const firstResponse = deferred<UpdateLeadResponse>();
+    const updateLead = vi
+      .fn()
+      .mockImplementationOnce(() => firstResponse.promise)
+      .mockResolvedValueOnce({
+        success: true,
+        lead: { id: '+91 99999 00000', lastUpdated: 'latest saved' }
+      });
+    vi.stubGlobal('window', { appRuntime: { updateLead } });
+
+    const app = sevaWorkspace();
+    const lead = createLead(app);
+    app.leads = [lead];
+    lead.notes = 'First revision';
+    app.markLeadDirty(lead);
+    const firstSave = app.commitLeadChanges(lead);
+
+    lead.notes = 'Edit made while saving';
+    app.markLeadDirty(lead);
+    firstResponse.resolve({
+      success: true,
+      lead: { id: lead.id, lastUpdated: 'first saved' }
+    });
+    await expect(firstSave).resolves.toBe(true);
+
+    expect(updateLead).toHaveBeenCalledTimes(1);
+    expect(lead._originalData?.notes).toBe('First revision');
+    expect(lead.notes).toBe('Edit made while saving');
+    expect(lead.isDirty).toBe(true);
+
+    await expect(app.flushPendingSaves()).resolves.toBe(true);
+
+    expect(updateLead).toHaveBeenCalledTimes(2);
+    expect(updateLead.mock.calls[1][0].notes).toBe('Edit made while saving');
+    expect(lead._originalData?.notes).toBe('Edit made while saving');
+    expect(lead.isDirty).toBe(false);
+  });
+
+  it('preserves custom quality and status when saving an unrelated edit', async () => {
+    const updateLead = vi.fn(async (payload) => ({
+      success: true as const,
+      lead: { id: payload.id, lastUpdated: 'saved' }
+    }));
+    vi.stubGlobal('window', { appRuntime: { updateLead } });
+
+    const app = sevaWorkspace();
+    app.qualityOptions = [{ value: 'Hot', label: 'Hot' }];
+    app.statusOptions = ['Response', 'Connected'];
+    const lead = app.normalizeLead({
+      id: 'custom-values-lead',
+      name: 'Custom values',
+      quality: 'Very Warm',
+      status: 'Left Voicemail',
+      notes: 'Original note',
+      campaignId: 'cmpLeads01AbcDefGhIJk',
+      campaignType: 'Leads'
+    });
+    app.leads = [lead];
+
+    expect(lead.quality).toBe('Very Warm');
+    expect(lead.status).toBe('Left Voicemail');
+
+    lead.notes = 'Only the note changed';
+    app.markLeadDirty(lead);
+    await expect(app.commitLeadChanges(lead)).resolves.toBe(true);
+
+    expect(updateLead).toHaveBeenCalledWith(
+      expect.objectContaining({
+        notes: 'Only the note changed',
+        quality: 'Very Warm',
+        status: 'Left Voicemail'
+      })
+    );
+  });
+
   it('defers name-filter invalidation until editing finishes', () => {
     const app = sevaWorkspace();
     const lead = createLead(app);
@@ -244,6 +320,56 @@ describe('Seva workspace lead lifecycle', () => {
     expect(app.buildWhatsappHref(lead)).not.toContain('91919876543210');
     app.dialLead(lead);
     expect(window.location.href).toBe('tel:+919876543210');
+  });
+
+  it('does not use a stable id as a missing mobile number', () => {
+    vi.stubGlobal('window', {
+      location: { href: 'https://example.test/seva' }
+    });
+    const app = sevaWorkspace();
+    const lead = app.normalizeLead({
+      id: 'stable-lead-1234567890',
+      mobile: '',
+      name: 'No mobile',
+      campaignId: 'cmpLeads01AbcDefGhIJk',
+      campaignType: 'Leads'
+    });
+
+    expect(lead._phoneDigits).toBe('');
+    expect(app.getTelHref(lead.mobile)).toBe('');
+    expect(app.buildWhatsappHref(lead)).toBe('');
+
+    app.dialLead(lead);
+    expect(window.location.href).toBe('https://example.test/seva');
+  });
+
+  it('preserves explicit international WhatsApp numbers and prefixes local ones', () => {
+    const app = sevaWorkspace();
+    app.appConfig.whatsappCountryCode = '91';
+    const internationalLead = app.normalizeLead({
+      id: 'international-lead',
+      mobile: '+1 415 555 2671',
+      name: 'International mobile',
+      campaignId: 'cmpLeads01AbcDefGhIJk',
+      campaignType: 'Leads'
+    });
+    const localLead = app.normalizeLead({
+      id: 'local-lead',
+      mobile: '98765 43210',
+      name: 'Local mobile',
+      campaignId: 'cmpLeads01AbcDefGhIJk',
+      campaignType: 'Leads'
+    });
+
+    expect(app.buildWhatsappHref(internationalLead)).toContain(
+      'https://wa.me/14155552671?'
+    );
+    expect(app.buildWhatsappHref(internationalLead)).not.toContain(
+      'https://wa.me/9114155552671?'
+    );
+    expect(app.buildWhatsappHref(localLead)).toContain(
+      'https://wa.me/919876543210?'
+    );
   });
 
   it.each([

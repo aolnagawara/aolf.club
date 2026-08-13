@@ -3,11 +3,8 @@ import {
   DeleteLeadRequestSchema,
   UpdateLeadRequestSchema,
   type BootstrapResponse,
-  type CreateLeadRequest,
   type CreateLeadResponse,
-  type DeleteLeadRequest,
   type DeleteLeadResponse,
-  type UpdateLeadRequest,
   type UpdateLeadResponse
 } from '../../../shared/contracts/appContracts.js';
 import { getServerEnv } from '../config/env.js';
@@ -35,41 +32,21 @@ export type ApiDataStore = {
     user: SessionUser,
     operation?: SheetsOperation
   ) => Promise<boolean>;
-  getBootstrapForUser: (
-    user: SessionUser,
-    campaignId?: string | null,
-    operation?: SheetsOperation
-  ) => Promise<BootstrapResponse>;
   getBootstrapForAuthorizedUser: (
     user: SessionUser,
     campaignId?: string | null,
     operation?: SheetsOperation
   ) => Promise<AuthorizedStoreResult<BootstrapResponse>>;
-  createLeadForUser: (
-    user: SessionUser,
-    payload: CreateLeadRequest,
-    operation?: SheetsOperation
-  ) => Promise<CreateLeadResponse>;
   createLeadForAuthorizedUser: (
     user: SessionUser,
     payload: unknown,
     operation?: SheetsOperation
   ) => Promise<AuthorizedStoreResult<CreateLeadResponse>>;
-  updateLeadForUser: (
-    user: SessionUser,
-    payload: UpdateLeadRequest,
-    operation?: SheetsOperation
-  ) => Promise<UpdateLeadResponse>;
   updateLeadForAuthorizedUser: (
     user: SessionUser,
     payload: unknown,
     operation?: SheetsOperation
   ) => Promise<AuthorizedStoreResult<UpdateLeadResponse>>;
-  deleteLeadForUser: (
-    user: SessionUser,
-    payload: DeleteLeadRequest,
-    operation?: SheetsOperation
-  ) => Promise<DeleteLeadResponse>;
   deleteLeadForAuthorizedUser: (
     user: SessionUser,
     payload: unknown,
@@ -96,10 +73,6 @@ const mockStore: ApiDataStore = {
     return isMockUserAllowed(user.email);
   },
 
-  async getBootstrapForUser(user, campaignId) {
-    return getMockBootstrapForUser(user, campaignId);
-  },
-
   async getBootstrapForAuthorizedUser(user, campaignId) {
     if (!isMockUserAllowed(user.email)) {
       return { allowed: false };
@@ -108,10 +81,6 @@ const mockStore: ApiDataStore = {
       allowed: true,
       value: await getMockBootstrapForUser(user, campaignId)
     };
-  },
-
-  async createLeadForUser(user, payload) {
-    return createMockLeadForUser(user, payload);
   },
 
   async createLeadForAuthorizedUser(user, payload) {
@@ -127,10 +96,6 @@ const mockStore: ApiDataStore = {
     };
   },
 
-  async updateLeadForUser(user, payload) {
-    return updateMockLeadForUser(user, payload);
-  },
-
   async updateLeadForAuthorizedUser(user, payload) {
     if (!isMockUserAllowed(user.email)) {
       return { allowed: false };
@@ -142,10 +107,6 @@ const mockStore: ApiDataStore = {
         UpdateLeadRequestSchema.parse(payload)
       )
     };
-  },
-
-  async deleteLeadForUser(user, payload) {
-    return deleteMockLeadForUser(user, payload);
   },
 
   async deleteLeadForAuthorizedUser(user, payload) {

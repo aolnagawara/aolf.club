@@ -1,6 +1,7 @@
 import type { ApiRequest, ApiResponse } from '../_lib/http/responses.js';
 import { readSessionUser } from '../_lib/auth/session.js';
 import { getApiDataStore } from '../_lib/storage/dataStore.js';
+import { ZodError } from 'zod';
 
 export default async function handler(req: ApiRequest, res: ApiResponse) {
   if (req.method !== 'POST') {
@@ -54,11 +55,25 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
         }
       });
     }
-    return res.status(400).json({
+    if (
+      error instanceof ZodError ||
+      message.includes('CAMPAIGN_TYPE_MISMATCH')
+    ) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Invalid record details.'
+        }
+      });
+    }
+
+    console.error('[leads-create] unexpected failure', error);
+    return res.status(500).json({
       success: false,
       error: {
-        code: 'VALIDATION_ERROR',
-        message: 'Invalid record details.'
+        code: 'INTERNAL_ERROR',
+        message: 'Unable to save the record.'
       }
     });
   }

@@ -13,6 +13,9 @@ export const appRuntime = {
   async signInWithGoogle() {
     return authService.signIn();
   },
+  async signOut() {
+    return authService.signOut();
+  },
   async loadBootstrap(campaignId?: string | null) {
     return leadService.getBootstrap(campaignId);
   },

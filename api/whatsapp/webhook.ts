@@ -19,6 +19,7 @@ import {
 } from '../_lib/whatsapp/pendingStore.js';
 
 const MAX_LOG_IDENTIFIER_CHARS = 128;
+const inFlightEvents = new Map<string, Promise<boolean>>();
 
 export const config = {
   api: {
@@ -38,15 +39,9 @@ function webhookLog(message: string, details?: Record<string, unknown>) {
   console.log('[whatsapp-webhook]', message);
 }
 
-async function processEvent(event: IncomingWhatsAppEvent): Promise<boolean> {
-  if (wasMessageProcessed(event.messageId)) {
-    webhookLog('event_skipped', {
-      messageId: boundedIdentifier(event.messageId),
-      reason: 'duplicate'
-    });
-    return true;
-  }
-
+async function processEventOnce(
+  event: IncomingWhatsAppEvent
+): Promise<boolean> {
   try {
     if (event.type === 'text' && event.textBody) {
       const result = await handleIncomingText(
@@ -83,6 +78,35 @@ async function processEvent(event: IncomingWhatsAppEvent): Promise<boolean> {
       )
     });
     return false;
+  }
+}
+
+async function processEvent(event: IncomingWhatsAppEvent): Promise<boolean> {
+  if (wasMessageProcessed(event.messageId)) {
+    webhookLog('event_skipped', {
+      messageId: boundedIdentifier(event.messageId),
+      reason: 'duplicate'
+    });
+    return true;
+  }
+
+  const existing = inFlightEvents.get(event.messageId);
+  if (existing) {
+    webhookLog('event_coalesced', {
+      messageId: boundedIdentifier(event.messageId),
+      reason: 'duplicate_in_flight'
+    });
+    return existing;
+  }
+
+  const processing = processEventOnce(event);
+  inFlightEvents.set(event.messageId, processing);
+  try {
+    return await processing;
+  } finally {
+    if (inFlightEvents.get(event.messageId) === processing) {
+      inFlightEvents.delete(event.messageId);
+    }
   }
 }
 
@@ -160,8 +184,8 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     return res.status(200).json({ success: true, ignored: true });
   }
 
-  // This app processes a handful of WhatsApp messages per day, so events are
-  // handled one at a time, in delivery order - no concurrency to coordinate.
+  // Events in one delivery are handled in order. Concurrent deliveries of the
+  // same message id are coalesced by processEvent's in-memory promise map.
   let succeeded = true;
   for (const event of events) {
     if (!(await processEvent(event))) {

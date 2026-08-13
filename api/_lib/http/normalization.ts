@@ -12,20 +12,12 @@ export function normalizeSpaces(value: string): string {
 
 export function normalizeIndianMobile(value: string): string {
   const digits = String(value || '').replace(/[^0-9]/g, '');
-  if (!digits) {
-    return '';
-  }
-
-  let normalized = digits;
-  if (normalized.length === 12 && normalized.startsWith('91')) {
-    normalized = normalized.slice(2);
-  }
-  if (normalized.length === 11 && normalized.startsWith('0')) {
-    normalized = normalized.slice(1);
-  }
-  if (normalized.length > 10) {
-    normalized = normalized.slice(-10);
-  }
+  const normalized =
+    digits.length === 12 && digits.startsWith('91')
+      ? digits.slice(2)
+      : digits.length === 11 && digits.startsWith('0')
+        ? digits.slice(1)
+        : digits;
 
   if (normalized.length !== 10) {
     return '';

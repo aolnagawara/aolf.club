@@ -7,6 +7,7 @@ const legacyLoginUrl = new URL('../../src/login.html', import.meta.url);
 const viteConfigUrl = new URL('../../vite.config.ts', import.meta.url);
 const vercelConfigUrl = new URL('../../vercel.json', import.meta.url);
 const mainModuleUrl = new URL('../../src/main.ts', import.meta.url);
+const publicModuleUrl = new URL('../../src/publicPage.ts', import.meta.url);
 const logoUrl = new URL(
   '../../public/assets/aolf-connect-logo.png',
   import.meta.url
@@ -26,6 +27,13 @@ describe('AOLF Connect frontend presentation', () => {
     expect(page).toContain('id="community"');
     expect(page).not.toContain('sevaWorkspace()');
     expect(page).not.toContain('src="./main.ts"');
+    expect(page).toContain('src="./publicPage.ts"');
+    expect(page).not.toContain('@tailwindcss/browser');
+    expect(page).not.toContain('alpinejs@');
+    expect(page).not.toContain('x-init="init()"');
+    expect(readText(publicModuleUrl)).toContain(
+      "import Alpine from 'alpinejs'"
+    );
   });
 
   it('publishes only the public page and protected Seva workspace', () => {
@@ -86,13 +94,15 @@ describe('AOLF Connect frontend presentation', () => {
     expect(sevaPage).toContain('data-icon="whatsapp"');
     expect(sevaPage).not.toContain('data-lucide="message-circle"');
     expect(mainModule).not.toContain('MessageCircle');
+    expect(sevaPage).toContain('x-show="buildWhatsappHref(lead)"');
+    expect(sevaPage).toContain(':disabled="!cleanPhone(lead.mobile)"');
   });
 
-  it('shows a notification icon in the workspace header', () => {
+  it('does not show an inactive notification control', () => {
     const sevaPage = readText(sevaPageUrl);
 
-    expect(sevaPage).toContain('aria-label="Notifications"');
-    expect(sevaPage).toContain('data-lucide="bell"');
+    expect(sevaPage).not.toContain('aria-label="Notifications"');
+    expect(sevaPage).not.toContain('data-lucide="bell"');
     expect(sevaPage).not.toContain('aria-label="Contact via WhatsApp"');
   });
 });

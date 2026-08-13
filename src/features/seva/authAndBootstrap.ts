@@ -66,6 +66,9 @@ function restoreCampaignView(
   Object.assign(context, snapshot);
 }
 
+const SIGN_OUT_SAVE_ERROR =
+  'Some changes could not be saved. Please retry before signing out.';
+
 export function createAuthAndBootstrapMethods() {
   return {
     async init(this: SevaWorkspaceContext): Promise<void> {
@@ -125,15 +128,6 @@ export function createAuthAndBootstrapMethods() {
         this.isLoadingBootstrap = false;
       }
     },
-    isValidVolunteerEmail(this: SevaWorkspaceContext, value: string): boolean {
-      const email = String(value || '')
-        .trim()
-        .toLowerCase();
-      return /.+@.+\..+/.test(email);
-    },
-    saveVolunteerEmail(this: SevaWorkspaceContext): void {
-      this.isVolunteerModalOpen = true;
-    },
     toggleProfileMenu(this: SevaWorkspaceContext): void {
       this.isProfileMenuOpen = !this.isProfileMenuOpen;
     },
@@ -162,7 +156,31 @@ export function createAuthAndBootstrapMethods() {
       }
       return (parts[0][0] + parts[1][0]).toUpperCase();
     },
-    signOutToLanding(this: SevaWorkspaceContext): void {
+    async signOutToLanding(this: SevaWorkspaceContext): Promise<void> {
+      try {
+        const saved = await this.flushPendingSaves();
+        if (!saved) {
+          this.authError = SIGN_OUT_SAVE_ERROR;
+          return;
+        }
+      } catch {
+        this.authError = SIGN_OUT_SAVE_ERROR;
+        return;
+      }
+
+      try {
+        await window.appRuntime.signOut();
+      } catch (error) {
+        const reason = toAuthErrorMessage(
+          error,
+          'Unable to sign out right now.'
+        );
+        this.authError =
+          reason +
+          ' Your workspace remains open; please try signing out again.';
+        return;
+      }
+
       this.authenticatedUser = null;
       this.volunteerEmail = '';
       this.authError = '';

@@ -248,23 +248,6 @@ export async function readSheetValuesBatch(
   });
 }
 
-export async function updateSheetRow(
-  target: SpreadsheetTarget,
-  range: string,
-  rowValues: string[],
-  operation?: SheetsOperation
-) {
-  const url = buildValuesUrl(target, range, 'valueInputOption=RAW');
-  await callSheetsApi(
-    url,
-    {
-      method: 'PUT',
-      body: JSON.stringify({ values: [rowValues] })
-    },
-    operation
-  );
-}
-
 export async function updateSheetValuesBatch(
   target: SpreadsheetTarget,
   updates: readonly SheetsBatchUpdate[],

@@ -8,6 +8,8 @@ describe('shared sheet primitives', () => {
     ['9876543210', '9876543210'],
     ['+91 98765 43210', '9876543210'],
     ['09876543210', '9876543210'],
+    ['001919876543210', ''],
+    ['12345678909876543210', ''],
     ['not-a-phone', '']
   ])('normalizes %s consistently', (input, expected) => {
     expect(normalizeIndianMobile(input)).toBe(expected);

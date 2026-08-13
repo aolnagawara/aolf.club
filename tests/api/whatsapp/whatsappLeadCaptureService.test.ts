@@ -1,28 +1,19 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const {
-  mockReadSheetValues,
-  mockReadSheetValuesBatch,
-  mockUpdateSheetValuesBatch,
-  mockAppendSheetRow
-} = vi.hoisted(() => ({
-  mockReadSheetValues:
-    vi.fn<(target: string, range: string) => Promise<string[][]>>(),
-  mockReadSheetValuesBatch:
-    vi.fn<
-      (target: string, ranges: readonly string[]) => Promise<string[][][]>
-    >(),
-  mockUpdateSheetValuesBatch: vi.fn<
-    (target: string, updates: readonly unknown[]) => Promise<void>
-  >(async () => {}),
-  mockAppendSheetRow: vi.fn<
-    (target: string, range: string, values: string[]) => Promise<void>
-  >(async () => {})
-}));
+const { mockReadSheetValues, mockUpdateSheetValuesBatch, mockAppendSheetRow } =
+  vi.hoisted(() => ({
+    mockReadSheetValues:
+      vi.fn<(target: string, range: string) => Promise<string[][]>>(),
+    mockUpdateSheetValuesBatch: vi.fn<
+      (target: string, updates: readonly unknown[]) => Promise<void>
+    >(async () => {}),
+    mockAppendSheetRow: vi.fn<
+      (target: string, range: string, values: string[]) => Promise<void>
+    >(async () => {})
+  }));
 
 vi.mock('../../../api/_lib/sheets/client.js', () => ({
   readSheetValues: mockReadSheetValues,
-  readSheetValuesBatch: mockReadSheetValuesBatch,
   updateSheetValuesBatch: mockUpdateSheetValuesBatch,
   appendSheetRow: mockAppendSheetRow
 }));
@@ -94,7 +85,6 @@ describe('WhatsApp lead Sheet upsert', () => {
     vi.clearAllMocks();
     delete process.env.WHATSAPP_PENDING_TTL_SECONDS;
     __resetWhatsAppStateForTests();
-    mockReadSheetValuesBatch.mockResolvedValue([[], []]);
   });
 
   afterEach(() => {
@@ -105,7 +95,7 @@ describe('WhatsApp lead Sheet upsert', () => {
 
   it('preserves the physical Sheet row number across blank rows and matches campaignId', async () => {
     const targetRow = [
-      '9876543210',
+      'existing-id',
       'Sandip Old',
       'Warm',
       'Follow-up',
@@ -114,24 +104,36 @@ describe('WhatsApp lead Sheet upsert', () => {
       'Existing',
       'leads-aug',
       'Leads',
-      'volunteer@example.com',
+      'original-owner@example.com',
       '',
       '',
-      ''
+      '9876543210'
     ];
     mockReadSheetValues.mockImplementation(async (_target, range) => {
-      if (range === 'Leads!1:1') {
-        return [headers];
-      }
-      if (range === 'Leads!A4:M4') {
-        return [targetRow];
+      if (range === 'Leads!A:Z') {
+        return [
+          headers,
+          [
+            'other-id',
+            'Other lead',
+            '',
+            '',
+            '',
+            '',
+            '',
+            'leads-jul',
+            'Leads',
+            '',
+            '',
+            '',
+            '9876543211'
+          ],
+          [],
+          targetRow
+        ];
       }
       throw new Error('Unexpected range: ' + range);
     });
-    mockReadSheetValuesBatch.mockResolvedValue([
-      [['9876543211'], [], ['9876543210']],
-      [['leads-jul'], [], ['leads-aug']]
-    ]);
 
     const result = await upsertLeadByMobileAndCampaign(
       'volunteer@example.com',
@@ -147,12 +149,11 @@ describe('WhatsApp lead Sheet upsert', () => {
     }>;
     expect(updates.length).toBeGreaterThan(0);
     expect(updates.every((update) => update.range.endsWith('4'))).toBe(true);
-    expect(updates.some((update) => update.range === 'Leads!M4')).toBe(true);
+    expect(updates.some((update) => update.range === 'Leads!B4')).toBe(true);
     expect(updates.some((update) => update.range === 'Leads!D4')).toBe(false);
-    expect(mockReadSheetValuesBatch).toHaveBeenCalledWith('data', [
-      'Leads!M2:M',
-      'Leads!H2:H'
-    ]);
+    expect(updates.some((update) => update.range === 'Leads!J4')).toBe(false);
+    expect(mockReadSheetValues).toHaveBeenCalledTimes(1);
+    expect(mockReadSheetValues).toHaveBeenCalledWith('data', 'Leads!A:Z');
     expect(mockAppendSheetRow).not.toHaveBeenCalled();
   });
 
@@ -174,7 +175,6 @@ describe('WhatsApp lead Sheet upsert', () => {
 
   it('creates a stable Nano ID and stores mobile in its dedicated column', async () => {
     mockReadSheetValues.mockResolvedValue([headers]);
-    mockReadSheetValuesBatch.mockResolvedValue([[], [], []]);
 
     const result = await upsertLeadByMobileAndCampaign(
       'volunteer@example.com',
@@ -210,12 +210,11 @@ describe('WhatsApp lead Sheet upsert', () => {
       action: 'show_confirmation',
       parsed: parsedLead
     });
-    expect(mockReadSheetValuesBatch).not.toHaveBeenCalled();
   });
 
   it('defaults a missing lead quality and month before showing confirmation', async () => {
     vi.useFakeTimers();
-    vi.setSystemTime(new Date('2026-09-15T12:00:00.000Z'));
+    vi.setSystemTime(new Date('2026-08-31T20:00:00.000Z'));
     mockReadSheetValues.mockImplementation(async (target, range) => {
       if (target === 'access' && range === 'AllowedUsers!A:Z') {
         return [
@@ -263,9 +262,13 @@ describe('WhatsApp lead Sheet upsert', () => {
         month: 'Sep'
       }
     });
+    expect(mockReadSheetValues).not.toHaveBeenCalledWith(
+      'data',
+      'Campaigns!A:F'
+    );
   });
 
-  it('returns a copyable edit draft and discards the pending lead only after delivery completes', async () => {
+  it('returns a copyable edit draft and discards the pending lead before delivery', async () => {
     vi.useFakeTimers();
     process.env.WHATSAPP_PENDING_TTL_SECONDS = '1';
     mockReadSheetValues.mockImplementation(async (target, range) => {
@@ -407,7 +410,7 @@ describe('WhatsApp lead Sheet upsert', () => {
           ['leads-aug', 'August Leads', 'Leads']
         ];
       }
-      if (target === 'data' && range === 'Leads!1:1') {
+      if (target === 'data' && range === 'Leads!A:Z') {
         return [headers];
       }
       throw new Error(`Unexpected Sheet read: ${target} ${range}`);
@@ -429,5 +432,112 @@ describe('WhatsApp lead Sheet upsert', () => {
     await vi.advanceTimersByTimeAsync(1_001);
 
     expect(mockAppendSheetRow).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the pending lead when saving fails so confirmation can be retried', async () => {
+    await upsertPendingLead(
+      '919876543210',
+      'volunteer@example.com',
+      parsedLead,
+      'source-message-retry-save'
+    );
+    mockReadSheetValues.mockImplementation(async (target, range) => {
+      if (target === 'data' && range === 'Config!A:B') {
+        return [];
+      }
+      if (target === 'data' && range === 'Campaigns!A:F') {
+        return [
+          ['id', 'name', 'type'],
+          ['leads-aug', 'August Leads', 'Leads']
+        ];
+      }
+      if (target === 'data' && range === 'Leads!A:Z') {
+        return [headers];
+      }
+      throw new Error(`Unexpected Sheet read: ${target} ${range}`);
+    });
+    mockAppendSheetRow.mockRejectedValueOnce(
+      new Error('Temporary Google Sheets failure')
+    );
+
+    await expect(
+      handleButtonReply('919876543210', 'confirm_save')
+    ).rejects.toThrow('Temporary Google Sheets failure');
+    await expect(getPendingLead('919876543210')).resolves.toMatchObject({
+      id: 'source-message-retry-save'
+    });
+
+    await expect(
+      handleButtonReply('919876543210', 'confirm_save')
+    ).resolves.toMatchObject({ action: 'send_text' });
+    expect(mockAppendSheetRow).toHaveBeenCalledTimes(2);
+    await expect(getPendingLead('919876543210')).resolves.toBeNull();
+    expect(mockReadSheetValues).not.toHaveBeenCalledWith('data', 'Config!A:B');
+  });
+
+  it('does not save to the first Leads campaign when its name does not match the month', async () => {
+    await upsertPendingLead(
+      '919876543210',
+      'volunteer@example.com',
+      parsedLead,
+      'source-message-no-campaign'
+    );
+    mockReadSheetValues.mockImplementation(async (target, range) => {
+      if (target === 'data' && range === 'Config!A:B') {
+        return [];
+      }
+      if (target === 'data' && range === 'Campaigns!A:F') {
+        return [
+          ['id', 'name', 'type'],
+          ['leads-jul', 'July Leads', 'Leads'],
+          ['members-aug', 'August Members', 'Members']
+        ];
+      }
+      throw new Error(`Unexpected Sheet read: ${target} ${range}`);
+    });
+
+    await expect(
+      handleButtonReply('919876543210', 'confirm_save')
+    ).resolves.toEqual({
+      action: 'send_text',
+      message: 'No leads campaign configured. Please contact admin.'
+    });
+    expect(mockAppendSheetRow).not.toHaveBeenCalled();
+    await expect(getPendingLead('919876543210')).resolves.toMatchObject({
+      id: 'source-message-no-campaign'
+    });
+  });
+
+  it('does not guess when multiple Leads campaigns match the same month', async () => {
+    await upsertPendingLead(
+      '919876543210',
+      'volunteer@example.com',
+      parsedLead,
+      'source-message-ambiguous-campaign'
+    );
+    mockReadSheetValues.mockImplementation(async (target, range) => {
+      if (target === 'data' && range === 'Config!A:B') {
+        return [];
+      }
+      if (target === 'data' && range === 'Campaigns!A:F') {
+        return [
+          ['id', 'name', 'type'],
+          ['leads-aug-a', 'August Leads A', 'Leads'],
+          ['leads-aug-b', 'August Leads B', 'Leads']
+        ];
+      }
+      throw new Error(`Unexpected Sheet read: ${target} ${range}`);
+    });
+
+    await expect(
+      handleButtonReply('919876543210', 'confirm_save')
+    ).resolves.toEqual({
+      action: 'send_text',
+      message: 'No leads campaign configured. Please contact admin.'
+    });
+    expect(mockAppendSheetRow).not.toHaveBeenCalled();
+    await expect(getPendingLead('919876543210')).resolves.toMatchObject({
+      id: 'source-message-ambiguous-campaign'
+    });
   });
 });

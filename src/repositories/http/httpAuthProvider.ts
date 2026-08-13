@@ -27,4 +27,8 @@ export class HttpAuthProvider implements AuthProvider {
       // OAuth sign-in redirects the browser and this promise never resolves in-page.
     });
   }
+
+  async signOut(): Promise<void> {
+    await this.apiClient.post('/api/auth/signout', {});
+  }
 }

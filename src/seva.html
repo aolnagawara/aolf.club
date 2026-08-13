@@ -40,14 +40,6 @@
           <span class="text-xs font-semibold text-slate-800">AOLF Connect</span>
         </div>
         <div class="flex items-center justify-end space-x-3 relative">
-          <button
-            type="button"
-            class="text-slate-600"
-            aria-label="Notifications"
-            title="Notifications"
-          >
-            <i data-lucide="bell" class="w-5 h-5"></i>
-          </button>
           <div class="relative" @keydown.escape.window="closeProfileMenu()">
             <button
               type="button"
@@ -88,15 +80,6 @@
                   x-text="authenticatedUser && authenticatedUser.email ? authenticatedUser.email : 'Not signed in'"
                 ></div>
               </div>
-              <button
-                x-show="!authenticatedUser"
-                type="button"
-                @click="closeProfileMenu(); startAuthFlow()"
-                class="w-full text-left px-2 py-1.5 text-xs rounded-md text-indigo-700 hover:bg-indigo-50"
-                role="menuitem"
-              >
-                Sign in with Google
-              </button>
               <button
                 x-show="authenticatedUser"
                 type="button"
@@ -338,6 +321,7 @@
                   <input
                     type="text"
                     x-model.debounce.250ms="searchQuery"
+                    aria-label="Search records"
                     placeholder="Search name or phone"
                     class="w-full pl-8 pr-16 text-xs border border-slate-200 rounded-lg py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                   />
@@ -499,6 +483,7 @@
                       x-show="lead.isDirty"
                       @click="discardLeadChanges(lead)"
                       class="inline-flex items-center justify-center w-6 h-6 rounded-full border border-slate-200 bg-white text-slate-500"
+                      aria-label="Discard record changes"
                       title="Discard changes"
                     >
                       <span aria-hidden="true">↺</span>
@@ -508,6 +493,7 @@
                       x-show="lead.isDirty"
                       @click="commitLeadChanges(lead)"
                       class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-indigo-600 text-white"
+                      aria-label="Save record changes"
                       title="Save changes"
                     >
                       <span aria-hidden="true">✓</span>
@@ -561,7 +547,9 @@
                     <button
                       @click="dialLead(lead)"
                       type="button"
+                      :disabled="!cleanPhone(lead.mobile)"
                       class="p-1.5 bg-slate-50 hover:bg-emerald-50 hover:text-emerald-600 rounded-full transition-colors border border-slate-200"
+                      :class="!cleanPhone(lead.mobile) ? 'cursor-not-allowed opacity-40' : ''"
                       title="Call Lead"
                       aria-label="Call lead"
                     >
@@ -569,6 +557,7 @@
                     </button>
                     <!-- WhatsApp Web/App Redirect -->
                     <a
+                      x-show="buildWhatsappHref(lead)"
                       :href="buildWhatsappHref(lead)"
                       target="_blank"
                       rel="noopener noreferrer"
@@ -596,6 +585,7 @@
                   <textarea
                     x-model="lead.notes"
                     @input="markLeadDirty(lead)"
+                    aria-label="Record notes"
                     rows="2"
                     placeholder="Add notes..."
                     class="w-full text-xs p-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-slate-50/50 text-slate-700 resize-none"

@@ -13,7 +13,6 @@ import { getSheetLayout } from '../sheets/layout.js';
 import {
   appendSheetRow,
   readSheetValues,
-  readSheetValuesBatch,
   updateSheetValuesBatch
 } from '../sheets/client.js';
 import {
@@ -79,9 +78,10 @@ function toShortMonth(monthValue: string): string {
 }
 
 function getCurrentShortMonth(): string {
-  return new Intl.DateTimeFormat('en-US', { month: 'short' }).format(
-    new Date()
-  );
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    timeZone: 'Asia/Kolkata'
+  }).format(new Date());
 }
 
 function buildTermsFromList(values: string[]): ParserTerm[] {
@@ -94,22 +94,14 @@ function buildTermsFromList(values: string[]): ParserTerm[] {
     }));
 }
 
-async function loadParserCatalogAndCampaigns(): Promise<{
-  catalog: LeadParserCatalog;
-  campaigns: Campaign[];
-}> {
+async function loadParserCatalog(): Promise<LeadParserCatalog> {
   const layout = getSheetLayout();
-  const [configRows, campaignsRows] = await Promise.all([
-    readSheetValues('data', layout.configRange),
-    readSheetValues('data', layout.campaignsRange)
-  ]);
+  const configRows = await readSheetValues('data', layout.configRange);
   const configMap = rowsToConfigMap(configRows);
   const programs = parseJsonValue<Array<{ code?: string; label?: string }>>(
     configMap.programs,
     []
   );
-  const campaigns = rowsToCampaigns(campaignsRows);
-
   const configuredPrograms = programs.length ? programs : DEFAULT_PROGRAMS;
   const courseTerms: ParserTerm[] = configuredPrograms
     .map((program) => {
@@ -142,13 +134,15 @@ async function loadParserCatalogAndCampaigns(): Promise<{
       }));
 
   return {
-    catalog: {
-      courses: courseTerms,
-      leadQualities: qualityTerms,
-      months: monthTerms
-    },
-    campaigns
+    courses: courseTerms,
+    leadQualities: qualityTerms,
+    months: monthTerms
   };
+}
+
+async function loadCampaigns(): Promise<Campaign[]> {
+  const layout = getSheetLayout();
+  return rowsToCampaigns(await readSheetValues('data', layout.campaignsRange));
 }
 
 async function findVolunteerByPhone(
@@ -214,13 +208,16 @@ function resolveLeadCampaign(
     return null;
   }
 
-  const shortMonth = toShortMonth(monthShort) || getCurrentShortMonth();
+  const shortMonth = toShortMonth(monthShort);
+  if (!shortMonth) {
+    return null;
+  }
   const longMonth =
     DEFAULT_MONTH_TERMS.find(
       ([shortName]) => shortName === shortMonth
     )?.[1]?.[0] || shortMonth;
 
-  const resolved = leadsCampaigns.find((campaign) => {
+  const matches = leadsCampaigns.filter((campaign) => {
     const lowered = campaign.name.toLowerCase();
     return (
       lowered.includes(shortMonth.toLowerCase()) ||
@@ -228,7 +225,7 @@ function resolveLeadCampaign(
     );
   });
 
-  return resolved || leadsCampaigns[0];
+  return matches.length === 1 ? matches[0] : null;
 }
 
 function appendNotes(existing: string, extra: string): string {
@@ -257,10 +254,8 @@ export async function upsertLeadByMobileAndCampaign(
 ): Promise<UpsertResult> {
   const layout = getSheetLayout();
   const tabName = getTabName(layout.leadsRange);
-
-  const headerRows = await readSheetValues('data', tabName + '!1:1');
-  const headers = (headerRows[0] || []).map((value) =>
-    String(value || '').trim()
+  const { headers, records } = rowsToTable(
+    await readSheetValues('data', layout.leadsRange)
   );
   if (!headers.length) {
     throw new Error('Lead sheet is missing header row.');
@@ -281,36 +276,23 @@ export async function upsertLeadByMobileAndCampaign(
   }
 
   const mobileHeader = headers[mobileHeaderIndex];
-  const mobileColumn = columnLabel(mobileHeaderIndex + 1);
-  const campaignColumn = columnLabel(campaignIdIndex + 1);
-  const [mobileValues, campaignValues] = await readSheetValuesBatch('data', [
-    `${tabName}!${mobileColumn}2:${mobileColumn}`,
-    `${tabName}!${campaignColumn}2:${campaignColumn}`
-  ]);
-  const candidateCount = Math.max(mobileValues.length, campaignValues.length);
-  let targetRowNumber = 0;
-  for (let index = 0; index < candidateCount; index += 1) {
-    const mobile = normalizeIndianMobile(mobileValues[index]?.[0] || '');
-    const campaignId = normalizeSpaces(campaignValues[index]?.[0] || '');
-    if (mobile === parsed.mobile && campaignId === campaign.id) {
-      targetRowNumber = index + 2;
-      break;
-    }
-  }
+  const campaignIdHeader = headers[campaignIdIndex];
+  const existingLead = records.find(
+    ({ record }) =>
+      normalizeIndianMobile(record[mobileHeader] || '') === parsed.mobile &&
+      normalizeSpaces(record[campaignIdHeader] || '') === campaign.id
+  );
 
   const now = new Date().toISOString();
-  const endColumn = columnLabel(headers.length);
-  if (targetRowNumber) {
-    const rowRange = `${tabName}!A${targetRowNumber}:${endColumn}${targetRowNumber}`;
-    const existingValues = (await readSheetValues('data', rowRange))[0] || [];
-    const row = rowsToTable([headers, existingValues]).records[0]?.record || {};
+  if (existingLead) {
+    const { record: row, rowNumber: targetRowNumber } = existingLead;
     const merged: Record<string, string> = {
       name: parsed.name || row.name || '',
       quality: parsed.leadQuality || row.quality || 'Quality',
       notes: appendNotes(row.notes || '', parsed.notes),
       campaignId: campaign.id,
       campaignType: 'Leads',
-      assignedVolunteerEmail: volunteerEmail,
+      assignedVolunteerEmail: row.assignedVolunteerEmail || volunteerEmail,
       wishlistPrograms: parsed.course || row.wishlistPrograms || '',
       lastUpdated: now
     };
@@ -355,7 +337,7 @@ export async function upsertLeadByMobileAndCampaign(
 async function savePendingLead(
   pending: PendingLeadConfirmation
 ): Promise<UpsertResult | null> {
-  const { campaigns } = await loadParserCatalogAndCampaigns();
+  const campaigns = await loadCampaigns();
   const monthForCampaign = pending.parsed.month || getCurrentShortMonth();
   const campaign = resolveLeadCampaign(campaigns, monthForCampaign);
   if (!campaign) {
@@ -448,7 +430,7 @@ export async function handleIncomingText(
     };
   }
 
-  const { catalog } = await loadParserCatalogAndCampaigns();
+  const catalog = await loadParserCatalog();
   let parsed: ParsedLeadMessage;
   try {
     parsed = parseAndValidateLead(text, catalog);
@@ -529,9 +511,6 @@ export async function handleButtonReply(
     return { action: 'ignore' };
   }
 
-  // Remove the pending confirmation before saving so a retried webhook delivery
-  // (Meta re-sends on timeout/non-200) can't trigger a second save attempt.
-  await removePendingLead(volunteerPhone, pending.id);
   const saved = await savePendingLead(pending);
   if (!saved) {
     return {
@@ -539,6 +518,7 @@ export async function handleButtonReply(
       message: 'No leads campaign configured. Please contact admin.'
     };
   }
+  await removePendingLead(volunteerPhone, pending.id);
 
   if (saved.action === 'updated') {
     return {

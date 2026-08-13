@@ -22,6 +22,13 @@ const requiredSheets = [
   'GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY'
 ];
 
+const requiredWhatsApp = [
+  'META_VERIFY_TOKEN',
+  'META_ACCESS_TOKEN',
+  'META_PHONE_NUMBER_ID',
+  'META_APP_SECRET'
+];
+
 const missing = [];
 for (const key of requiredCommon) {
   if (isMissing(env, key)) {
@@ -39,6 +46,17 @@ if ((env.VITE_APP_MODE || '').trim() === 'api') {
 
 if ((env.APP_DATA_MODE || '').trim() === 'sheets') {
   for (const key of requiredSheets) {
+    if (isMissing(env, key)) {
+      missing.push(key);
+    }
+  }
+}
+
+if (
+  (env.VITE_APP_MODE || '').trim() === 'api' &&
+  (env.APP_DATA_MODE || '').trim() === 'sheets'
+) {
+  for (const key of requiredWhatsApp) {
     if (isMissing(env, key)) {
       missing.push(key);
     }

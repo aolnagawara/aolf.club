@@ -59,14 +59,6 @@ export function findHeaderIndex(
   return -1;
 }
 
-export function findHeader(
-  headers: string[],
-  candidates: readonly string[]
-): string {
-  const index = findHeaderIndex(headers, candidates);
-  return index >= 0 ? headers[index] : '';
-}
-
 export function rowsToTable(rows: string[][]): SheetTable {
   if (!rows.length) {
     return { headers: [], records: [] };

@@ -1,31 +1,33 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en" class="scroll-smooth">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="AOLF Connect - Programs, practices, and community management platform for Art of Living volunteers and participants." />
-  <meta name="theme-color" content="#f6f0e8" />
-  <meta property="og:title" content="AOLF Connect" />
-  <meta property="og:description" content="AOLF Connect helps Art of Living volunteers and participants access local programs, schedules, follow-ups, and volunteering activities." />
-  <meta property="og:type" content="website" />
-  <meta property="og:image" content="/assets/aolf-connect-logo.png" />
-  <title>AOLF Connect</title>
-  <meta name="application-name" content="AOLF Connect" />
-  <meta name="apple-mobile-web-app-title" content="AOLF Connect" />
-  <link rel="canonical" href="https://aolf.club/" />
-  <link rel="icon" type="image/png" href="/assets/aolf-connect-logo.png" />
-  <link rel="apple-touch-icon" href="/assets/aolf-connect-logo.png" />
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="AOLF Connect - Programs, practices, and community management platform for Art of Living volunteers and participants."
+    />
+    <meta name="theme-color" content="#f6f0e8" />
+    <meta property="og:title" content="AOLF Connect" />
+    <meta
+      property="og:description"
+      content="AOLF Connect helps Art of Living volunteers and participants access local programs, schedules, follow-ups, and volunteering activities."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/assets/aolf-connect-logo.png" />
+    <title>AOLF Connect</title>
+    <meta name="application-name" content="AOLF Connect" />
+    <meta name="apple-mobile-web-app-title" content="AOLF Connect" />
+    <link rel="canonical" href="https://aolf.club/" />
+    <link rel="icon" type="image/png" href="/assets/aolf-connect-logo.png" />
+    <link rel="apple-touch-icon" href="/assets/aolf-connect-logo.png" />
 
-  <!-- Tailwind CSS v4 browser build (no framework / no build step). -->
-  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script type="module" src="./publicPage.ts"></script>
+  </head>
 
-  <!-- Alpine.js -->
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-</head>
-
-<body
-  class="m-0 overflow-x-hidden bg-[#fbf7f1] font-sans text-[#25221f] antialiased"
-  x-data="{
+  <body
+    class="m-0 overflow-x-hidden bg-[#fbf7f1] font-sans text-[#25221f] antialiased"
+    x-data="{
     menuOpen: false,
     activeDay: 'all',
     year: new Date().getFullYear(),
@@ -35,255 +37,596 @@
       slider.scrollBy({ left: direction * amount, behavior: 'smooth' });
     }
   }"
-  x-init="init()"
->
-  <header class="sticky top-0 z-50 border-b border-black/10 bg-[#fbf7f1]/90 backdrop-blur-xl">
-    <div class="mx-auto flex h-[76px] w-[min(1160px,calc(100%-36px))] items-center justify-between gap-6">
-      <a href="/" class="flex items-center gap-[11px]" aria-label="AOLF Connect home">
-        <img
-          src="/assets/aolf-connect-logo.png"
-          alt="AOLF Connect"
-          class="h-[42px] w-[42px] rounded-[13px] object-contain"
-        />
-        <div>
-          <div class="text-base font-extrabold">AOLF Connect</div>
-          <div class="mt-0.5 text-[0.66rem] uppercase tracking-[0.14em] text-[#6f6a64]">Local community</div>
-        </div>
-      </a>
-
-      <!-- Desktop navigation: never visible on mobile -->
-      <nav class="hidden items-center gap-7 text-[0.86rem] font-bold md:flex" aria-label="Main navigation">
-        <a class="opacity-75 transition hover:opacity-100" href="#programs">Programs</a>
-        <a class="opacity-75 transition hover:opacity-100" href="#schedule">Schedule</a>
-        <a class="opacity-75 transition hover:opacity-100" href="#community">Community</a>
-        <a class="opacity-75 transition hover:opacity-100" href="/seva">Volunteer</a>
+  >
+    <header
+      class="sticky top-0 z-50 border-b border-black/10 bg-[#fbf7f1]/90 backdrop-blur-xl"
+    >
+      <div
+        class="mx-auto flex h-[76px] w-[min(1160px,calc(100%-36px))] items-center justify-between gap-6"
+      >
         <a
-          class="rounded-full bg-[#25221f] px-[17px] py-[11px] text-white"
+          href="/"
+          class="flex items-center gap-[11px]"
+          aria-label="AOLF Connect home"
+        >
+          <img
+            src="/assets/aolf-connect-logo.png"
+            alt="AOLF Connect"
+            class="h-[42px] w-[42px] rounded-[13px] object-contain"
+          />
+          <div>
+            <div class="text-base font-extrabold">AOLF Connect</div>
+            <div
+              class="mt-0.5 text-[0.66rem] uppercase tracking-[0.14em] text-[#6f6a64]"
+            >
+              Local community
+            </div>
+          </div>
+        </a>
+
+        <!-- Desktop navigation: never visible on mobile -->
+        <nav
+          class="hidden items-center gap-7 text-[0.86rem] font-bold md:flex"
+          aria-label="Main navigation"
+        >
+          <a class="opacity-75 transition hover:opacity-100" href="#programs"
+            >Programs</a
+          >
+          <a class="opacity-75 transition hover:opacity-100" href="#schedule"
+            >Schedule</a
+          >
+          <a class="opacity-75 transition hover:opacity-100" href="#community"
+            >Community</a
+          >
+          <a class="opacity-75 transition hover:opacity-100" href="/seva"
+            >Volunteer</a
+          >
+          <a
+            class="rounded-full bg-[#25221f] px-[17px] py-[11px] text-white"
+            href="https://wa.me/918884560660"
+            target="_blank"
+            rel="noopener noreferrer"
+            >WhatsApp us</a
+          >
+        </nav>
+
+        <!-- Mobile hamburger: never visible on desktop -->
+        <button
+          type="button"
+          class="border-0 bg-transparent text-2xl md:hidden"
+          aria-label="Open menu"
+          :aria-expanded="menuOpen.toString()"
+          @click="menuOpen = !menuOpen"
+          x-text="menuOpen ? '×' : '☰'"
+        >
+          ☰
+        </button>
+      </div>
+
+      <!-- Mobile navigation: md:hidden guarantees it cannot appear on desktop -->
+      <nav
+        class="mx-auto grid w-[min(1160px,calc(100%-36px))] gap-0 pb-4 md:hidden"
+        x-show="menuOpen"
+        style="display: none"
+        aria-label="Mobile navigation"
+      >
+        <a
+          class="border-t border-black/10 py-[11px] font-bold"
+          href="#programs"
+          @click="menuOpen = false"
+          >Programs</a
+        >
+        <a
+          class="border-t border-black/10 py-[11px] font-bold"
+          href="#schedule"
+          @click="menuOpen = false"
+          >Schedule</a
+        >
+        <a
+          class="border-t border-black/10 py-[11px] font-bold"
+          href="#community"
+          @click="menuOpen = false"
+          >Community</a
+        >
+        <a
+          class="border-t border-black/10 py-[11px] font-bold"
+          href="/seva"
+          @click="menuOpen = false"
+          >Volunteer</a
+        >
+        <a
+          class="border-t border-black/10 py-[11px] font-bold"
           href="https://wa.me/918884560660"
           target="_blank"
           rel="noopener noreferrer"
-        >WhatsApp us</a>
+          @click="menuOpen = false"
+          >WhatsApp us</a
+        >
       </nav>
+    </header>
+    <main>
+      <section
+        id="top"
+        class="px-0 pb-[14px] pt-[34px] md:pb-[42px] md:pt-[74px]"
+      >
+        <div
+          class="mx-auto grid w-[min(1160px,calc(100%-36px))] grid-cols-1 items-center gap-7 md:grid-cols-[1.08fr_.92fr] md:gap-[62px]"
+        >
+          <div>
+            <div
+              class="text-[0.72rem] font-extrabold uppercase tracking-[0.16em] text-[#a85f49]"
+            >
+              Breathe • Belong • Serve
+            </div>
+            <h1
+              class="mt-3 mb-4 max-w-[800px] font-serif text-[clamp(3.2rem,15vw,4.8rem)] leading-[0.89] font-medium tracking-[-0.04em] md:mb-[26px] md:text-[clamp(3.7rem,7vw,7.1rem)]"
+            >
+              Come back to yourself.
+            </h1>
+            <p
+              class="max-w-[620px] text-[0.98rem] leading-[1.6] text-[#6f6a64] md:text-[1.08rem] md:leading-[1.75]"
+            >
+              Discover local Art of Living programs, weekly practices, satsangs
+              and opportunities to serve — all in one simple community space.
+            </p>
+          </div>
 
-      <!-- Mobile hamburger: never visible on desktop -->
-      <button
-        type="button"
-        class="border-0 bg-transparent text-2xl md:hidden"
-        aria-label="Open menu"
-        :aria-expanded="menuOpen.toString()"
-        @click="menuOpen = !menuOpen"
-        x-text="menuOpen ? '×' : '☰'"
-      >☰</button>
-    </div>
+          <div
+            class="relative hidden min-h-[500px] md:block"
+            aria-hidden="true"
+          >
+            <div
+              class="absolute right-[7%] top-[8%] h-[340px] w-[340px] rounded-full bg-[#d9c4ad]"
+            ></div>
+            <div
+              class="absolute bottom-[4%] left-[3%] h-[210px] w-[210px] rounded-full bg-[#9d6c57]"
+            ></div>
+            <div
+              class="absolute right-0 bottom-4 w-[min(390px,90%)] rounded-[28px] border border-white/80 bg-white/80 p-[27px] shadow-[0_18px_50px_rgba(49,42,34,0.10)] backdrop-blur-xl"
+            >
+              <div
+                class="text-[0.72rem] font-extrabold uppercase tracking-[0.16em] text-[#a85f49]"
+              >
+                This week
+              </div>
+              <div class="my-3 font-serif text-[2.15rem] leading-[1.1]">
+                Practice together. Feel the difference.
+              </div>
+              <div
+                class="mt-[18px] flex justify-between gap-4 border-t border-black/10 pt-[15px] text-[0.79rem] text-[#6f6a64]"
+              >
+                <span>Weekly follow-up</span><span>Satsang & community</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
-    <!-- Mobile navigation: md:hidden guarantees it cannot appear on desktop -->
-    <nav
-      class="mx-auto grid w-[min(1160px,calc(100%-36px))] gap-0 pb-4 md:hidden"
-      x-show="menuOpen"
-      style="display: none;"
-      aria-label="Mobile navigation"
+      <section id="programs" class="px-0 py-[54px] pt-[22px] md:py-[78px]">
+        <div class="mx-auto w-[min(1160px,calc(100%-36px))]">
+          <div
+            class="mb-[18px] flex flex-col items-start justify-between gap-6 md:mb-[30px] md:flex-row md:items-end"
+          >
+            <div>
+              <div
+                class="text-[0.72rem] font-extrabold uppercase tracking-[0.16em] text-[#a85f49]"
+              >
+                Explore what’s next
+              </div>
+              <h2
+                class="mt-[7px] font-serif text-[clamp(2.35rem,12vw,3.5rem)] leading-[0.95] font-medium tracking-[-0.04em] md:text-[clamp(2.6rem,5vw,4.8rem)]"
+              >
+                Upcoming Programs
+              </h2>
+            </div>
+            <div>
+              <p
+                class="max-w-[420px] text-[0.9rem] leading-[1.55] text-[#6f6a64] md:text-base md:leading-[1.65]"
+              >
+                Swipe through upcoming programs and choose what feels right for
+                you.
+              </p>
+              <div class="mt-[14px] hidden gap-2 md:flex">
+                <button
+                  type="button"
+                  class="h-11 w-11 cursor-pointer rounded-full border border-black/10 bg-white text-lg transition hover:bg-[#25221f] hover:text-white"
+                  aria-label="Previous program"
+                  @click="scrollPrograms(-1)"
+                >
+                  ←
+                </button>
+                <button
+                  type="button"
+                  class="h-11 w-11 cursor-pointer rounded-full border border-black/10 bg-white text-lg transition hover:bg-[#25221f] hover:text-white"
+                  aria-label="Next program"
+                  @click="scrollPrograms(1)"
+                >
+                  →
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div
+            x-ref="programSlider"
+            class="grid snap-x snap-mandatory auto-cols-[86%] grid-flow-col gap-[14px] overflow-x-auto px-[3px] pt-1 pb-5 [scrollbar-width:none] md:auto-cols-[minmax(310px,36%)] md:gap-[18px] [&::-webkit-scrollbar]:hidden"
+          >
+            <article
+              class="flex min-h-[340px] snap-start flex-col justify-between rounded-[28px] bg-[#eadbca] p-[23px] shadow-[0_18px_50px_rgba(49,42,34,0.10)] transition-transform hover:-translate-y-1 md:min-h-[380px] md:p-[27px]"
+            >
+              <div>
+                <span
+                  class="inline-flex w-max rounded-full border border-black/20 px-[10px] py-[7px] text-[0.68rem] font-extrabold uppercase tracking-[0.1em]"
+                  >Adults</span
+                >
+                <h3
+                  class="my-[13px] font-serif text-[1.85rem] leading-[1.03] md:text-[2.1rem]"
+                >
+                  Happiness Program
+                </h3>
+                <p class="m-0 leading-[1.65] text-[#514c47]">
+                  Breath, meditation and practical wisdom for greater energy,
+                  clarity and resilience.
+                </p>
+              </div>
+              <a
+                class="flex items-center justify-between border-t border-black/15 pt-[18px] text-[0.85rem] font-extrabold"
+                href="https://wa.me/918884560660"
+                target="_blank"
+                rel="noopener noreferrer"
+                ><span>Get details</span><span>↗</span></a
+              >
+            </article>
+
+            <article
+              class="flex min-h-[340px] snap-start flex-col justify-between rounded-[28px] bg-[#d8dfd2] p-[23px] shadow-[0_18px_50px_rgba(49,42,34,0.10)] transition-transform hover:-translate-y-1 md:min-h-[380px] md:p-[27px]"
+            >
+              <div>
+                <span
+                  class="inline-flex w-max rounded-full border border-black/20 px-[10px] py-[7px] text-[0.68rem] font-extrabold uppercase tracking-[0.1em]"
+                  >Children & Teens</span
+                >
+                <h3
+                  class="my-[13px] font-serif text-[1.85rem] leading-[1.03] md:text-[2.1rem]"
+                >
+                  Intuition Process
+                </h3>
+                <p class="m-0 leading-[1.65] text-[#514c47]">
+                  A joyful program that nurtures intuition, confidence, focus
+                  and creativity.
+                </p>
+              </div>
+              <a
+                class="flex items-center justify-between border-t border-black/15 pt-[18px] text-[0.85rem] font-extrabold"
+                href="https://wa.me/918884560660"
+                target="_blank"
+                rel="noopener noreferrer"
+                ><span>Get details</span><span>↗</span></a
+              >
+            </article>
+
+            <article
+              class="flex min-h-[340px] snap-start flex-col justify-between rounded-[28px] bg-[#d8c4bc] p-[23px] shadow-[0_18px_50px_rgba(49,42,34,0.10)] transition-transform hover:-translate-y-1 md:min-h-[380px] md:p-[27px]"
+            >
+              <div>
+                <span
+                  class="inline-flex w-max rounded-full border border-black/20 px-[10px] py-[7px] text-[0.68rem] font-extrabold uppercase tracking-[0.1em]"
+                  >Meditation</span
+                >
+                <h3
+                  class="my-[13px] font-serif text-[1.85rem] leading-[1.03] md:text-[2.1rem]"
+                >
+                  Sahaj Samadhi Meditation
+                </h3>
+                <p class="m-0 leading-[1.65] text-[#514c47]">
+                  A simple mantra-based meditation technique for deep rest and
+                  effortless inner calm.
+                </p>
+              </div>
+              <a
+                class="flex items-center justify-between border-t border-black/15 pt-[18px] text-[0.85rem] font-extrabold"
+                href="https://wa.me/918884560660"
+                target="_blank"
+                rel="noopener noreferrer"
+                ><span>Get details</span><span>↗</span></a
+              >
+            </article>
+
+            <article
+              class="flex min-h-[340px] snap-start flex-col justify-between rounded-[28px] bg-[#e6dfcc] p-[23px] shadow-[0_18px_50px_rgba(49,42,34,0.10)] transition-transform hover:-translate-y-1 md:min-h-[380px] md:p-[27px]"
+            >
+              <div>
+                <span
+                  class="inline-flex w-max rounded-full border border-black/20 px-[10px] py-[7px] text-[0.68rem] font-extrabold uppercase tracking-[0.1em]"
+                  >Members</span
+                >
+                <h3
+                  class="my-[13px] font-serif text-[1.85rem] leading-[1.03] md:text-[2.1rem]"
+                >
+                  Advanced Programs
+                </h3>
+                <p class="m-0 leading-[1.65] text-[#514c47]">
+                  Go deeper into practice, silence, knowledge and the shared
+                  experience of community.
+                </p>
+              </div>
+              <a
+                class="flex items-center justify-between border-t border-black/15 pt-[18px] text-[0.85rem] font-extrabold"
+                href="https://wa.me/918884560660"
+                target="_blank"
+                rel="noopener noreferrer"
+                ><span>Ask what’s next</span><span>↗</span></a
+              >
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="schedule"
+        class="bg-[#41473b] px-0 py-[54px] text-[#f7f2eb] md:py-[78px]"
+      >
+        <div class="mx-auto w-[min(1160px,calc(100%-36px))]">
+          <div
+            class="flex flex-col items-start justify-between gap-[30px] md:flex-row md:items-end"
+          >
+            <div>
+              <div
+                class="text-[0.72rem] font-extrabold uppercase tracking-[0.16em] text-[#e4c4a3]"
+              >
+                Stay connected
+              </div>
+              <h2
+                class="mt-2 font-serif text-[clamp(3rem,6vw,5.3rem)] leading-none font-medium tracking-[-0.04em]"
+              >
+                Schedule
+              </h2>
+            </div>
+            <a
+              class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full border border-white px-5 py-[13px] text-[0.88rem] font-extrabold text-white"
+              href="https://wa.me/918884560660"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Ask for timings ↗</a
+            >
+          </div>
+
+          <div
+            class="flex gap-2 overflow-x-auto py-6 pb-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            role="tablist"
+            aria-label="Schedule days"
+          >
+            <button
+              type="button"
+              @click="activeDay = 'all'"
+              :class="activeDay === 'all' ? 'bg-[#f1e5d7] text-[#25221f] border-[#f1e5d7]' : 'border-white/20 text-white'"
+              class="whitespace-nowrap rounded-full border px-4 py-[11px] text-[0.8rem] font-bold"
+            >
+              This week
+            </button>
+            <button
+              type="button"
+              @click="activeDay = 'practice'"
+              :class="activeDay === 'practice' ? 'bg-[#f1e5d7] text-[#25221f] border-[#f1e5d7]' : 'border-white/20 text-white'"
+              class="whitespace-nowrap rounded-full border px-4 py-[11px] text-[0.8rem] font-bold"
+            >
+              Practice
+            </button>
+            <button
+              type="button"
+              @click="activeDay = 'community'"
+              :class="activeDay === 'community' ? 'bg-[#f1e5d7] text-[#25221f] border-[#f1e5d7]' : 'border-white/20 text-white'"
+              class="whitespace-nowrap rounded-full border px-4 py-[11px] text-[0.8rem] font-bold"
+            >
+              Community
+            </button>
+            <button
+              type="button"
+              @click="activeDay = 'special'"
+              :class="activeDay === 'special' ? 'bg-[#f1e5d7] text-[#25221f] border-[#f1e5d7]' : 'border-white/20 text-white'"
+              class="whitespace-nowrap rounded-full border px-4 py-[11px] text-[0.8rem] font-bold"
+            >
+              Special events
+            </button>
+          </div>
+
+          <div class="border-t border-white/20">
+            <div
+              x-show="activeDay === 'all' || activeDay === 'practice'"
+              class="grid grid-cols-[95px_1fr] items-center gap-7 border-b border-white/20 py-6 md:grid-cols-[140px_1fr_auto]"
+            >
+              <div class="font-serif text-[1.45rem]">Weekly</div>
+              <div>
+                <h3 class="mb-1.5 text-[1.08rem] font-bold">
+                  Community Follow-up
+                </h3>
+                <p class="m-0 text-[0.84rem] text-[#cbc9c3]">
+                  Practice together and refresh your techniques.
+                </p>
+              </div>
+              <span
+                class="col-start-2 w-max whitespace-nowrap rounded-full border border-white/25 px-[11px] py-2 text-[0.7rem] font-extrabold md:col-auto"
+                >Practice</span
+              >
+            </div>
+
+            <div
+              x-show="activeDay === 'all' || activeDay === 'community'"
+              class="grid grid-cols-[95px_1fr] items-center gap-7 border-b border-white/20 py-6 md:grid-cols-[140px_1fr_auto]"
+            >
+              <div class="font-serif text-[1.45rem]">Weekly</div>
+              <div>
+                <h3 class="mb-1.5 text-[1.08rem] font-bold">
+                  Satsang & Chapter Events
+                </h3>
+                <p class="m-0 text-[0.84rem] text-[#cbc9c3]">
+                  Music, meditation, knowledge and celebrations.
+                </p>
+              </div>
+              <span
+                class="col-start-2 w-max whitespace-nowrap rounded-full border border-white/25 px-[11px] py-2 text-[0.7rem] font-extrabold md:col-auto"
+                >Community</span
+              >
+            </div>
+
+            <div
+              x-show="activeDay === 'all' || activeDay === 'special'"
+              class="grid grid-cols-[95px_1fr] items-center gap-7 border-b border-white/20 py-6 md:grid-cols-[140px_1fr_auto]"
+            >
+              <div class="font-serif text-[1.45rem]">Upcoming</div>
+              <div>
+                <h3 class="mb-1.5 text-[1.08rem] font-bold">
+                  Special Programs & Celebrations
+                </h3>
+                <p class="m-0 text-[0.84rem] text-[#cbc9c3]">
+                  Connect with the chapter for the next local gathering.
+                </p>
+              </div>
+              <span
+                class="col-start-2 w-max whitespace-nowrap rounded-full border border-white/25 px-[11px] py-2 text-[0.7rem] font-extrabold md:col-auto"
+                >Events</span
+              >
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="community" class="px-0 py-[54px] md:py-[78px]">
+        <div
+          class="mx-auto grid w-[min(1160px,calc(100%-36px))] grid-cols-1 items-center gap-7 md:grid-cols-[.9fr_1.1fr] md:gap-[70px]"
+        >
+          <div
+            class="flex min-h-[420px] flex-col justify-between rounded-[32px] bg-[#f0e7dc] p-9"
+          >
+            <div class="font-serif text-[5rem] leading-[0.7] text-[#a85f49]">
+              “
+            </div>
+            <blockquote class="m-0 font-serif text-[2.15rem] leading-[1.17]">
+              Community makes practice easier, richer and more joyful.
+            </blockquote>
+            <div
+              class="text-[0.72rem] font-extrabold uppercase tracking-[0.16em] text-[#a85f49]"
+            >
+              Your local chapter
+            </div>
+          </div>
+
+          <div>
+            <div
+              class="text-[0.72rem] font-extrabold uppercase tracking-[0.16em] text-[#a85f49]"
+            >
+              For members
+            </div>
+            <h2
+              class="mt-2 mb-[22px] font-serif text-[clamp(2.8rem,5vw,4.7rem)] leading-[0.96] font-medium tracking-[-0.04em]"
+            >
+              Keep your practice alive.
+            </h2>
+            <p class="leading-[1.75] text-[#6f6a64]">
+              Stay connected beyond the course through weekly follow-ups,
+              satsangs, advanced programs and seva opportunities.
+            </p>
+            <div class="mt-[30px] border-t border-black/10">
+              <a
+                class="flex justify-between border-b border-black/10 py-4 font-extrabold"
+                href="#schedule"
+                ><span>Weekly follow-up</span><span>→</span></a
+              >
+              <a
+                class="flex justify-between border-b border-black/10 py-4 font-extrabold"
+                href="#schedule"
+                ><span>Satsang & events</span><span>→</span></a
+              >
+              <a
+                class="flex justify-between border-b border-black/10 py-4 font-extrabold"
+                href="https://wa.me/918884560660"
+                target="_blank"
+                rel="noopener noreferrer"
+                ><span>Advanced programs</span><span>→</span></a
+              >
+              <a
+                class="flex justify-between border-b border-black/10 py-4 font-extrabold"
+                href="/seva"
+                ><span>Seva / Volunteer</span><span>→</span></a
+              >
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="px-0 pt-7 pb-[54px] md:pb-[78px]">
+        <div class="mx-auto w-[min(1160px,calc(100%-36px))]">
+          <div
+            class="flex flex-col items-start justify-between gap-8 rounded-[34px] bg-[#b06b54] p-[30px] text-white md:flex-row md:items-center md:p-[42px]"
+          >
+            <h2
+              class="m-0 max-w-[680px] font-serif text-[clamp(2.25rem,4vw,4rem)] leading-none font-medium tracking-[-0.04em]"
+            >
+              Not sure which program is right for you?
+            </h2>
+            <a
+              class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full border border-white px-5 py-[13px] text-[0.88rem] font-extrabold text-white"
+              href="https://wa.me/918884560660"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Chat on WhatsApp ↗</a
+            >
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <a
+      class="fixed right-5 bottom-5 z-40 grid h-14 w-14 place-items-center rounded-full bg-[#316b4c] text-xl text-white shadow-[0_10px_30px_rgba(0,0,0,0.18)]"
+      href="https://wa.me/918884560660"
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="Chat with us on WhatsApp"
+      >✆</a
     >
-      <a class="border-t border-black/10 py-[11px] font-bold" href="#programs" @click="menuOpen = false">Programs</a>
-      <a class="border-t border-black/10 py-[11px] font-bold" href="#schedule" @click="menuOpen = false">Schedule</a>
-      <a class="border-t border-black/10 py-[11px] font-bold" href="#community" @click="menuOpen = false">Community</a>
-      <a class="border-t border-black/10 py-[11px] font-bold" href="/seva" @click="menuOpen = false">Volunteer</a>
-      <a
-        class="border-t border-black/10 py-[11px] font-bold"
-        href="https://wa.me/918884560660"
-        target="_blank"
-        rel="noopener noreferrer"
-        @click="menuOpen = false"
-      >WhatsApp us</a>
-    </nav>
-  </header>
-<main>
-    <section id="top" class="px-0 pb-[14px] pt-[34px] md:pb-[42px] md:pt-[74px]">
-      <div class="mx-auto grid w-[min(1160px,calc(100%-36px))] grid-cols-1 items-center gap-7 md:grid-cols-[1.08fr_.92fr] md:gap-[62px]">
+
+    <footer class="mt-[70px] border-t border-black/10 px-0 pt-[42px] pb-[50px]">
+      <div
+        class="mx-auto flex w-[min(1160px,calc(100%-36px))] flex-col items-start justify-between gap-[30px] md:flex-row md:items-end"
+      >
         <div>
-          <div class="text-[0.72rem] font-extrabold uppercase tracking-[0.16em] text-[#a85f49]">Breathe • Belong • Serve</div>
-          <h1 class="mt-3 mb-4 max-w-[800px] font-serif text-[clamp(3.2rem,15vw,4.8rem)] leading-[0.89] font-medium tracking-[-0.04em] md:mb-[26px] md:text-[clamp(3.7rem,7vw,7.1rem)]">
-            Come back to yourself.
-          </h1>
-          <p class="max-w-[620px] text-[0.98rem] leading-[1.6] text-[#6f6a64] md:text-[1.08rem] md:leading-[1.75]">
-            Discover local Art of Living programs, weekly practices, satsangs and opportunities to serve — all in one simple community space.
-          </p>
-        </div>
-
-        <div class="relative hidden min-h-[500px] md:block" aria-hidden="true">
-          <div class="absolute right-[7%] top-[8%] h-[340px] w-[340px] rounded-full bg-[#d9c4ad]"></div>
-          <div class="absolute bottom-[4%] left-[3%] h-[210px] w-[210px] rounded-full bg-[#9d6c57]"></div>
-          <div class="absolute right-0 bottom-4 w-[min(390px,90%)] rounded-[28px] border border-white/80 bg-white/80 p-[27px] shadow-[0_18px_50px_rgba(49,42,34,0.10)] backdrop-blur-xl">
-            <div class="text-[0.72rem] font-extrabold uppercase tracking-[0.16em] text-[#a85f49]">This week</div>
-            <div class="my-3 font-serif text-[2.15rem] leading-[1.1]">Practice together. Feel the difference.</div>
-            <div class="mt-[18px] flex justify-between gap-4 border-t border-black/10 pt-[15px] text-[0.79rem] text-[#6f6a64]">
-              <span>Weekly follow-up</span><span>Satsang & community</span>
+          <a href="/" class="flex items-center gap-[11px]">
+            <img
+              src="/assets/aolf-connect-logo.png"
+              alt="AOLF Connect"
+              class="h-[42px] w-[42px] rounded-[13px] object-contain"
+            />
+            <div>
+              <div class="text-base font-extrabold">AOLF Connect</div>
+              <div
+                class="mt-0.5 text-[0.66rem] uppercase tracking-[0.14em] text-[#6f6a64]"
+              >
+                Breathe • Belong • Serve
+              </div>
             </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section id="programs" class="px-0 py-[54px] pt-[22px] md:py-[78px]">
-      <div class="mx-auto w-[min(1160px,calc(100%-36px))]">
-        <div class="mb-[18px] flex flex-col items-start justify-between gap-6 md:mb-[30px] md:flex-row md:items-end">
-          <div>
-            <div class="text-[0.72rem] font-extrabold uppercase tracking-[0.16em] text-[#a85f49]">Explore what’s next</div>
-            <h2 class="mt-[7px] font-serif text-[clamp(2.35rem,12vw,3.5rem)] leading-[0.95] font-medium tracking-[-0.04em] md:text-[clamp(2.6rem,5vw,4.8rem)]">Upcoming Programs</h2>
-          </div>
-          <div>
-            <p class="max-w-[420px] text-[0.9rem] leading-[1.55] text-[#6f6a64] md:text-base md:leading-[1.65]">Swipe through upcoming programs and choose what feels right for you.</p>
-            <div class="mt-[14px] hidden gap-2 md:flex">
-              <button type="button" class="h-11 w-11 cursor-pointer rounded-full border border-black/10 bg-white text-lg transition hover:bg-[#25221f] hover:text-white" aria-label="Previous program" @click="scrollPrograms(-1)">←</button>
-              <button type="button" class="h-11 w-11 cursor-pointer rounded-full border border-black/10 bg-white text-lg transition hover:bg-[#25221f] hover:text-white" aria-label="Next program" @click="scrollPrograms(1)">→</button>
-            </div>
+          </a>
+          <div class="mt-[14px] text-[0.72rem] text-[#99918a]">
+            © <span x-text="year">2026</span> AOLF Connect. Built in the spirit
+            of seva.
           </div>
         </div>
 
         <div
-          x-ref="programSlider"
-          class="grid snap-x snap-mandatory auto-cols-[86%] grid-flow-col gap-[14px] overflow-x-auto px-[3px] pt-1 pb-5 [scrollbar-width:none] md:auto-cols-[minmax(310px,36%)] md:gap-[18px] [&::-webkit-scrollbar]:hidden"
+          class="flex flex-wrap justify-start gap-[18px] text-[0.78rem] font-bold text-[#6f6a64] md:justify-end"
         >
-          <article class="flex min-h-[340px] snap-start flex-col justify-between rounded-[28px] bg-[#eadbca] p-[23px] shadow-[0_18px_50px_rgba(49,42,34,0.10)] transition-transform hover:-translate-y-1 md:min-h-[380px] md:p-[27px]">
-            <div>
-              <span class="inline-flex w-max rounded-full border border-black/20 px-[10px] py-[7px] text-[0.68rem] font-extrabold uppercase tracking-[0.1em]">Adults</span>
-              <h3 class="my-[13px] font-serif text-[1.85rem] leading-[1.03] md:text-[2.1rem]">Happiness Program</h3>
-              <p class="m-0 leading-[1.65] text-[#514c47]">Breath, meditation and practical wisdom for greater energy, clarity and resilience.</p>
-            </div>
-            <a class="flex items-center justify-between border-t border-black/15 pt-[18px] text-[0.85rem] font-extrabold" href="https://wa.me/918884560660" target="_blank" rel="noopener noreferrer"><span>Get details</span><span>↗</span></a>
-          </article>
-
-          <article class="flex min-h-[340px] snap-start flex-col justify-between rounded-[28px] bg-[#d8dfd2] p-[23px] shadow-[0_18px_50px_rgba(49,42,34,0.10)] transition-transform hover:-translate-y-1 md:min-h-[380px] md:p-[27px]">
-            <div>
-              <span class="inline-flex w-max rounded-full border border-black/20 px-[10px] py-[7px] text-[0.68rem] font-extrabold uppercase tracking-[0.1em]">Children & Teens</span>
-              <h3 class="my-[13px] font-serif text-[1.85rem] leading-[1.03] md:text-[2.1rem]">Intuition Process</h3>
-              <p class="m-0 leading-[1.65] text-[#514c47]">A joyful program that nurtures intuition, confidence, focus and creativity.</p>
-            </div>
-            <a class="flex items-center justify-between border-t border-black/15 pt-[18px] text-[0.85rem] font-extrabold" href="https://wa.me/918884560660" target="_blank" rel="noopener noreferrer"><span>Get details</span><span>↗</span></a>
-          </article>
-
-          <article class="flex min-h-[340px] snap-start flex-col justify-between rounded-[28px] bg-[#d8c4bc] p-[23px] shadow-[0_18px_50px_rgba(49,42,34,0.10)] transition-transform hover:-translate-y-1 md:min-h-[380px] md:p-[27px]">
-            <div>
-              <span class="inline-flex w-max rounded-full border border-black/20 px-[10px] py-[7px] text-[0.68rem] font-extrabold uppercase tracking-[0.1em]">Meditation</span>
-              <h3 class="my-[13px] font-serif text-[1.85rem] leading-[1.03] md:text-[2.1rem]">Sahaj Samadhi Meditation</h3>
-              <p class="m-0 leading-[1.65] text-[#514c47]">A simple mantra-based meditation technique for deep rest and effortless inner calm.</p>
-            </div>
-            <a class="flex items-center justify-between border-t border-black/15 pt-[18px] text-[0.85rem] font-extrabold" href="https://wa.me/918884560660" target="_blank" rel="noopener noreferrer"><span>Get details</span><span>↗</span></a>
-          </article>
-
-          <article class="flex min-h-[340px] snap-start flex-col justify-between rounded-[28px] bg-[#e6dfcc] p-[23px] shadow-[0_18px_50px_rgba(49,42,34,0.10)] transition-transform hover:-translate-y-1 md:min-h-[380px] md:p-[27px]">
-            <div>
-              <span class="inline-flex w-max rounded-full border border-black/20 px-[10px] py-[7px] text-[0.68rem] font-extrabold uppercase tracking-[0.1em]">Members</span>
-              <h3 class="my-[13px] font-serif text-[1.85rem] leading-[1.03] md:text-[2.1rem]">Advanced Programs</h3>
-              <p class="m-0 leading-[1.65] text-[#514c47]">Go deeper into practice, silence, knowledge and the shared experience of community.</p>
-            </div>
-            <a class="flex items-center justify-between border-t border-black/15 pt-[18px] text-[0.85rem] font-extrabold" href="https://wa.me/918884560660" target="_blank" rel="noopener noreferrer"><span>Ask what’s next</span><span>↗</span></a>
-          </article>
-        </div>
-        
-      </div>
-    </section>
-
-    <section id="schedule" class="bg-[#41473b] px-0 py-[54px] text-[#f7f2eb] md:py-[78px]">
-      <div class="mx-auto w-[min(1160px,calc(100%-36px))]">
-        <div class="flex flex-col items-start justify-between gap-[30px] md:flex-row md:items-end">
-          <div>
-            <div class="text-[0.72rem] font-extrabold uppercase tracking-[0.16em] text-[#e4c4a3]">Stay connected</div>
-            <h2 class="mt-2 font-serif text-[clamp(3rem,6vw,5.3rem)] leading-none font-medium tracking-[-0.04em]">Schedule</h2>
-          </div>
-          <a class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full border border-white px-5 py-[13px] text-[0.88rem] font-extrabold text-white" href="https://wa.me/918884560660" target="_blank" rel="noopener noreferrer">Ask for timings ↗</a>
-        </div>
-
-        <div class="flex gap-2 overflow-x-auto py-6 pb-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="tablist" aria-label="Schedule days">
-          <button type="button" @click="activeDay = 'all'" :class="activeDay === 'all' ? 'bg-[#f1e5d7] text-[#25221f] border-[#f1e5d7]' : 'border-white/20 text-white'" class="whitespace-nowrap rounded-full border px-4 py-[11px] text-[0.8rem] font-bold">This week</button>
-          <button type="button" @click="activeDay = 'practice'" :class="activeDay === 'practice' ? 'bg-[#f1e5d7] text-[#25221f] border-[#f1e5d7]' : 'border-white/20 text-white'" class="whitespace-nowrap rounded-full border px-4 py-[11px] text-[0.8rem] font-bold">Practice</button>
-          <button type="button" @click="activeDay = 'community'" :class="activeDay === 'community' ? 'bg-[#f1e5d7] text-[#25221f] border-[#f1e5d7]' : 'border-white/20 text-white'" class="whitespace-nowrap rounded-full border px-4 py-[11px] text-[0.8rem] font-bold">Community</button>
-          <button type="button" @click="activeDay = 'special'" :class="activeDay === 'special' ? 'bg-[#f1e5d7] text-[#25221f] border-[#f1e5d7]' : 'border-white/20 text-white'" class="whitespace-nowrap rounded-full border px-4 py-[11px] text-[0.8rem] font-bold">Special events</button>
-        </div>
-
-        <div class="border-t border-white/20">
-          <div x-show="activeDay === 'all' || activeDay === 'practice'" class="grid grid-cols-[95px_1fr] items-center gap-7 border-b border-white/20 py-6 md:grid-cols-[140px_1fr_auto]">
-            <div class="font-serif text-[1.45rem]">Weekly</div>
-            <div><h3 class="mb-1.5 text-[1.08rem] font-bold">Community Follow-up</h3><p class="m-0 text-[0.84rem] text-[#cbc9c3]">Practice together and refresh your techniques.</p></div>
-            <span class="col-start-2 w-max whitespace-nowrap rounded-full border border-white/25 px-[11px] py-2 text-[0.7rem] font-extrabold md:col-auto">Practice</span>
-          </div>
-
-          <div x-show="activeDay === 'all' || activeDay === 'community'" class="grid grid-cols-[95px_1fr] items-center gap-7 border-b border-white/20 py-6 md:grid-cols-[140px_1fr_auto]">
-            <div class="font-serif text-[1.45rem]">Weekly</div>
-            <div><h3 class="mb-1.5 text-[1.08rem] font-bold">Satsang & Chapter Events</h3><p class="m-0 text-[0.84rem] text-[#cbc9c3]">Music, meditation, knowledge and celebrations.</p></div>
-            <span class="col-start-2 w-max whitespace-nowrap rounded-full border border-white/25 px-[11px] py-2 text-[0.7rem] font-extrabold md:col-auto">Community</span>
-          </div>
-
-          <div x-show="activeDay === 'all' || activeDay === 'special'" class="grid grid-cols-[95px_1fr] items-center gap-7 border-b border-white/20 py-6 md:grid-cols-[140px_1fr_auto]">
-            <div class="font-serif text-[1.45rem]">Upcoming</div>
-            <div><h3 class="mb-1.5 text-[1.08rem] font-bold">Special Programs & Celebrations</h3><p class="m-0 text-[0.84rem] text-[#cbc9c3]">Connect with the chapter for the next local gathering.</p></div>
-            <span class="col-start-2 w-max whitespace-nowrap rounded-full border border-white/25 px-[11px] py-2 text-[0.7rem] font-extrabold md:col-auto">Events</span>
-          </div>
+          <a href="#programs">Programs</a>
+          <a href="#schedule">Schedule</a>
+          <a href="/seva">Volunteer</a>
+          <a href="/privacy.html">Privacy Policy</a>
+          <a href="/terms.html">Terms of Service</a>
+          <a
+            href="https://www.artofliving.org/"
+            target="_blank"
+            rel="noopener noreferrer"
+            >Official Art of Living site</a
+          >
         </div>
       </div>
-    </section>
-
-    <section id="community" class="px-0 py-[54px] md:py-[78px]">
-      <div class="mx-auto grid w-[min(1160px,calc(100%-36px))] grid-cols-1 items-center gap-7 md:grid-cols-[.9fr_1.1fr] md:gap-[70px]">
-        <div class="flex min-h-[420px] flex-col justify-between rounded-[32px] bg-[#f0e7dc] p-9">
-          <div class="font-serif text-[5rem] leading-[0.7] text-[#a85f49]">“</div>
-          <blockquote class="m-0 font-serif text-[2.15rem] leading-[1.17]">Community makes practice easier, richer and more joyful.</blockquote>
-          <div class="text-[0.72rem] font-extrabold uppercase tracking-[0.16em] text-[#a85f49]">Your local chapter</div>
-        </div>
-
-        <div>
-          <div class="text-[0.72rem] font-extrabold uppercase tracking-[0.16em] text-[#a85f49]">For members</div>
-          <h2 class="mt-2 mb-[22px] font-serif text-[clamp(2.8rem,5vw,4.7rem)] leading-[0.96] font-medium tracking-[-0.04em]">Keep your practice alive.</h2>
-          <p class="leading-[1.75] text-[#6f6a64]">Stay connected beyond the course through weekly follow-ups, satsangs, advanced programs and seva opportunities.</p>
-          <div class="mt-[30px] border-t border-black/10">
-            <a class="flex justify-between border-b border-black/10 py-4 font-extrabold" href="#schedule"><span>Weekly follow-up</span><span>→</span></a>
-            <a class="flex justify-between border-b border-black/10 py-4 font-extrabold" href="#schedule"><span>Satsang & events</span><span>→</span></a>
-            <a class="flex justify-between border-b border-black/10 py-4 font-extrabold" href="https://wa.me/918884560660" target="_blank" rel="noopener noreferrer"><span>Advanced programs</span><span>→</span></a>
-            <a class="flex justify-between border-b border-black/10 py-4 font-extrabold" href="/seva"><span>Seva / Volunteer</span><span>→</span></a>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="px-0 pt-7 pb-[54px] md:pb-[78px]">
-      <div class="mx-auto w-[min(1160px,calc(100%-36px))]">
-        <div class="flex flex-col items-start justify-between gap-8 rounded-[34px] bg-[#b06b54] p-[30px] text-white md:flex-row md:items-center md:p-[42px]">
-          <h2 class="m-0 max-w-[680px] font-serif text-[clamp(2.25rem,4vw,4rem)] leading-none font-medium tracking-[-0.04em]">Not sure which program is right for you?</h2>
-          <a class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full border border-white px-5 py-[13px] text-[0.88rem] font-extrabold text-white" href="https://wa.me/918884560660" target="_blank" rel="noopener noreferrer">Chat on WhatsApp ↗</a>
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <a
-    class="fixed right-5 bottom-5 z-40 grid h-14 w-14 place-items-center rounded-full bg-[#316b4c] text-xl text-white shadow-[0_10px_30px_rgba(0,0,0,0.18)]"
-    href="https://wa.me/918884560660"
-    target="_blank"
-    rel="noopener noreferrer"
-    aria-label="Chat with us on WhatsApp"
-  >✆</a>
-
-  <footer class="mt-[70px] border-t border-black/10 px-0 pt-[42px] pb-[50px]">
-    <div class="mx-auto flex w-[min(1160px,calc(100%-36px))] flex-col items-start justify-between gap-[30px] md:flex-row md:items-end">
-      <div>
-        <a href="/" class="flex items-center gap-[11px]">
-          <img src="/assets/aolf-connect-logo.png" alt="AOLF Connect" class="h-[42px] w-[42px] rounded-[13px] object-contain" />
-          <div>
-            <div class="text-base font-extrabold">AOLF Connect</div>
-            <div class="mt-0.5 text-[0.66rem] uppercase tracking-[0.14em] text-[#6f6a64]">Breathe • Belong • Serve</div>
-          </div>
-        </a>
-        <div class="mt-[14px] text-[0.72rem] text-[#99918a]">© <span x-text="year">2026</span> AOLF Connect. Built in the spirit of seva.</div>
-      </div>
-
-      <div class="flex flex-wrap justify-start gap-[18px] text-[0.78rem] font-bold text-[#6f6a64] md:justify-end">
-        <a href="#programs">Programs</a>
-        <a href="#schedule">Schedule</a>
-        <a href="/seva">Volunteer</a>
-        <a href="/privacy.html">Privacy Policy</a>
-        <a href="/terms.html">Terms of Service</a>
-        <a href="https://www.artofliving.org/" target="_blank" rel="noopener noreferrer">Official Art of Living site</a>
-      </div>
-    </div>
-  </footer>
-</body>
+    </footer>
+  </body>
 </html>

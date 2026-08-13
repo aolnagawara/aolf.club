@@ -12,6 +12,7 @@ import type {
 export interface AuthProvider {
   getSessionUser(): Promise<AuthenticatedUser | null>;
   signIn(): Promise<AuthenticatedUser>;
+  signOut(): Promise<void>;
 }
 
 export interface LeadRepository {

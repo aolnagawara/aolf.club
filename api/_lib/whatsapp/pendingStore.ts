@@ -96,7 +96,20 @@ export function markMessageProcessed(messageId: string): void {
 export async function getPendingLead(
   volunteerPhone: string
 ): Promise<PendingLeadConfirmation | null> {
-  return getMemoryState().pending.get(pendingKey(volunteerPhone)) || null;
+  const memory = getMemoryState();
+  const phone = pendingKey(volunteerPhone);
+  const pending = memory.pending.get(phone);
+  if (!pending) {
+    return null;
+  }
+
+  if (pending.expiresAt <= nowMs()) {
+    clearPendingTimeout(memory, pending.id);
+    memory.pending.delete(phone);
+    return null;
+  }
+
+  return pending;
 }
 
 export async function upsertPendingLead(

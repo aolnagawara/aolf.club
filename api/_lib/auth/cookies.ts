@@ -18,7 +18,12 @@ export function parseCookies(
       }
       const key = part.slice(0, index).trim();
       const value = part.slice(index + 1).trim();
-      acc[key] = decodeURIComponent(value);
+      try {
+        acc[key] = decodeURIComponent(value);
+      } catch {
+        // One malformed cookie must not turn an otherwise anonymous request into
+        // a server error. Ignore the unusable value and continue parsing.
+      }
       return acc;
     }, {});
 }

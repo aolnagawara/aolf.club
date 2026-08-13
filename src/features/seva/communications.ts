@@ -12,13 +12,13 @@ export function createCommunicationMethods() {
       const hasPlus = input.startsWith('+');
       const digits = this.cleanPhone(input);
       if (!digits) {
-        return 'tel:';
+        return '';
       }
       return 'tel:' + (hasPlus ? '+' : '') + digits;
     },
     dialLead(this: SevaWorkspaceContext, lead: Lead): void {
-      const telHref = this.getTelHref(lead.mobile || lead.id);
-      if (telHref === 'tel:') {
+      const telHref = this.getTelHref(lead.mobile);
+      if (!telHref) {
         return;
       }
       window.location.href = telHref;
@@ -39,7 +39,11 @@ export function createCommunicationMethods() {
         .replaceAll('{campaign}', campaignName);
     },
     buildWhatsappHref(this: SevaWorkspaceContext, lead: Lead): string {
-      const phone = this.cleanPhone(lead.mobile || lead.id || '');
+      const mobile = String(lead.mobile || '').trim();
+      const phone = this.cleanPhone(mobile);
+      if (!phone) {
+        return '';
+      }
       const countryCode =
         this.cleanPhone(
           String(
@@ -47,7 +51,8 @@ export function createCommunicationMethods() {
           )
         ) || DEFAULT_WHATSAPP_COUNTRY_CODE;
       const destination =
-        phone.length > 10 && phone.startsWith(countryCode)
+        mobile.startsWith('+') ||
+        (phone.length > 10 && phone.startsWith(countryCode))
           ? phone
           : countryCode + phone;
       const message = encodeURIComponent(this.buildCampaignMessage(lead));

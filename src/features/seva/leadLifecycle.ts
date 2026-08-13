@@ -49,6 +49,24 @@ function cloneSnapshot(snapshot: LeadSnapshot): LeadSnapshot {
   };
 }
 
+function snapshotsMatch(left: LeadSnapshot, right: LeadSnapshot): boolean {
+  return (
+    left.name === right.name &&
+    left.quality === right.quality &&
+    left.followUp === right.followUp &&
+    left.status === right.status &&
+    left.notes === right.notes &&
+    left.wishlistPrograms.length === right.wishlistPrograms.length &&
+    left.wishlistPrograms.every(
+      (program, index) => program === right.wishlistPrograms[index]
+    ) &&
+    left.donePrograms.length === right.donePrograms.length &&
+    left.donePrograms.every(
+      (program, index) => program === right.donePrograms[index]
+    )
+  );
+}
+
 function toCampaignType(value: unknown, fallback: CampaignType): CampaignType {
   return value === 'Members' || value === 'Leads' ? value : fallback;
 }
@@ -77,8 +95,11 @@ async function drainLeadSaveQueue(
       // Only mark clean if no newer edit was queued while this save was in flight.
       if (!queue.pending) {
         request.lead._originalData = cloneSnapshot(request.snapshot);
-        request.lead.isDirty = false;
         request.lead.lastUpdated = lastUpdated || 'Just now';
+        request.lead.isDirty = !snapshotsMatch(
+          context.createLeadSnapshot(request.lead),
+          request.snapshot
+        );
       }
     } catch (error) {
       console.error(error);
@@ -308,18 +329,14 @@ export function createLeadLifecycleMethods() {
         _followUpDate: null,
         _followUpTs: null
       } satisfies Lead;
-      const allowedQuality = this.qualityOptions.map(
-        (q: { value: string }) => q.value
-      );
-      const allowedStatus = this.statusOptions;
       const qualityPlaceholder =
         campaignType === 'Members' ? 'Engagement' : 'Quality';
       const incomingQuality = String(lead.quality || '');
       const incomingStatus = String(lead.status || '');
-      normalizedLead.quality = allowedQuality.includes(incomingQuality)
+      normalizedLead.quality = incomingQuality.trim()
         ? incomingQuality
         : qualityPlaceholder;
-      normalizedLead.status = allowedStatus.includes(incomingStatus)
+      normalizedLead.status = incomingStatus.trim()
         ? incomingStatus
         : 'Response';
       normalizedLead.followUp = String(lead.followUp || 'Follow-up');
@@ -327,7 +344,7 @@ export function createLeadLifecycleMethods() {
       return normalizedLead;
     },
     normalizeLeadDerivedFields(this: SevaWorkspaceContext, lead: Lead): void {
-      const contactMobile = String(lead.mobile || lead.id || '');
+      const contactMobile = String(lead.mobile || '');
       lead._nameLower = String(lead.name || '').toLowerCase();
       lead._phoneRawLower = contactMobile.toLowerCase();
       lead._phoneDigits = this.cleanPhone(contactMobile);

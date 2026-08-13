@@ -46,7 +46,15 @@ const LEAD_HEADERS = [
   'donePrograms'
 ];
 
-function createFixture(leadRows: string[][], leadHeaders = LEAD_HEADERS) {
+function createFixture(
+  leadRows: string[][],
+  leadHeaders = LEAD_HEADERS,
+  allowedUserRows: string[][] = [
+    ['email', 'name'],
+    [USER.email, 'Current Volunteer'],
+    [OTHER_VOLUNTEER_EMAIL, 'Another Volunteer']
+  ]
+) {
   const readSheetValues = vi.fn(
     async (
       target: SpreadsheetTarget,
@@ -55,11 +63,7 @@ function createFixture(leadRows: string[][], leadHeaders = LEAD_HEADERS) {
     ): Promise<string[][]> => {
       void _operation;
       if (target === 'access') {
-        return [
-          ['email', 'name'],
-          [USER.email, 'Current Volunteer'],
-          [OTHER_VOLUNTEER_EMAIL, 'Another Volunteer']
-        ];
+        return allowedUserRows;
       }
       if (range === LAYOUT.leadsRange) {
         return [leadHeaders, ...leadRows];
@@ -131,6 +135,14 @@ function createFixture(leadRows: string[][], leadHeaders = LEAD_HEADERS) {
 }
 
 describe('Sheets store campaign and access scoping', () => {
+  it('denies access when AllowedUsers is empty even if legacy Config lists the user', async () => {
+    const fixture = createFixture([], LEAD_HEADERS, [['email', 'name']]);
+
+    await expect(
+      fixture.store.getBootstrapForAuthorizedUser(USER, CAMPAIGN_A)
+    ).resolves.toEqual({ allowed: false });
+  });
+
   it('filters raw rows by the selected campaign before parsing', async () => {
     const fixture = createFixture([
       [

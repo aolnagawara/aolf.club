@@ -1,6 +1,7 @@
 import type { ApiRequest, ApiResponse } from '../_lib/http/responses.js';
 import { readSessionUser } from '../_lib/auth/session.js';
 import { getApiDataStore } from '../_lib/storage/dataStore.js';
+import { ZodError } from 'zod';
 
 export default async function handler(req: ApiRequest, res: ApiResponse) {
   if (req.method !== 'PUT' && req.method !== 'DELETE') {
@@ -115,11 +116,22 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       });
     }
 
-    return res.status(400).json({
+    if (error instanceof ZodError) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Invalid lead update payload.'
+        }
+      });
+    }
+
+    console.error('[leads-mutate] unexpected failure', error);
+    return res.status(500).json({
       success: false,
       error: {
-        code: 'VALIDATION_ERROR',
-        message: 'Invalid lead update payload.'
+        code: 'INTERNAL_ERROR',
+        message: 'Unable to save lead changes.'
       }
     });
   }

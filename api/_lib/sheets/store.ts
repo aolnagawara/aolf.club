@@ -11,9 +11,7 @@ import {
   type AppConfig,
   type BootstrapResponse,
   type Campaign,
-  type CreateLeadRequest,
   type CreateLeadResponse,
-  type DeleteLeadRequest,
   type DeleteLeadResponse,
   type Lead,
   type UpdateLeadRequest,
@@ -169,21 +167,6 @@ function toCsv(raw: string | string[] | undefined): string {
     .join(',');
 }
 
-function parseAllowedUsers(raw: string | undefined): string[] {
-  if (!raw) {
-    return [];
-  }
-
-  const parsed = parseJsonValue<unknown>(raw, null);
-  if (Array.isArray(parsed)) {
-    return parsed
-      .filter((item): item is string => typeof item === 'string')
-      .flatMap((item) => parseEmailCell(item));
-  }
-
-  return parseEmailCell(raw);
-}
-
 function parseOptionalBoolean(raw: string | undefined): boolean | undefined {
   const value = String(raw || '')
     .trim()
@@ -246,21 +229,11 @@ function buildAppConfig(
     defaultStatusIcon: rawConfig.defaultStatusIcon,
     defaultCampaignMessage: rawConfig.defaultCampaignMessage,
     whatsappCountryCode: rawConfig.whatsappCountryCode,
-    allowedUsers: parseAllowedUsers(rawConfig.allowedUsers)
+    allowedUsers: []
   });
 }
 
-function buildAllowedUsers(
-  rows: string[][],
-  configAllowedUsers: string[]
-): Set<string> {
-  const fallback = new Set(
-    configAllowedUsers.map(normalizeEmail).filter(Boolean)
-  );
-  if (!rows.length) {
-    return fallback;
-  }
-
+function buildAllowedUsers(rows: string[][]): Set<string> {
   const headers = (rows[0] || []).map((value) => String(value || '').trim());
   const emailColumnIndex = ALLOWED_USERS_EMAIL_HEADERS.map((candidate) =>
     headers.findIndex(
@@ -280,7 +253,7 @@ function buildAllowedUsers(
     parseEmailCell(cell).forEach((email) => emails.add(email));
   }
 
-  return emails.size ? emails : fallback;
+  return emails;
 }
 
 function getVolunteerFallbackName(email: string): string {
@@ -461,10 +434,9 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
       throw new Error('No campaignId configured in Config sheet.');
     }
 
-    const allowedUsers = buildAllowedUsers(
-      allowedUserRows,
-      config.allowedUsers || []
-    );
+    // AllowedUsers is the documented access-control source. An empty sheet must
+    // deny access rather than silently reviving users left in legacy Config data.
+    const allowedUsers = buildAllowedUsers(allowedUserRows);
 
     return {
       config,
@@ -765,17 +737,6 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
       );
     },
 
-    async getBootstrapForUser(
-      user: SessionUser,
-      campaignId?: string | null,
-      operation?: SheetsOperation
-    ) {
-      return withStoreOperation(operation, async (activeOperation) => {
-        const snapshot = await loadMetadataSnapshot(activeOperation);
-        return getBootstrap(user, snapshot, activeOperation, campaignId);
-      });
-    },
-
     async getBootstrapForAuthorizedUser(
       user: SessionUser,
       campaignId?: string | null,
@@ -790,17 +751,6 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
           allowed: true,
           value: await getBootstrap(user, snapshot, activeOperation, campaignId)
         };
-      });
-    },
-
-    async updateLeadForUser(
-      user: SessionUser,
-      payload: UpdateLeadRequest,
-      operation?: SheetsOperation
-    ) {
-      return withStoreOperation(operation, async (activeOperation) => {
-        const snapshot = await loadMetadataSnapshot(activeOperation);
-        return updateLead(user, snapshot, activeOperation, payload);
       });
     },
 
@@ -821,17 +771,6 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
       });
     },
 
-    async createLeadForUser(
-      user: SessionUser,
-      payload: CreateLeadRequest,
-      operation?: SheetsOperation
-    ) {
-      return withStoreOperation(operation, async (activeOperation) => {
-        const snapshot = await loadMetadataSnapshot(activeOperation);
-        return createLead(user, snapshot, activeOperation, payload);
-      });
-    },
-
     async createLeadForAuthorizedUser(
       user: SessionUser,
       payload: unknown,
@@ -847,16 +786,6 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
           value: await createLead(user, snapshot, activeOperation, payload)
         };
       });
-    },
-
-    async deleteLeadForUser(
-      user: SessionUser,
-      payload: DeleteLeadRequest,
-      operation?: SheetsOperation
-    ) {
-      return withStoreOperation(operation, (activeOperation) =>
-        deleteLead(user, activeOperation, payload)
-      );
     },
 
     async deleteLeadForAuthorizedUser(

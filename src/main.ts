@@ -1,7 +1,6 @@
 import Alpine from 'alpinejs';
 import { appRuntime } from './services/appRuntime';
 import {
-  Bell,
   Calendar,
   FolderInput,
   Phone,
@@ -32,7 +31,6 @@ window.Alpine = Alpine;
 
 createIcons({
   icons: {
-    Bell,
     Calendar,
     FolderInput,
     Phone,

@@ -365,11 +365,61 @@ describe('whatsapp webhook event routing', () => {
     expect(capture.statusCode).toBe(200);
   });
 
+  it('coalesces overlapping deliveries of the same message id', async () => {
+    let resolveHandling!: (value: {
+      action: 'send_text';
+      message: string;
+    }) => void;
+    const handling = new Promise<{
+      action: 'send_text';
+      message: string;
+    }>((resolve) => {
+      resolveHandling = resolve;
+    });
+    mockHandleIncomingText.mockReturnValue(handling);
+    const body = {
+      value: {
+        messages: [
+          {
+            id: 'msg-overlapping',
+            from: '919876543210',
+            type: 'text',
+            text: { body: '9876543210 Sandip HP Hot Aug' }
+          }
+        ]
+      }
+    };
+    const firstResponse = createResponseCapture();
+    const secondResponse = createResponseCapture();
+
+    const firstRequest = handler(createRequest(body), firstResponse.res);
+    await vi.waitFor(() => {
+      expect(mockHandleIncomingText).toHaveBeenCalledTimes(1);
+    });
+
+    const secondRequest = handler(createRequest(body), secondResponse.res);
+    await vi.waitFor(() => {
+      expect(mockWasMessageProcessed).toHaveBeenCalledTimes(2);
+      expect(mockHandleIncomingText).toHaveBeenCalledTimes(1);
+    });
+
+    resolveHandling({ action: 'send_text', message: 'Handled once.' });
+    await Promise.all([firstRequest, secondRequest]);
+
+    expect(mockHandleIncomingText).toHaveBeenCalledTimes(1);
+    expect(mockSendTextMessage).toHaveBeenCalledTimes(1);
+    expect(mockMarkMessageProcessed).toHaveBeenCalledTimes(1);
+    expect(firstResponse.capture.statusCode).toBe(200);
+    expect(secondResponse.capture.statusCode).toBe(200);
+  });
+
   it('processes multiple events sequentially in delivery order', async () => {
-    mockHandleIncomingText.mockImplementation(async (_from: string, text: string) => ({
-      action: 'send_text',
-      message: `handled: ${text}`
-    }));
+    mockHandleIncomingText.mockImplementation(
+      async (_from: string, text: string) => ({
+        action: 'send_text',
+        message: `handled: ${text}`
+      })
+    );
     const req = createRequest({
       value: {
         messages: [
