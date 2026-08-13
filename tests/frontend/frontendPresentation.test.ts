@@ -109,7 +109,11 @@ describe('AOLF Connect frontend presentation', () => {
   it('shows action feedback as a viewport-floating status', () => {
     const sevaPage = readText(sevaPageUrl);
 
+    expect(sevaPage).toContain('<template x-teleport="body">');
     expect(sevaPage).toContain('x-show="actionMessage"');
-    expect(sevaPage).toContain('class="fixed left-1/2 top-20 z-40');
+    expect(sevaPage).toContain('class="fixed left-1/2 z-[100]');
+    expect(sevaPage).toContain(
+      'style="bottom: calc(5.5rem + env(safe-area-inset-bottom))"'
+    );
   });
 });

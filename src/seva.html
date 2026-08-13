@@ -23,6 +23,27 @@
       x-init="init()"
       class="flex flex-col flex-1 pb-6"
     >
+      <template x-teleport="body">
+        <div
+          x-cloak
+          x-show="actionMessage"
+          x-transition.opacity
+          role="status"
+          class="fixed left-1/2 z-[100] flex w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 items-start justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50/95 px-4 py-3 text-xs text-emerald-700 shadow-lg backdrop-blur"
+          style="bottom: calc(5.5rem + env(safe-area-inset-bottom))"
+        >
+          <span x-text="actionMessage"></span>
+          <button
+            type="button"
+            @click="actionMessage = ''"
+            class="shrink-0 font-medium text-emerald-700 hover:text-emerald-900"
+            aria-label="Dismiss message"
+          >
+            Dismiss
+          </button>
+        </div>
+      </template>
+
       <!-- 1. HEADER SECTION -->
       <header
         x-cloak
@@ -225,23 +246,6 @@
               @click="authError = ''"
               class="shrink-0 font-medium text-rose-600 hover:text-rose-800"
               aria-label="Dismiss error"
-            >
-              Dismiss
-            </button>
-          </div>
-
-          <div
-            x-show="actionMessage"
-            x-transition.opacity
-            role="status"
-            class="fixed left-1/2 top-20 z-40 flex w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 items-start justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50/95 px-4 py-3 text-xs text-emerald-700 shadow-lg backdrop-blur"
-          >
-            <span x-text="actionMessage"></span>
-            <button
-              type="button"
-              @click="actionMessage = ''"
-              class="shrink-0 font-medium text-emerald-700 hover:text-emerald-900"
-              aria-label="Dismiss message"
             >
               Dismiss
             </button>
