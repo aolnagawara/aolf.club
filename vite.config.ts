@@ -1,8 +1,8 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'node:path';
 
-function sevaRewritePlugin() {
-  const rewriteSevaUrl = (url?: string) => {
+function volunteerRewritePlugin() {
+  const rewriteVolunteerUrl = (url?: string) => {
     if (!url) {
       return url;
     }
@@ -11,13 +11,13 @@ function sevaRewritePlugin() {
     const pathname = queryIndex >= 0 ? url.slice(0, queryIndex) : url;
     const query = queryIndex >= 0 ? url.slice(queryIndex) : '';
 
-    return pathname === '/seva' || pathname === '/seva/'
-      ? `/seva.html${query}`
+    return pathname === '/volunteer' || pathname === '/volunteer/'
+      ? `/volunteer.html${query}`
       : url;
   };
 
   return {
-    name: 'aolf-seva-rewrite',
+    name: 'aolf-volunteer-rewrite',
     configureServer(server: {
       middlewares: {
         use: (
@@ -30,7 +30,7 @@ function sevaRewritePlugin() {
       };
     }) {
       server.middlewares.use((req, _res, next) => {
-        req.url = rewriteSevaUrl(req.url);
+        req.url = rewriteVolunteerUrl(req.url);
         next();
       });
     },
@@ -46,7 +46,7 @@ function sevaRewritePlugin() {
       };
     }) {
       server.middlewares.use((req, _res, next) => {
-        req.url = rewriteSevaUrl(req.url);
+        req.url = rewriteVolunteerUrl(req.url);
         next();
       });
     }
@@ -56,12 +56,12 @@ function sevaRewritePlugin() {
 export default defineConfig({
   root: 'src',
   publicDir: resolve(__dirname, 'public'),
-  plugins: [sevaRewritePlugin()],
+  plugins: [volunteerRewritePlugin()],
   build: {
     rollupOptions: {
       input: {
         main: resolve(__dirname, 'src/index.html'),
-        seva: resolve(__dirname, 'src/seva.html'),
+        volunteer: resolve(__dirname, 'src/volunteer.html'),
         privacy: resolve(__dirname, 'src/privacy.html'),
         terms: resolve(__dirname, 'src/terms.html')
       }
