@@ -5,13 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="AOLF Connect - Programs, practices, and community management platform for Art of Living volunteers and participants."
+      content="AOLF Connect - Explore beginner Art of Living programs, free sessions, local activities, member practices and volunteering opportunities."
     />
     <meta name="theme-color" content="#f6f0e8" />
     <meta property="og:title" content="AOLF Connect" />
     <meta
       property="og:description"
-      content="AOLF Connect helps Art of Living volunteers and participants access local programs, schedules, follow-ups, and volunteering activities."
+      content="Explore beginner programs, free sessions, weekly practices, satsangs and volunteering opportunities with your local Art of Living community."
     />
     <meta property="og:type" content="website" />
     <meta property="og:image" content="/assets/aolf-connect-logo.png" />
@@ -28,15 +28,20 @@
   <body
     class="m-0 overflow-x-hidden bg-[#fbf7f1] font-sans text-[#25221f] antialiased"
     x-data="{
-    menuOpen: false,
-    activeDay: 'all',
-    year: new Date().getFullYear(),
-    scrollPrograms(direction) {
-      const slider = this.$refs.programSlider;
-      const amount = Math.min(slider.clientWidth * 0.78, 430);
-      slider.scrollBy({ left: direction * amount, behavior: 'smooth' });
-    }
-  }"
+      menuOpen: false,
+      activeDay: 'all',
+      year: new Date().getFullYear(),
+      scrollPrograms(direction) {
+        const slider = this.$refs.programSlider;
+        const amount = Math.min(slider.clientWidth * 0.78, 430);
+        slider.scrollBy({ left: direction * amount, behavior: 'smooth' });
+      },
+      scrollFree(direction) {
+        const slider = this.$refs.freeSlider;
+        const amount = Math.min(slider.clientWidth * 0.78, 430);
+        slider.scrollBy({ left: direction * amount, behavior: 'smooth' });
+      }
+    }"
   >
     <header
       class="sticky top-0 z-50 border-b border-black/10 bg-[#fbf7f1]/90 backdrop-blur-xl"
@@ -44,11 +49,7 @@
       <div
         class="mx-auto flex h-[76px] w-[min(1160px,calc(100%-36px))] items-center justify-between gap-6"
       >
-        <a
-          href="/"
-          class="flex items-center gap-[11px]"
-          aria-label="AOLF Connect home"
-        >
+        <a href="/" class="flex items-center gap-[11px]" aria-label="AOLF Connect home">
           <img
             src="/assets/aolf-connect-logo.png"
             alt="AOLF Connect"
@@ -56,41 +57,27 @@
           />
           <div>
             <div class="text-base font-extrabold">AOLF Connect</div>
-            <div
-              class="mt-0.5 text-[0.66rem] uppercase tracking-[0.14em] text-[#6f6a64]"
-            >
+            <div class="mt-0.5 text-[0.66rem] uppercase tracking-[0.14em] text-[#6f6a64]">
               Local community
             </div>
           </div>
         </a>
 
-        <!-- Desktop navigation: never visible on mobile -->
         <nav
-          class="hidden items-center gap-7 text-[0.86rem] font-bold md:flex"
+          class="hidden items-center gap-6 text-[0.84rem] font-bold md:flex"
           aria-label="Main navigation"
         >
-          <a class="opacity-75 transition hover:opacity-100" href="#programs"
-            >Programs</a
-          >
-          <a class="opacity-75 transition hover:opacity-100" href="#schedule"
-            >Schedule</a
-          >
-          <a class="opacity-75 transition hover:opacity-100" href="#community"
-            >Community</a
-          >
-          <a class="opacity-75 transition hover:opacity-100" href="/seva"
-            >Volunteer</a
-          >
+          <a class="opacity-75 transition hover:opacity-100" href="#programs">Programs</a>
+          <a class="opacity-75 transition hover:opacity-100" href="#free-activities">Free Activities</a>
+          <a class="opacity-75 transition hover:opacity-100" href="#schedule">Schedule</a>
+          <a class="opacity-75 transition hover:opacity-100" href="#members">Members</a>
+          <a class="opacity-75 transition hover:opacity-100" href="/volunteer.html">Volunteer</a>
           <a
             class="rounded-full bg-[#25221f] px-[17px] py-[11px] text-white"
-            href="https://wa.me/918884560660"
-            target="_blank"
-            rel="noopener noreferrer"
-            >WhatsApp us</a
-          >
+            href="/volunteer.html"
+          >Call Tracker</a>
         </nav>
 
-        <!-- Mobile hamburger: never visible on desktop -->
         <button
           type="button"
           class="border-0 bg-transparent text-2xl md:hidden"
@@ -98,103 +85,63 @@
           :aria-expanded="menuOpen.toString()"
           @click="menuOpen = !menuOpen"
           x-text="menuOpen ? '×' : '☰'"
-        >
-          ☰
-        </button>
+        >☰</button>
       </div>
 
-      <!-- Mobile navigation: md:hidden guarantees it cannot appear on desktop -->
       <nav
         class="mx-auto grid w-[min(1160px,calc(100%-36px))] gap-0 pb-4 md:hidden"
         x-show="menuOpen"
         style="display: none"
         aria-label="Mobile navigation"
       >
-        <a
-          class="border-t border-black/10 py-[11px] font-bold"
-          href="#programs"
-          @click="menuOpen = false"
-          >Programs</a
-        >
-        <a
-          class="border-t border-black/10 py-[11px] font-bold"
-          href="#schedule"
-          @click="menuOpen = false"
-          >Schedule</a
-        >
-        <a
-          class="border-t border-black/10 py-[11px] font-bold"
-          href="#community"
-          @click="menuOpen = false"
-          >Community</a
-        >
-        <a
-          class="border-t border-black/10 py-[11px] font-bold"
-          href="/seva"
-          @click="menuOpen = false"
-          >Volunteer</a
-        >
-        <a
-          class="border-t border-black/10 py-[11px] font-bold"
-          href="https://wa.me/918884560660"
-          target="_blank"
-          rel="noopener noreferrer"
-          @click="menuOpen = false"
-          >WhatsApp us</a
-        >
+        <a class="border-t border-black/10 py-[11px] font-bold" href="#programs" @click="menuOpen = false">Programs</a>
+        <a class="border-t border-black/10 py-[11px] font-bold" href="#free-activities" @click="menuOpen = false">Free Activities</a>
+        <a class="border-t border-black/10 py-[11px] font-bold" href="#schedule" @click="menuOpen = false">Schedule</a>
+        <a class="border-t border-black/10 py-[11px] font-bold" href="#members" @click="menuOpen = false">Members</a>
+        <a class="border-t border-black/10 py-[11px] font-bold" href="/volunteer.html" @click="menuOpen = false">Volunteer</a>
+        <a class="border-t border-black/10 py-[11px] font-bold" href="/volunteer.html" @click="menuOpen = false">Call Tracker</a>
       </nav>
     </header>
+
     <main>
-      <section
-        id="top"
-        class="px-0 pb-[14px] pt-[34px] md:pb-[42px] md:pt-[74px]"
-      >
+      <section id="top" class="px-0 pb-[14px] pt-[34px] md:pb-[42px] md:pt-[74px]">
         <div
           class="mx-auto grid w-[min(1160px,calc(100%-36px))] grid-cols-1 items-center gap-7 md:grid-cols-[1.08fr_.92fr] md:gap-[62px]"
         >
           <div>
-            <div
-              class="text-[0.72rem] font-extrabold uppercase tracking-[0.16em] text-[#a85f49]"
-            >
+            <div class="text-[0.72rem] font-extrabold uppercase tracking-[0.16em] text-[#a85f49]">
               Breathe • Belong • Serve
             </div>
             <h1
               class="mt-3 mb-4 max-w-[800px] font-serif text-[clamp(3.2rem,15vw,4.8rem)] leading-[0.89] font-medium tracking-[-0.04em] md:mb-[26px] md:text-[clamp(3.7rem,7vw,7.1rem)]"
-            >
-              Come back to yourself.
-            </h1>
-            <p
-              class="max-w-[620px] text-[0.98rem] leading-[1.6] text-[#6f6a64] md:text-[1.08rem] md:leading-[1.75]"
-            >
-              Discover local Art of Living programs, weekly practices, satsangs
-              and opportunities to serve — all in one simple community space.
+            >Come back to yourself.</h1>
+            <p class="max-w-[650px] text-[0.98rem] leading-[1.6] text-[#6f6a64] md:text-[1.08rem] md:leading-[1.75]">
+              Explore beginner programs, join free sessions and community events, continue your regular practices, or find a way to volunteer with your local Art of Living community.
             </p>
+
+            <div class="mt-7 grid gap-3 sm:grid-cols-3 md:max-w-[700px]">
+              <a href="#programs" class="rounded-[20px] border border-black/10 bg-white p-4 shadow-[0_10px_30px_rgba(49,42,34,0.06)] transition hover:-translate-y-0.5">
+                <div class="text-[0.67rem] font-extrabold uppercase tracking-[0.12em] text-[#a85f49]">New here?</div>
+                <div class="mt-1 text-[0.9rem] font-extrabold">Explore programs & free sessions →</div>
+              </a>
+              <a href="#members" class="rounded-[20px] border border-black/10 bg-white p-4 shadow-[0_10px_30px_rgba(49,42,34,0.06)] transition hover:-translate-y-0.5">
+                <div class="text-[0.67rem] font-extrabold uppercase tracking-[0.12em] text-[#a85f49]">Already a member?</div>
+                <div class="mt-1 text-[0.9rem] font-extrabold">See weekly activities →</div>
+              </a>
+              <a href="/volunteer.html" class="rounded-[20px] bg-[#25221f] p-4 text-white shadow-[0_10px_30px_rgba(49,42,34,0.12)] transition hover:-translate-y-0.5">
+                <div class="text-[0.67rem] font-extrabold uppercase tracking-[0.12em] text-white/65">Active volunteer?</div>
+                <div class="mt-1 text-[0.9rem] font-extrabold">Open Call Tracker →</div>
+              </a>
+            </div>
           </div>
 
-          <div
-            class="relative hidden min-h-[500px] md:block"
-            aria-hidden="true"
-          >
-            <div
-              class="absolute right-[7%] top-[8%] h-[340px] w-[340px] rounded-full bg-[#d9c4ad]"
-            ></div>
-            <div
-              class="absolute bottom-[4%] left-[3%] h-[210px] w-[210px] rounded-full bg-[#9d6c57]"
-            ></div>
-            <div
-              class="absolute right-0 bottom-4 w-[min(390px,90%)] rounded-[28px] border border-white/80 bg-white/80 p-[27px] shadow-[0_18px_50px_rgba(49,42,34,0.10)] backdrop-blur-xl"
-            >
-              <div
-                class="text-[0.72rem] font-extrabold uppercase tracking-[0.16em] text-[#a85f49]"
-              >
-                This week
-              </div>
-              <div class="my-3 font-serif text-[2.15rem] leading-[1.1]">
-                Practice together. Feel the difference.
-              </div>
-              <div
-                class="mt-[18px] flex justify-between gap-4 border-t border-black/10 pt-[15px] text-[0.79rem] text-[#6f6a64]"
-              >
+          <div class="relative hidden min-h-[500px] md:block" aria-hidden="true">
+            <div class="absolute right-[7%] top-[8%] h-[340px] w-[340px] rounded-full bg-[#d9c4ad]"></div>
+            <div class="absolute bottom-[4%] left-[3%] h-[210px] w-[210px] rounded-full bg-[#9d6c57]"></div>
+            <div class="absolute right-0 bottom-4 w-[min(390px,90%)] rounded-[28px] border border-white/80 bg-white/80 p-[27px] shadow-[0_18px_50px_rgba(49,42,34,0.10)] backdrop-blur-xl">
+              <div class="text-[0.72rem] font-extrabold uppercase tracking-[0.16em] text-[#a85f49]">This week</div>
+              <div class="my-3 font-serif text-[2.15rem] leading-[1.1]">Practice together. Feel the difference.</div>
+              <div class="mt-[18px] flex justify-between gap-4 border-t border-black/10 pt-[15px] text-[0.79rem] text-[#6f6a64]">
                 <span>Weekly follow-up</span><span>Satsang & community</span>
               </div>
             </div>
@@ -204,427 +151,214 @@
 
       <section id="programs" class="px-0 py-[54px] pt-[22px] md:py-[78px]">
         <div class="mx-auto w-[min(1160px,calc(100%-36px))]">
-          <div
-            class="mb-[18px] flex flex-col items-start justify-between gap-6 md:mb-[30px] md:flex-row md:items-end"
-          >
+          <div class="mb-[18px] flex flex-col items-start justify-between gap-6 md:mb-[30px] md:flex-row md:items-end">
             <div>
-              <div
-                class="text-[0.72rem] font-extrabold uppercase tracking-[0.16em] text-[#a85f49]"
-              >
-                Explore what’s next
-              </div>
-              <h2
-                class="mt-[7px] font-serif text-[clamp(2.35rem,12vw,3.5rem)] leading-[0.95] font-medium tracking-[-0.04em] md:text-[clamp(2.6rem,5vw,4.8rem)]"
-              >
-                Upcoming Programs
-              </h2>
+              <div class="text-[0.72rem] font-extrabold uppercase tracking-[0.16em] text-[#a85f49]">Begin your journey</div>
+              <h2 class="mt-[7px] font-serif text-[clamp(2.35rem,12vw,3.5rem)] leading-[0.95] font-medium tracking-[-0.04em] md:text-[clamp(2.6rem,5vw,4.8rem)]">Programs for you & your family</h2>
             </div>
             <div>
-              <p
-                class="max-w-[420px] text-[0.9rem] leading-[1.55] text-[#6f6a64] md:text-base md:leading-[1.65]"
-              >
-                Swipe through upcoming programs and choose what feels right for
-                you.
-              </p>
+              <p class="max-w-[440px] text-[0.9rem] leading-[1.55] text-[#6f6a64] md:text-base md:leading-[1.65]">Explore beginner programs and choose the experience that best fits you or your family.</p>
               <div class="mt-[14px] hidden gap-2 md:flex">
-                <button
-                  type="button"
-                  class="h-11 w-11 cursor-pointer rounded-full border border-black/10 bg-white text-lg transition hover:bg-[#25221f] hover:text-white"
-                  aria-label="Previous program"
-                  @click="scrollPrograms(-1)"
-                >
-                  ←
-                </button>
-                <button
-                  type="button"
-                  class="h-11 w-11 cursor-pointer rounded-full border border-black/10 bg-white text-lg transition hover:bg-[#25221f] hover:text-white"
-                  aria-label="Next program"
-                  @click="scrollPrograms(1)"
-                >
-                  →
-                </button>
+                <button type="button" class="h-11 w-11 cursor-pointer rounded-full border border-black/10 bg-white text-lg transition hover:bg-[#25221f] hover:text-white" aria-label="Previous program" @click="scrollPrograms(-1)">←</button>
+                <button type="button" class="h-11 w-11 cursor-pointer rounded-full border border-black/10 bg-white text-lg transition hover:bg-[#25221f] hover:text-white" aria-label="Next program" @click="scrollPrograms(1)">→</button>
               </div>
             </div>
           </div>
 
-          <div
-            x-ref="programSlider"
-            class="grid snap-x snap-mandatory auto-cols-[86%] grid-flow-col gap-[14px] overflow-x-auto px-[3px] pt-1 pb-5 [scrollbar-width:none] md:auto-cols-[minmax(310px,36%)] md:gap-[18px] [&::-webkit-scrollbar]:hidden"
-          >
-            <article
-              class="flex min-h-[340px] snap-start flex-col justify-between rounded-[28px] bg-[#eadbca] p-[23px] shadow-[0_18px_50px_rgba(49,42,34,0.10)] transition-transform hover:-translate-y-1 md:min-h-[380px] md:p-[27px]"
-            >
+          <div x-ref="programSlider" class="grid snap-x snap-mandatory auto-cols-[86%] grid-flow-col gap-[14px] overflow-x-auto px-[3px] pt-1 pb-5 [scrollbar-width:none] md:auto-cols-[minmax(310px,36%)] md:gap-[18px] [&::-webkit-scrollbar]:hidden">
+            <article class="flex min-h-[340px] snap-start flex-col justify-between rounded-[28px] bg-[#eadbca] p-[23px] shadow-[0_18px_50px_rgba(49,42,34,0.10)] transition-transform hover:-translate-y-1 md:min-h-[380px] md:p-[27px]">
               <div>
-                <span
-                  class="inline-flex w-max rounded-full border border-black/20 px-[10px] py-[7px] text-[0.68rem] font-extrabold uppercase tracking-[0.1em]"
-                  >Adults</span
-                >
-                <h3
-                  class="my-[13px] font-serif text-[1.85rem] leading-[1.03] md:text-[2.1rem]"
-                >
-                  Happiness Program
-                </h3>
-                <p class="m-0 leading-[1.65] text-[#514c47]">
-                  Breath, meditation and practical wisdom for greater energy,
-                  clarity and resilience.
-                </p>
+                <span class="inline-flex w-max rounded-full border border-black/20 px-[10px] py-[7px] text-[0.68rem] font-extrabold uppercase tracking-[0.1em]">Adults</span>
+                <h3 class="my-[13px] font-serif text-[1.85rem] leading-[1.03] md:text-[2.1rem]">Happiness Program</h3>
+                <p class="m-0 leading-[1.65] text-[#514c47]">Breathwork, meditation and practical wisdom to reduce stress and bring greater energy, clarity and joy.</p>
               </div>
-              <a
-                class="flex items-center justify-between border-t border-black/15 pt-[18px] text-[0.85rem] font-extrabold"
-                href="https://wa.me/918884560660"
-                target="_blank"
-                rel="noopener noreferrer"
-                ><span>Get details</span><span>↗</span></a
-              >
+              <a class="flex items-center justify-between border-t border-black/15 pt-[18px] text-[0.85rem] font-extrabold" href="https://wa.me/918884560660" target="_blank" rel="noopener noreferrer"><span>Know more</span><span>↗</span></a>
             </article>
 
-            <article
-              class="flex min-h-[340px] snap-start flex-col justify-between rounded-[28px] bg-[#d8dfd2] p-[23px] shadow-[0_18px_50px_rgba(49,42,34,0.10)] transition-transform hover:-translate-y-1 md:min-h-[380px] md:p-[27px]"
-            >
+            <article class="flex min-h-[340px] snap-start flex-col justify-between rounded-[28px] bg-[#d8dfd2] p-[23px] shadow-[0_18px_50px_rgba(49,42,34,0.10)] transition-transform hover:-translate-y-1 md:min-h-[380px] md:p-[27px]">
               <div>
-                <span
-                  class="inline-flex w-max rounded-full border border-black/20 px-[10px] py-[7px] text-[0.68rem] font-extrabold uppercase tracking-[0.1em]"
-                  >Children & Teens</span
-                >
-                <h3
-                  class="my-[13px] font-serif text-[1.85rem] leading-[1.03] md:text-[2.1rem]"
-                >
-                  Intuition Process
-                </h3>
-                <p class="m-0 leading-[1.65] text-[#514c47]">
-                  A joyful program that nurtures intuition, confidence, focus
-                  and creativity.
-                </p>
+                <span class="inline-flex w-max rounded-full border border-black/20 px-[10px] py-[7px] text-[0.68rem] font-extrabold uppercase tracking-[0.1em]">Children & Teens</span>
+                <h3 class="my-[13px] font-serif text-[1.85rem] leading-[1.03] md:text-[2.1rem]">Intuition Process</h3>
+                <p class="m-0 leading-[1.65] text-[#514c47]">A joyful experiential program designed to nurture intuition, confidence, focus, memory and creativity.</p>
               </div>
-              <a
-                class="flex items-center justify-between border-t border-black/15 pt-[18px] text-[0.85rem] font-extrabold"
-                href="https://wa.me/918884560660"
-                target="_blank"
-                rel="noopener noreferrer"
-                ><span>Get details</span><span>↗</span></a
-              >
+              <a class="flex items-center justify-between border-t border-black/15 pt-[18px] text-[0.85rem] font-extrabold" href="https://wa.me/918884560660" target="_blank" rel="noopener noreferrer"><span>Know more</span><span>↗</span></a>
             </article>
 
-            <article
-              class="flex min-h-[340px] snap-start flex-col justify-between rounded-[28px] bg-[#d8c4bc] p-[23px] shadow-[0_18px_50px_rgba(49,42,34,0.10)] transition-transform hover:-translate-y-1 md:min-h-[380px] md:p-[27px]"
-            >
+            <article class="flex min-h-[340px] snap-start flex-col justify-between rounded-[28px] bg-[#d8c4bc] p-[23px] shadow-[0_18px_50px_rgba(49,42,34,0.10)] transition-transform hover:-translate-y-1 md:min-h-[380px] md:p-[27px]">
               <div>
-                <span
-                  class="inline-flex w-max rounded-full border border-black/20 px-[10px] py-[7px] text-[0.68rem] font-extrabold uppercase tracking-[0.1em]"
-                  >Meditation</span
-                >
-                <h3
-                  class="my-[13px] font-serif text-[1.85rem] leading-[1.03] md:text-[2.1rem]"
-                >
-                  Sahaj Samadhi Meditation
-                </h3>
-                <p class="m-0 leading-[1.65] text-[#514c47]">
-                  A simple mantra-based meditation technique for deep rest and
-                  effortless inner calm.
-                </p>
+                <span class="inline-flex w-max rounded-full border border-black/20 px-[10px] py-[7px] text-[0.68rem] font-extrabold uppercase tracking-[0.1em]">Meditation</span>
+                <h3 class="my-[13px] font-serif text-[1.85rem] leading-[1.03] md:text-[2.1rem]">Sahaj Samadhi Meditation</h3>
+                <p class="m-0 leading-[1.65] text-[#514c47]">Learn an effortless mantra-based meditation technique that allows the mind to settle deeply and naturally.</p>
               </div>
-              <a
-                class="flex items-center justify-between border-t border-black/15 pt-[18px] text-[0.85rem] font-extrabold"
-                href="https://wa.me/918884560660"
-                target="_blank"
-                rel="noopener noreferrer"
-                ><span>Get details</span><span>↗</span></a
-              >
-            </article>
-
-            <article
-              class="flex min-h-[340px] snap-start flex-col justify-between rounded-[28px] bg-[#e6dfcc] p-[23px] shadow-[0_18px_50px_rgba(49,42,34,0.10)] transition-transform hover:-translate-y-1 md:min-h-[380px] md:p-[27px]"
-            >
-              <div>
-                <span
-                  class="inline-flex w-max rounded-full border border-black/20 px-[10px] py-[7px] text-[0.68rem] font-extrabold uppercase tracking-[0.1em]"
-                  >Members</span
-                >
-                <h3
-                  class="my-[13px] font-serif text-[1.85rem] leading-[1.03] md:text-[2.1rem]"
-                >
-                  Advanced Programs
-                </h3>
-                <p class="m-0 leading-[1.65] text-[#514c47]">
-                  Go deeper into practice, silence, knowledge and the shared
-                  experience of community.
-                </p>
-              </div>
-              <a
-                class="flex items-center justify-between border-t border-black/15 pt-[18px] text-[0.85rem] font-extrabold"
-                href="https://wa.me/918884560660"
-                target="_blank"
-                rel="noopener noreferrer"
-                ><span>Ask what’s next</span><span>↗</span></a
-              >
+              <a class="flex items-center justify-between border-t border-black/15 pt-[18px] text-[0.85rem] font-extrabold" href="https://wa.me/918884560660" target="_blank" rel="noopener noreferrer"><span>Know more</span><span>↗</span></a>
             </article>
           </div>
         </div>
       </section>
 
-      <section
-        id="schedule"
-        class="bg-[#41473b] px-0 py-[54px] text-[#f7f2eb] md:py-[78px]"
-      >
+      <section id="free-activities" class="px-0 pb-[54px] md:pb-[78px]">
         <div class="mx-auto w-[min(1160px,calc(100%-36px))]">
-          <div
-            class="flex flex-col items-start justify-between gap-[30px] md:flex-row md:items-end"
-          >
+          <div class="mb-[18px] flex flex-col items-start justify-between gap-6 md:mb-[30px] md:flex-row md:items-end">
             <div>
-              <div
-                class="text-[0.72rem] font-extrabold uppercase tracking-[0.16em] text-[#e4c4a3]"
-              >
-                Stay connected
-              </div>
-              <h2
-                class="mt-2 font-serif text-[clamp(3rem,6vw,5.3rem)] leading-none font-medium tracking-[-0.04em]"
-              >
-                Schedule
-              </h2>
+              <div class="text-[0.72rem] font-extrabold uppercase tracking-[0.16em] text-[#a85f49]">Explore for free</div>
+              <h2 class="mt-[7px] font-serif text-[clamp(2.35rem,12vw,3.5rem)] leading-[0.95] font-medium tracking-[-0.04em] md:text-[clamp(2.6rem,5vw,4.8rem)]">Join us before taking a program</h2>
             </div>
-            <a
-              class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full border border-white px-5 py-[13px] text-[0.88rem] font-extrabold text-white"
-              href="https://wa.me/918884560660"
-              target="_blank"
-              rel="noopener noreferrer"
-              >Ask for timings ↗</a
-            >
+            <div>
+              <p class="max-w-[440px] text-[0.9rem] leading-[1.55] text-[#6f6a64] md:text-base md:leading-[1.65]">Come experience the community through free online and offline sessions, satsangs and local gatherings.</p>
+              <div class="mt-[14px] hidden gap-2 md:flex">
+                <button type="button" class="h-11 w-11 cursor-pointer rounded-full border border-black/10 bg-white text-lg transition hover:bg-[#25221f] hover:text-white" aria-label="Previous free activity" @click="scrollFree(-1)">←</button>
+                <button type="button" class="h-11 w-11 cursor-pointer rounded-full border border-black/10 bg-white text-lg transition hover:bg-[#25221f] hover:text-white" aria-label="Next free activity" @click="scrollFree(1)">→</button>
+              </div>
+            </div>
           </div>
 
-          <div
-            class="flex gap-2 overflow-x-auto py-6 pb-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-            role="tablist"
-            aria-label="Schedule days"
-          >
-            <button
-              type="button"
-              @click="activeDay = 'all'"
-              :class="activeDay === 'all' ? 'bg-[#f1e5d7] text-[#25221f] border-[#f1e5d7]' : 'border-white/20 text-white'"
-              class="whitespace-nowrap rounded-full border px-4 py-[11px] text-[0.8rem] font-bold"
-            >
-              This week
-            </button>
-            <button
-              type="button"
-              @click="activeDay = 'practice'"
-              :class="activeDay === 'practice' ? 'bg-[#f1e5d7] text-[#25221f] border-[#f1e5d7]' : 'border-white/20 text-white'"
-              class="whitespace-nowrap rounded-full border px-4 py-[11px] text-[0.8rem] font-bold"
-            >
-              Practice
-            </button>
-            <button
-              type="button"
-              @click="activeDay = 'community'"
-              :class="activeDay === 'community' ? 'bg-[#f1e5d7] text-[#25221f] border-[#f1e5d7]' : 'border-white/20 text-white'"
-              class="whitespace-nowrap rounded-full border px-4 py-[11px] text-[0.8rem] font-bold"
-            >
-              Community
-            </button>
-            <button
-              type="button"
-              @click="activeDay = 'special'"
-              :class="activeDay === 'special' ? 'bg-[#f1e5d7] text-[#25221f] border-[#f1e5d7]' : 'border-white/20 text-white'"
-              class="whitespace-nowrap rounded-full border px-4 py-[11px] text-[0.8rem] font-bold"
-            >
-              Special events
-            </button>
+          <div x-ref="freeSlider" class="grid snap-x snap-mandatory auto-cols-[86%] grid-flow-col gap-[14px] overflow-x-auto px-[3px] pt-1 pb-5 [scrollbar-width:none] md:auto-cols-[minmax(310px,36%)] md:gap-[18px] [&::-webkit-scrollbar]:hidden">
+            <article class="flex min-h-[315px] snap-start flex-col justify-between rounded-[28px] bg-[#e6dfcc] p-[23px] shadow-[0_18px_50px_rgba(49,42,34,0.08)] md:p-[27px]">
+              <div><span class="inline-flex w-max rounded-full border border-black/20 px-[10px] py-[7px] text-[0.68rem] font-extrabold uppercase tracking-[0.1em]">Online & Offline</span><h3 class="my-[13px] font-serif text-[1.85rem] leading-[1.03] md:text-[2.1rem]">Free Intro Session</h3><p class="m-0 leading-[1.65] text-[#514c47]">Experience simple breathing and meditation practices and learn what the Happiness Program offers.</p></div>
+              <a class="flex items-center justify-between border-t border-black/15 pt-[18px] text-[0.85rem] font-extrabold" href="#schedule"><span>See upcoming sessions</span><span>→</span></a>
+            </article>
+            <article class="flex min-h-[315px] snap-start flex-col justify-between rounded-[28px] bg-[#d8dfd2] p-[23px] shadow-[0_18px_50px_rgba(49,42,34,0.08)] md:p-[27px]">
+              <div><span class="inline-flex w-max rounded-full border border-black/20 px-[10px] py-[7px] text-[0.68rem] font-extrabold uppercase tracking-[0.1em]">Everyone Welcome</span><h3 class="my-[13px] font-serif text-[1.85rem] leading-[1.03] md:text-[2.1rem]">Satsang</h3><p class="m-0 leading-[1.65] text-[#514c47]">Music, meditation, wisdom and joyful community gatherings open to everyone.</p></div>
+              <a class="flex items-center justify-between border-t border-black/15 pt-[18px] text-[0.85rem] font-extrabold" href="#schedule"><span>See satsang schedule</span><span>→</span></a>
+            </article>
+            <article class="flex min-h-[315px] snap-start flex-col justify-between rounded-[28px] bg-[#eadbca] p-[23px] shadow-[0_18px_50px_rgba(49,42,34,0.08)] md:p-[27px]">
+              <div><span class="inline-flex w-max rounded-full border border-black/20 px-[10px] py-[7px] text-[0.68rem] font-extrabold uppercase tracking-[0.1em]">Guided Experience</span><h3 class="my-[13px] font-serif text-[1.85rem] leading-[1.03] md:text-[2.1rem]">Intro to Meditation</h3><p class="m-0 leading-[1.65] text-[#514c47]">A simple guided session for anyone who would like to experience meditation in a relaxed setting.</p></div>
+              <a class="flex items-center justify-between border-t border-black/15 pt-[18px] text-[0.85rem] font-extrabold" href="#schedule"><span>Find a session</span><span>→</span></a>
+            </article>
+            <article class="flex min-h-[315px] snap-start flex-col justify-between rounded-[28px] bg-[#d8c4bc] p-[23px] shadow-[0_18px_50px_rgba(49,42,34,0.08)] md:p-[27px]">
+              <div><span class="inline-flex w-max rounded-full border border-black/20 px-[10px] py-[7px] text-[0.68rem] font-extrabold uppercase tracking-[0.1em]">Community</span><h3 class="my-[13px] font-serif text-[1.85rem] leading-[1.03] md:text-[2.1rem]">Special Events & Celebrations</h3><p class="m-0 leading-[1.65] text-[#514c47]">Join local celebrations, spiritual gatherings and special community events throughout the year.</p></div>
+              <a class="flex items-center justify-between border-t border-black/15 pt-[18px] text-[0.85rem] font-extrabold" href="#schedule"><span>See what’s coming up</span><span>→</span></a>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="schedule" class="bg-[#41473b] px-0 py-[54px] text-[#f7f2eb] md:py-[78px]">
+        <div class="mx-auto w-[min(1160px,calc(100%-36px))]">
+          <div class="flex flex-col items-start justify-between gap-[30px] md:flex-row md:items-end">
+            <div>
+              <div class="text-[0.72rem] font-extrabold uppercase tracking-[0.16em] text-[#e4c4a3]">Stay connected</div>
+              <h2 class="mt-2 font-serif text-[clamp(3rem,6vw,5.3rem)] leading-none font-medium tracking-[-0.04em]">Schedule</h2>
+              <p class="mt-4 max-w-[560px] text-[0.9rem] leading-[1.65] text-[#cbc9c3]">Find free activities open to everyone, regular member practices and special community events.</p>
+            </div>
+            <a class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full border border-white px-5 py-[13px] text-[0.88rem] font-extrabold text-white" href="https://wa.me/918884560660" target="_blank" rel="noopener noreferrer">Ask for timings ↗</a>
+          </div>
+
+          <div class="flex gap-2 overflow-x-auto py-6 pb-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="tablist" aria-label="Schedule categories">
+            <button type="button" @click="activeDay = 'all'" :class="activeDay === 'all' ? 'bg-[#f1e5d7] text-[#25221f] border-[#f1e5d7]' : 'border-white/20 text-white'" class="whitespace-nowrap rounded-full border px-4 py-[11px] text-[0.8rem] font-bold">This week</button>
+            <button type="button" @click="activeDay = 'free'" :class="activeDay === 'free' ? 'bg-[#f1e5d7] text-[#25221f] border-[#f1e5d7]' : 'border-white/20 text-white'" class="whitespace-nowrap rounded-full border px-4 py-[11px] text-[0.8rem] font-bold">Free & Open</button>
+            <button type="button" @click="activeDay = 'practice'" :class="activeDay === 'practice' ? 'bg-[#f1e5d7] text-[#25221f] border-[#f1e5d7]' : 'border-white/20 text-white'" class="whitespace-nowrap rounded-full border px-4 py-[11px] text-[0.8rem] font-bold">Follow-ups</button>
+            <button type="button" @click="activeDay = 'community'" :class="activeDay === 'community' ? 'bg-[#f1e5d7] text-[#25221f] border-[#f1e5d7]' : 'border-white/20 text-white'" class="whitespace-nowrap rounded-full border px-4 py-[11px] text-[0.8rem] font-bold">Satsang</button>
+            <button type="button" @click="activeDay = 'special'" :class="activeDay === 'special' ? 'bg-[#f1e5d7] text-[#25221f] border-[#f1e5d7]' : 'border-white/20 text-white'" class="whitespace-nowrap rounded-full border px-4 py-[11px] text-[0.8rem] font-bold">Special Events</button>
           </div>
 
           <div class="border-t border-white/20">
-            <div
-              x-show="activeDay === 'all' || activeDay === 'practice'"
-              class="grid grid-cols-[95px_1fr] items-center gap-7 border-b border-white/20 py-6 md:grid-cols-[140px_1fr_auto]"
-            >
-              <div class="font-serif text-[1.45rem]">Weekly</div>
-              <div>
-                <h3 class="mb-1.5 text-[1.08rem] font-bold">
-                  Community Follow-up
-                </h3>
-                <p class="m-0 text-[0.84rem] text-[#cbc9c3]">
-                  Practice together and refresh your techniques.
-                </p>
-              </div>
-              <span
-                class="col-start-2 w-max whitespace-nowrap rounded-full border border-white/25 px-[11px] py-2 text-[0.7rem] font-extrabold md:col-auto"
-                >Practice</span
-              >
-            </div>
-
-            <div
-              x-show="activeDay === 'all' || activeDay === 'community'"
-              class="grid grid-cols-[95px_1fr] items-center gap-7 border-b border-white/20 py-6 md:grid-cols-[140px_1fr_auto]"
-            >
-              <div class="font-serif text-[1.45rem]">Weekly</div>
-              <div>
-                <h3 class="mb-1.5 text-[1.08rem] font-bold">
-                  Satsang & Chapter Events
-                </h3>
-                <p class="m-0 text-[0.84rem] text-[#cbc9c3]">
-                  Music, meditation, knowledge and celebrations.
-                </p>
-              </div>
-              <span
-                class="col-start-2 w-max whitespace-nowrap rounded-full border border-white/25 px-[11px] py-2 text-[0.7rem] font-extrabold md:col-auto"
-                >Community</span
-              >
-            </div>
-
-            <div
-              x-show="activeDay === 'all' || activeDay === 'special'"
-              class="grid grid-cols-[95px_1fr] items-center gap-7 border-b border-white/20 py-6 md:grid-cols-[140px_1fr_auto]"
-            >
+            <div x-show="activeDay === 'all' || activeDay === 'free'" class="grid grid-cols-[95px_1fr] items-center gap-7 border-b border-white/20 py-6 md:grid-cols-[140px_1fr_auto]">
               <div class="font-serif text-[1.45rem]">Upcoming</div>
-              <div>
-                <h3 class="mb-1.5 text-[1.08rem] font-bold">
-                  Special Programs & Celebrations
-                </h3>
-                <p class="m-0 text-[0.84rem] text-[#cbc9c3]">
-                  Connect with the chapter for the next local gathering.
-                </p>
-              </div>
-              <span
-                class="col-start-2 w-max whitespace-nowrap rounded-full border border-white/25 px-[11px] py-2 text-[0.7rem] font-extrabold md:col-auto"
-                >Events</span
-              >
+              <div><h3 class="mb-1.5 text-[1.08rem] font-bold">Free Intro Sessions</h3><p class="m-0 text-[0.84rem] text-[#cbc9c3]">Online and offline introductions for anyone exploring the Art of Living.</p></div>
+              <span class="col-start-2 w-max whitespace-nowrap rounded-full border border-white/25 px-[11px] py-2 text-[0.7rem] font-extrabold md:col-auto">Everyone welcome</span>
+            </div>
+            <div x-show="activeDay === 'all' || activeDay === 'practice'" class="grid grid-cols-[95px_1fr] items-center gap-7 border-b border-white/20 py-6 md:grid-cols-[140px_1fr_auto]">
+              <div class="font-serif text-[1.45rem]">Weekly</div>
+              <div><h3 class="mb-1.5 text-[1.08rem] font-bold">Community Follow-up</h3><p class="m-0 text-[0.84rem] text-[#cbc9c3]">Practice together and refresh your techniques with fellow course graduates.</p></div>
+              <span class="col-start-2 w-max whitespace-nowrap rounded-full border border-white/25 px-[11px] py-2 text-[0.7rem] font-extrabold md:col-auto">Members</span>
+            </div>
+            <div x-show="activeDay === 'all' || activeDay === 'community'" class="grid grid-cols-[95px_1fr] items-center gap-7 border-b border-white/20 py-6 md:grid-cols-[140px_1fr_auto]">
+              <div class="font-serif text-[1.45rem]">Weekly</div>
+              <div><h3 class="mb-1.5 text-[1.08rem] font-bold">Satsang & Chapter Gatherings</h3><p class="m-0 text-[0.84rem] text-[#cbc9c3]">Music, meditation, knowledge and celebrations with the local community.</p></div>
+              <span class="col-start-2 w-max whitespace-nowrap rounded-full border border-white/25 px-[11px] py-2 text-[0.7rem] font-extrabold md:col-auto">Open to all</span>
+            </div>
+            <div x-show="activeDay === 'all' || activeDay === 'special'" class="grid grid-cols-[95px_1fr] items-center gap-7 border-b border-white/20 py-6 md:grid-cols-[140px_1fr_auto]">
+              <div class="font-serif text-[1.45rem]">Upcoming</div>
+              <div><h3 class="mb-1.5 text-[1.08rem] font-bold">Special Programs & Celebrations</h3><p class="m-0 text-[0.84rem] text-[#cbc9c3]">Festivals, spiritual gatherings and special local events.</p></div>
+              <span class="col-start-2 w-max whitespace-nowrap rounded-full border border-white/25 px-[11px] py-2 text-[0.7rem] font-extrabold md:col-auto">Events</span>
             </div>
           </div>
         </div>
       </section>
 
-      <section id="community" class="px-0 py-[54px] md:py-[78px]">
-        <div
-          class="mx-auto grid w-[min(1160px,calc(100%-36px))] grid-cols-1 items-center gap-7 md:grid-cols-[.9fr_1.1fr] md:gap-[70px]"
-        >
-          <div
-            class="flex min-h-[420px] flex-col justify-between rounded-[32px] bg-[#f0e7dc] p-9"
-          >
-            <div class="font-serif text-[5rem] leading-[0.7] text-[#a85f49]">
-              “
-            </div>
-            <blockquote class="m-0 font-serif text-[2.15rem] leading-[1.17]">
-              Community makes practice easier, richer and more joyful.
-            </blockquote>
-            <div
-              class="text-[0.72rem] font-extrabold uppercase tracking-[0.16em] text-[#a85f49]"
-            >
-              Your local chapter
-            </div>
+      <section id="members" class="px-0 py-[54px] md:py-[78px]">
+        <div class="mx-auto grid w-[min(1160px,calc(100%-36px))] grid-cols-1 items-center gap-7 md:grid-cols-[.9fr_1.1fr] md:gap-[70px]">
+          <div class="flex min-h-[420px] flex-col justify-between rounded-[32px] bg-[#f0e7dc] p-9">
+            <div class="font-serif text-[5rem] leading-[0.7] text-[#a85f49]">“</div>
+            <blockquote class="m-0 font-serif text-[2.15rem] leading-[1.17]">Community makes practice easier, richer and more joyful.</blockquote>
+            <div class="text-[0.72rem] font-extrabold uppercase tracking-[0.16em] text-[#a85f49]">Your local chapter</div>
           </div>
 
           <div>
-            <div
-              class="text-[0.72rem] font-extrabold uppercase tracking-[0.16em] text-[#a85f49]"
-            >
-              For members
-            </div>
-            <h2
-              class="mt-2 mb-[22px] font-serif text-[clamp(2.8rem,5vw,4.7rem)] leading-[0.96] font-medium tracking-[-0.04em]"
-            >
-              Keep your practice alive.
-            </h2>
-            <p class="leading-[1.75] text-[#6f6a64]">
-              Stay connected beyond the course through weekly follow-ups,
-              satsangs, advanced programs and seva opportunities.
-            </p>
+            <div class="text-[0.72rem] font-extrabold uppercase tracking-[0.16em] text-[#a85f49]">For course graduates</div>
+            <h2 class="mt-2 mb-[22px] font-serif text-[clamp(2.8rem,5vw,4.7rem)] leading-[0.96] font-medium tracking-[-0.04em]">Stay connected. Keep growing.</h2>
+            <p class="leading-[1.75] text-[#6f6a64]">Continue your journey through regular practices, satsangs, advanced programs and seva with your local community.</p>
             <div class="mt-[30px] border-t border-black/10">
-              <a
-                class="flex justify-between border-b border-black/10 py-4 font-extrabold"
-                href="#schedule"
-                ><span>Weekly follow-up</span><span>→</span></a
-              >
-              <a
-                class="flex justify-between border-b border-black/10 py-4 font-extrabold"
-                href="#schedule"
-                ><span>Satsang & events</span><span>→</span></a
-              >
-              <a
-                class="flex justify-between border-b border-black/10 py-4 font-extrabold"
-                href="https://wa.me/918884560660"
-                target="_blank"
-                rel="noopener noreferrer"
-                ><span>Advanced programs</span><span>→</span></a
-              >
-              <a
-                class="flex justify-between border-b border-black/10 py-4 font-extrabold"
-                href="/seva"
-                ><span>Seva / Volunteer</span><span>→</span></a
-              >
+              <a class="flex justify-between border-b border-black/10 py-4 font-extrabold" href="#schedule"><span>Weekly Practices & Follow-ups</span><span>→</span></a>
+              <a class="flex justify-between border-b border-black/10 py-4 font-extrabold" href="#schedule"><span>Satsang & Community</span><span>→</span></a>
+              <a class="flex justify-between border-b border-black/10 py-4 font-extrabold" href="https://wa.me/918884560660" target="_blank" rel="noopener noreferrer"><span>Advanced Programs</span><span>↗</span></a>
+              <a class="flex justify-between border-b border-black/10 py-4 font-extrabold" href="/volunteer.html"><span>Volunteer / Seva Opportunities</span><span>→</span></a>
             </div>
           </div>
         </div>
       </section>
 
-      <section class="px-0 pt-7 pb-[54px] md:pb-[78px]">
+      <section id="volunteer" class="px-0 pb-[54px] md:pb-[78px]">
         <div class="mx-auto w-[min(1160px,calc(100%-36px))]">
-          <div
-            class="flex flex-col items-start justify-between gap-8 rounded-[34px] bg-[#b06b54] p-[30px] text-white md:flex-row md:items-center md:p-[42px]"
-          >
-            <h2
-              class="m-0 max-w-[680px] font-serif text-[clamp(2.25rem,4vw,4rem)] leading-none font-medium tracking-[-0.04em]"
-            >
-              Not sure which program is right for you?
-            </h2>
-            <a
-              class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full border border-white px-5 py-[13px] text-[0.88rem] font-extrabold text-white"
-              href="https://wa.me/918884560660"
-              target="_blank"
-              rel="noopener noreferrer"
-              >Chat on WhatsApp ↗</a
-            >
+          <div class="rounded-[34px] bg-[#f0e7dc] p-[30px] md:p-[42px]">
+            <div class="grid gap-8 md:grid-cols-[.9fr_1.1fr] md:items-center">
+              <div>
+                <div class="text-[0.72rem] font-extrabold uppercase tracking-[0.16em] text-[#a85f49]">Want to contribute?</div>
+                <h2 class="mt-2 font-serif text-[clamp(2.4rem,5vw,4.3rem)] leading-[0.96] font-medium tracking-[-0.04em]">There’s always a way to serve.</h2>
+                <p class="mt-5 leading-[1.7] text-[#6f6a64]">Choose a seva that fits your time and interests. You can help occasionally or take up a regular responsibility.</p>
+              </div>
+              <div>
+                <div class="grid gap-3 sm:grid-cols-2">
+                  <div class="rounded-[18px] bg-white/70 p-4 font-bold">Help with upcoming programs</div>
+                  <div class="rounded-[18px] bg-white/70 p-4 font-bold">Welcome desk & registrations</div>
+                  <div class="rounded-[18px] bg-white/70 p-4 font-bold">Satsang & event setup</div>
+                  <div class="rounded-[18px] bg-white/70 p-4 font-bold">Calling & outreach</div>
+                  <div class="rounded-[18px] bg-white/70 p-4 font-bold">Social media & creative help</div>
+                  <div class="rounded-[18px] bg-white/70 p-4 font-bold">Other local seva</div>
+                </div>
+                <a class="mt-5 inline-flex items-center justify-center gap-2 rounded-full bg-[#25221f] px-5 py-[13px] text-[0.88rem] font-extrabold text-white" href="/volunteer.html">See current volunteer opportunities →</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="px-0 pt-1 pb-[54px] md:pb-[78px]">
+        <div class="mx-auto w-[min(1160px,calc(100%-36px))]">
+          <div class="flex flex-col items-start justify-between gap-8 rounded-[34px] bg-[#b06b54] p-[30px] text-white md:flex-row md:items-center md:p-[42px]">
+            <div>
+              <h2 class="m-0 max-w-[680px] font-serif text-[clamp(2.25rem,4vw,4rem)] leading-none font-medium tracking-[-0.04em]">Not sure where to begin?</h2>
+              <p class="mt-4 mb-0 max-w-[680px] text-[0.92rem] leading-[1.65] text-white/80">Whether you’re looking for a program, a free introductory session or a local community activity, we’re happy to help.</p>
+            </div>
+            <a class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full border border-white px-5 py-[13px] text-[0.88rem] font-extrabold text-white" href="https://wa.me/918884560660" target="_blank" rel="noopener noreferrer">Chat on WhatsApp ↗</a>
           </div>
         </div>
       </section>
     </main>
 
-    <a
-      class="fixed right-5 bottom-5 z-40 grid h-14 w-14 place-items-center rounded-full bg-[#316b4c] text-xl text-white shadow-[0_10px_30px_rgba(0,0,0,0.18)]"
-      href="https://wa.me/918884560660"
-      target="_blank"
-      rel="noopener noreferrer"
-      aria-label="Chat with us on WhatsApp"
-      >✆</a
-    >
+    <a class="fixed right-5 bottom-5 z-40 grid h-14 w-14 place-items-center rounded-full bg-[#316b4c] text-xl text-white shadow-[0_10px_30px_rgba(0,0,0,0.18)]" href="https://wa.me/918884560660" target="_blank" rel="noopener noreferrer" aria-label="Chat with us on WhatsApp">✆</a>
 
     <footer class="mt-[70px] border-t border-black/10 px-0 pt-[42px] pb-[50px]">
-      <div
-        class="mx-auto flex w-[min(1160px,calc(100%-36px))] flex-col items-start justify-between gap-[30px] md:flex-row md:items-end"
-      >
+      <div class="mx-auto flex w-[min(1160px,calc(100%-36px))] flex-col items-start justify-between gap-[30px] md:flex-row md:items-end">
         <div>
           <a href="/" class="flex items-center gap-[11px]">
-            <img
-              src="/assets/aolf-connect-logo.png"
-              alt="AOLF Connect"
-              class="h-[42px] w-[42px] rounded-[13px] object-contain"
-            />
-            <div>
-              <div class="text-base font-extrabold">AOLF Connect</div>
-              <div
-                class="mt-0.5 text-[0.66rem] uppercase tracking-[0.14em] text-[#6f6a64]"
-              >
-                Breathe • Belong • Serve
-              </div>
-            </div>
+            <img src="/assets/aolf-connect-logo.png" alt="AOLF Connect" class="h-[42px] w-[42px] rounded-[13px] object-contain" />
+            <div><div class="text-base font-extrabold">AOLF Connect</div><div class="mt-0.5 text-[0.66rem] uppercase tracking-[0.14em] text-[#6f6a64]">Breathe • Belong • Serve</div></div>
           </a>
-          <div class="mt-[14px] text-[0.72rem] text-[#99918a]">
-            © <span x-text="year">2026</span> AOLF Connect. Built in the spirit
-            of seva.
-          </div>
+          <div class="mt-[14px] text-[0.72rem] text-[#99918a]">© <span x-text="year">2026</span> AOLF Connect. Built in the spirit of seva.</div>
         </div>
 
-        <div
-          class="flex flex-wrap justify-start gap-[18px] text-[0.78rem] font-bold text-[#6f6a64] md:justify-end"
-        >
+        <div class="flex flex-wrap justify-start gap-[18px] text-[0.78rem] font-bold text-[#6f6a64] md:justify-end">
           <a href="#programs">Programs</a>
+          <a href="#free-activities">Free Activities</a>
           <a href="#schedule">Schedule</a>
-          <a href="/seva">Volunteer</a>
+          <a href="#members">Members</a>
+          <a href="/volunteer.html">Volunteer</a>
+          <a href="/volunteer.html">Call Tracker</a>
           <a href="/privacy.html">Privacy Policy</a>
           <a href="/terms.html">Terms of Service</a>
-          <a
-            href="https://www.artofliving.org/"
-            target="_blank"
-            rel="noopener noreferrer"
-            >Official Art of Living site</a
-          >
+          <a href="https://www.artofliving.org/" target="_blank" rel="noopener noreferrer">Official Art of Living site</a>
         </div>
       </div>
     </footer>

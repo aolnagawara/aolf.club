@@ -1,15 +1,8 @@
 {
-  "redirects": [
-    {
-      "source": "/login",
-      "destination": "/seva",
-      "permanent": false
-    }
-  ],
   "rewrites": [
     {
-      "source": "/seva",
-      "destination": "/seva.html"
+      "source": "/volunteer",
+      "destination": "/volunteer.html"
     },
     {
       "source": "/privacy",
