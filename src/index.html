@@ -71,10 +71,10 @@
           <a class="opacity-75 transition hover:opacity-100" href="#free-activities">Free Activities</a>
           <a class="opacity-75 transition hover:opacity-100" href="#schedule">Schedule</a>
           <a class="opacity-75 transition hover:opacity-100" href="#members">Members</a>
-          <a class="opacity-75 transition hover:opacity-100" href="/volunteer.html">Volunteer</a>
+          <a class="opacity-75 transition hover:opacity-100" href="/volunteer">Volunteer</a>
           <a
             class="rounded-full bg-[#25221f] px-[17px] py-[11px] text-white"
-            href="/volunteer.html"
+            href="/volunteer"
           >Call Tracker</a>
         </nav>
 
@@ -98,8 +98,8 @@
         <a class="border-t border-black/10 py-[11px] font-bold" href="#free-activities" @click="menuOpen = false">Free Activities</a>
         <a class="border-t border-black/10 py-[11px] font-bold" href="#schedule" @click="menuOpen = false">Schedule</a>
         <a class="border-t border-black/10 py-[11px] font-bold" href="#members" @click="menuOpen = false">Members</a>
-        <a class="border-t border-black/10 py-[11px] font-bold" href="/volunteer.html" @click="menuOpen = false">Volunteer</a>
-        <a class="border-t border-black/10 py-[11px] font-bold" href="/volunteer.html" @click="menuOpen = false">Call Tracker</a>
+        <a class="border-t border-black/10 py-[11px] font-bold" href="/volunteer" @click="menuOpen = false">Volunteer</a>
+        <a class="border-t border-black/10 py-[11px] font-bold" href="/volunteer" @click="menuOpen = false">Call Tracker</a>
       </nav>
     </header>
 
@@ -119,18 +119,20 @@
               Explore beginner programs, join free sessions and community events, continue your regular practices, or find a way to volunteer with your local Art of Living community.
             </p>
 
-            <div class="mt-7 grid gap-3 sm:grid-cols-3 md:max-w-[700px]">
-              <a href="#programs" class="rounded-[20px] border border-black/10 bg-white p-4 shadow-[0_10px_30px_rgba(49,42,34,0.06)] transition hover:-translate-y-0.5">
-                <div class="text-[0.67rem] font-extrabold uppercase tracking-[0.12em] text-[#a85f49]">New here?</div>
-                <div class="mt-1 text-[0.9rem] font-extrabold">Explore programs & free sessions →</div>
-              </a>
-              <a href="#members" class="rounded-[20px] border border-black/10 bg-white p-4 shadow-[0_10px_30px_rgba(49,42,34,0.06)] transition hover:-translate-y-0.5">
-                <div class="text-[0.67rem] font-extrabold uppercase tracking-[0.12em] text-[#a85f49]">Already a member?</div>
-                <div class="mt-1 text-[0.9rem] font-extrabold">See weekly activities →</div>
-              </a>
-              <a href="/volunteer.html" class="rounded-[20px] bg-[#25221f] p-4 text-white shadow-[0_10px_30px_rgba(49,42,34,0.12)] transition hover:-translate-y-0.5">
-                <div class="text-[0.67rem] font-extrabold uppercase tracking-[0.12em] text-white/65">Active volunteer?</div>
-                <div class="mt-1 text-[0.9rem] font-extrabold">Open Call Tracker →</div>
+            <div class="mt-5 border-y border-black/10 md:max-w-[700px]">
+              <div class="grid grid-cols-3 py-3 text-center">
+                <a href="#programs" class="px-1 text-[0.76rem] font-extrabold whitespace-nowrap">
+                  New here? <span class="text-[#a85f49]">→</span>
+                </a>
+                <a href="#members" class="border-x border-black/10 px-1 text-[0.76rem] font-extrabold whitespace-nowrap">
+                  Member <span class="text-[#a85f49]">→</span>
+                </a>
+                <a href="/volunteer" class="px-1 text-[0.76rem] font-extrabold whitespace-nowrap">
+                  Volunteer <span class="text-[#a85f49]">→</span>
+                </a>
+              </div>
+              <a href="#free-activities" class="block border-t border-black/10 py-2.5 text-center text-[0.7rem] font-extrabold uppercase tracking-[0.08em] text-[#a85f49]">
+                Everyone’s Welcome ↓
               </a>
             </div>
           </div>
@@ -293,7 +295,7 @@
               <a class="flex justify-between border-b border-black/10 py-4 font-extrabold" href="#schedule"><span>Weekly Practices & Follow-ups</span><span>→</span></a>
               <a class="flex justify-between border-b border-black/10 py-4 font-extrabold" href="#schedule"><span>Satsang & Community</span><span>→</span></a>
               <a class="flex justify-between border-b border-black/10 py-4 font-extrabold" href="https://wa.me/918884560660" target="_blank" rel="noopener noreferrer"><span>Advanced Programs</span><span>↗</span></a>
-              <a class="flex justify-between border-b border-black/10 py-4 font-extrabold" href="/volunteer.html"><span>Volunteer / Seva Opportunities</span><span>→</span></a>
+              <a class="flex justify-between border-b border-black/10 py-4 font-extrabold" href="/volunteer"><span>Volunteer / Seva Opportunities</span><span>→</span></a>
             </div>
           </div>
         </div>
@@ -317,7 +319,7 @@
                   <div class="rounded-[18px] bg-white/70 p-4 font-bold">Social media & creative help</div>
                   <div class="rounded-[18px] bg-white/70 p-4 font-bold">Other local seva</div>
                 </div>
-                <a class="mt-5 inline-flex items-center justify-center gap-2 rounded-full bg-[#25221f] px-5 py-[13px] text-[0.88rem] font-extrabold text-white" href="/volunteer.html">See current volunteer opportunities →</a>
+                <a class="mt-5 inline-flex items-center justify-center gap-2 rounded-full bg-[#25221f] px-5 py-[13px] text-[0.88rem] font-extrabold text-white" href="/volunteer">See current volunteer opportunities →</a>
               </div>
             </div>
           </div>
@@ -354,8 +356,8 @@
           <a href="#free-activities">Free Activities</a>
           <a href="#schedule">Schedule</a>
           <a href="#members">Members</a>
-          <a href="/volunteer.html">Volunteer</a>
-          <a href="/volunteer.html">Call Tracker</a>
+          <a href="/volunteer">Volunteer</a>
+          <a href="/volunteer">Call Tracker</a>
           <a href="/privacy.html">Privacy Policy</a>
           <a href="/terms.html">Terms of Service</a>
           <a href="https://www.artofliving.org/" target="_blank" rel="noopener noreferrer">Official Art of Living site</a>
