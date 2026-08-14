@@ -5,6 +5,7 @@ import type {
   Lead,
   LeadSnapshot
 } from './types';
+import { toUserErrorMessage } from '../../services/apiClient';
 
 type LeadInput = Omit<
   Partial<ContractLead>,
@@ -103,6 +104,10 @@ async function drainLeadSaveQueue(
       }
     } catch (error) {
       console.error(error);
+      context.authError = toUserErrorMessage(
+        error,
+        'Unable to save your changes. Please try again.'
+      );
       latestSucceeded = false;
       request.lead.isDirty = true;
       if (!queue.pending) {

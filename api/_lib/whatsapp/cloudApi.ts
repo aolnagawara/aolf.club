@@ -161,12 +161,7 @@ export function verifyWebhookHandshake(req: ApiRequest): {
   ok: boolean;
   challenge: string;
 } {
-  let env: ReturnType<typeof getWhatsAppVerifyEnv>;
-  try {
-    env = getWhatsAppVerifyEnv();
-  } catch {
-    return { ok: false, challenge: '' };
-  }
+  const env = getWhatsAppVerifyEnv();
 
   const mode =
     typeof req.query['hub.mode'] === 'string' ? req.query['hub.mode'] : '';
@@ -189,12 +184,7 @@ export function verifyWebhookSignature(
   req: ApiRequest,
   rawBody: Uint8Array = bodyAsBuffer(req.body)
 ): boolean {
-  let env: ReturnType<typeof getWhatsAppSignatureEnv>;
-  try {
-    env = getWhatsAppSignatureEnv();
-  } catch {
-    return false;
-  }
+  const env = getWhatsAppSignatureEnv();
 
   const rawSignature = req.headers['x-hub-signature-256'];
   const signature = Array.isArray(rawSignature)

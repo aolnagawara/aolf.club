@@ -73,17 +73,19 @@ describe('lead API error classification', () => {
       response
     );
 
-    expect(state).toEqual({
+    expect(state).toMatchObject({
       statusCode: 400,
       body: {
         success: false,
         error: {
           code: 'VALIDATION_ERROR',
-          message: 'Invalid record details.'
+          message: 'Invalid record details.',
+          retryable: false,
+          traceId: expect.any(String)
         }
       }
     });
-    expect(console.error).not.toHaveBeenCalled();
+    expect(console.error).toHaveBeenCalledOnce();
   });
 
   it('reports unexpected create failures as internal errors', async () => {
@@ -98,9 +100,14 @@ describe('lead API error classification', () => {
     );
 
     expect(state.statusCode).toBe(500);
-    expect(state.body).toEqual({
+    expect(state.body).toMatchObject({
       success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'Unable to save the record.' }
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: 'Unable to save the record.',
+        retryable: false,
+        traceId: expect.any(String)
+      }
     });
     expect(console.error).toHaveBeenCalledOnce();
   });
@@ -120,11 +127,13 @@ describe('lead API error classification', () => {
     await mutateLeadHandler(request, response);
 
     expect(state.statusCode).toBe(500);
-    expect(state.body).toEqual({
+    expect(state.body).toMatchObject({
       success: false,
       error: {
         code: 'INTERNAL_ERROR',
-        message: 'Unable to save lead changes.'
+        message: 'Unable to save lead changes.',
+        retryable: false,
+        traceId: expect.any(String)
       }
     });
     expect(console.error).toHaveBeenCalledOnce();

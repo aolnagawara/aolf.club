@@ -1,3 +1,11 @@
+import type { ApiErrorCode } from '../../shared/contracts/appContracts';
+
+export type ApiClientErrorCode =
+  | ApiErrorCode
+  | 'NETWORK_ERROR'
+  | 'TIMEOUT'
+  | 'INVALID_RESPONSE';
+
 export class ApiClient {
   constructor(
     private readonly baseUrl: string,
@@ -53,16 +61,44 @@ export class ApiClient {
         signal: controller.signal
       });
       return this.parseJson<T>(response);
+    } catch (error) {
+      if (isApiClientError(error)) {
+        throw error;
+      }
+      if (controller.signal.aborted) {
+        throw new ApiClientError(
+          'The request is taking too long. Please try again.',
+          0,
+          'TIMEOUT',
+          true
+        );
+      }
+      throw new ApiClientError(
+        'Unable to reach the server right now. Please check your connection and try again.',
+        0,
+        'NETWORK_ERROR',
+        true
+      );
     } finally {
       window.clearTimeout(timeout);
     }
   }
 
   private async parseJson<T>(response: Response): Promise<T> {
-    const json = (await response.json().catch(() => ({}))) as Record<
-      string,
-      unknown
-    >;
+    let json: Record<string, unknown>;
+    try {
+      json = (await response.json()) as Record<string, unknown>;
+    } catch {
+      if (response.ok) {
+        throw new ApiClientError(
+          'The server returned an unexpected response. Please try again.',
+          response.status,
+          'INVALID_RESPONSE',
+          true
+        );
+      }
+      json = {};
+    }
     if (!response.ok) {
       const errorData =
         json.error && typeof json.error === 'object'
@@ -72,9 +108,15 @@ export class ApiClient {
       throw new ApiClientError(
         typeof errorData?.message === 'string'
           ? errorData.message
-          : 'API request failed with status ' + response.status,
+          : 'Unable to complete the request. Please try again.',
         response.status,
-        typeof errorData?.code === 'string' ? errorData.code : undefined
+        typeof errorData?.code === 'string'
+          ? (errorData.code as ApiClientErrorCode)
+          : undefined,
+        typeof errorData?.retryable === 'boolean'
+          ? errorData.retryable
+          : false,
+        typeof errorData?.traceId === 'string' ? errorData.traceId : undefined
       );
     }
     return json as T;
@@ -85,7 +127,9 @@ export class ApiClientError extends Error {
   constructor(
     message: string,
     public readonly status: number,
-    public readonly code?: string
+    public readonly code?: ApiClientErrorCode,
+    public readonly retryable = false,
+    public readonly traceId?: string
   ) {
     super(message);
     this.name = 'ApiClientError';
@@ -94,4 +138,17 @@ export class ApiClientError extends Error {
 
 export function isApiClientError(value: unknown): value is ApiClientError {
   return value instanceof ApiClientError;
+}
+
+export function toUserErrorMessage(error: unknown, fallback: string): string {
+  if (!isApiClientError(error)) {
+    return fallback;
+  }
+  if (error.code === 'FORBIDDEN') {
+    return 'You do not have permission to perform this action.';
+  }
+  if (error.code === 'UNAUTHENTICATED') {
+    return 'Your session has expired. Please sign in again.';
+  }
+  return error.message || fallback;
 }

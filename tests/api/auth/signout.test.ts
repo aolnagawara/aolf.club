@@ -1,4 +1,12 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  it,
+  vi
+} from 'vitest';
 import handler from '../../../api/auth/signout.js';
 import type {
   ApiRequest,
@@ -60,6 +68,10 @@ describe('auth sign-out endpoint', () => {
     }
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('clears the session cookie for POST requests', async () => {
     const request: ApiRequest = { method: 'POST', headers: {}, query: {} };
     const { response, state, headers } = createResponse();
@@ -73,18 +85,21 @@ describe('auth sign-out endpoint', () => {
   });
 
   it('rejects other methods without clearing the cookie', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
     const request: ApiRequest = { method: 'GET', headers: {}, query: {} };
     const { response, state, headers } = createResponse();
 
     await handler(request, response);
 
-    expect(state).toEqual({
+    expect(state).toMatchObject({
       statusCode: 405,
       body: {
         success: false,
         error: {
           code: 'METHOD_NOT_ALLOWED',
-          message: 'Method not allowed.'
+          message: 'Method not allowed.',
+          retryable: false,
+          traceId: expect.any(String)
         }
       }
     });

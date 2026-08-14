@@ -1,8 +1,27 @@
 import { describe, expect, it } from 'vitest';
 import {
+  ApiErrorSchema,
   LeadSchema,
   UpdateLeadRequestSchema
 } from '../../shared/contracts/appContracts';
+
+describe('ApiErrorSchema', () => {
+  it('requires retryability and a trace id for structured failures', () => {
+    expect(
+      ApiErrorSchema.parse({
+        success: false,
+        error: {
+          code: 'UPSTREAM_TIMEOUT',
+          message: 'Unable to access data right now. Please try again.',
+          retryable: true,
+          traceId: 'trace-123'
+        }
+      })
+    ).toMatchObject({
+      error: { code: 'UPSTREAM_TIMEOUT', retryable: true }
+    });
+  });
+});
 
 describe('LeadSchema', () => {
   it('applies defaults for optional lead fields', () => {

@@ -1,80 +1,80 @@
 import type { ApiRequest, ApiResponse } from '../_lib/http/responses.js';
 import { readSessionUser } from '../_lib/auth/session.js';
 import { getApiDataStore } from '../_lib/storage/dataStore.js';
-import { ZodError } from 'zod';
+import { sendApiError } from '../_lib/http/errors.js';
 
 export default async function handler(req: ApiRequest, res: ApiResponse) {
+  const context = {
+    route: 'POST /api/leads',
+    action: 'create_lead',
+    startedAt: Date.now(),
+    messages: {
+      validation: 'Invalid record details.',
+      timeout: 'Unable to save the record right now. Please try again.',
+      upstream: 'Unable to save the record right now. Please try again.',
+      upstreamPermission:
+        'Unable to save the record. Please contact an admin if this continues.',
+      internal: 'Unable to save the record.'
+    }
+  };
+
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
-    return res.status(405).json({
-      success: false,
-      error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed.' }
-    });
-  }
-
-  const user = await readSessionUser(req);
-  if (!user) {
-    return res.status(401).json({
-      success: false,
-      error: {
-        code: 'UNAUTHENTICATED',
-        message: 'Authentication required.'
-      }
+    return sendApiError(res, new Error('Method not allowed.'), context, {
+      status: 405,
+      code: 'METHOD_NOT_ALLOWED',
+      message: 'Method not allowed.',
+      retryable: false,
+      category: 'method_not_allowed'
     });
   }
 
   try {
+    const user = await readSessionUser(req);
+    if (!user) {
+      return sendApiError(res, new Error('Authentication required.'), context, {
+        status: 401,
+        code: 'UNAUTHENTICATED',
+        message: 'Authentication required.',
+        retryable: false,
+        category: 'unauthenticated'
+      });
+    }
+
     const result = await getApiDataStore().createLeadForAuthorizedUser(
       user,
       req.body
     );
     if (!result.allowed) {
-      return res.status(403).json({
-        success: false,
-        error: {
-          code: 'FORBIDDEN',
-          message: 'Your account is not authorized to access this application.'
-        }
+      return sendApiError(res, new Error('Authorization denied.'), context, {
+        status: 403,
+        code: 'FORBIDDEN',
+        message: 'Your account is not authorized to access this application.',
+        retryable: false,
+        category: 'authorization_denied'
       });
     }
     return res.status(201).json(result.value);
   } catch (error) {
     const message = error instanceof Error ? error.message : '';
     if (message.includes('CAMPAIGN_NOT_FOUND')) {
-      return res.status(404).json({
-        success: false,
-        error: { code: 'NOT_FOUND', message: 'Campaign not found.' }
+      return sendApiError(res, error, context, {
+        status: 404,
+        code: 'NOT_FOUND',
+        message: 'Campaign not found.',
+        retryable: false,
+        category: 'not_found'
       });
     }
-    if (message.includes('Google Sheets API')) {
-      return res.status(502).json({
-        success: false,
-        error: {
-          code: 'UPSTREAM_ERROR',
-          message: 'Unable to save the record to Google Sheets.'
-        }
+    if (message.includes('CAMPAIGN_TYPE_MISMATCH')) {
+      return sendApiError(res, error, context, {
+        status: 400,
+        code: 'VALIDATION_ERROR',
+        message: 'Invalid record details.',
+        retryable: false,
+        category: 'validation'
       });
     }
-    if (
-      error instanceof ZodError ||
-      message.includes('CAMPAIGN_TYPE_MISMATCH')
-    ) {
-      return res.status(400).json({
-        success: false,
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Invalid record details.'
-        }
-      });
-    }
-
-    console.error('[leads-create] unexpected failure', error);
-    return res.status(500).json({
-      success: false,
-      error: {
-        code: 'INTERNAL_ERROR',
-        message: 'Unable to save the record.'
-      }
-    });
+    return sendApiError(res, error, context);
   }
 }

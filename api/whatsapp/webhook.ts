@@ -17,6 +17,7 @@ import {
   markMessageProcessed,
   wasMessageProcessed
 } from '../_lib/whatsapp/pendingStore.js';
+import { sendApiError } from '../_lib/http/errors.js';
 
 const MAX_LOG_IDENTIFIER_CHARS = 128;
 const inFlightEvents = new Map<string, Promise<boolean>>();
@@ -115,15 +116,36 @@ async function processEvent(event: IncomingWhatsAppEvent): Promise<boolean> {
 }
 
 export default async function handler(req: ApiRequest, res: ApiResponse) {
+  const context = {
+    route: String(req.method || 'UNKNOWN') + ' /api/whatsapp/webhook',
+    action: 'process_whatsapp_webhook',
+    startedAt: Date.now(),
+    messages: {
+      validation: 'Invalid webhook request.',
+      internal: 'Unable to process webhook request.'
+    }
+  };
+
   if (req.method === 'GET') {
-    const verification = verifyWebhookHandshake(req);
+    let verification: ReturnType<typeof verifyWebhookHandshake>;
+    try {
+      verification = verifyWebhookHandshake(req);
+    } catch (error) {
+      return sendApiError(res, error, context, {
+        status: 500,
+        code: 'INTERNAL_ERROR',
+        message: 'Webhook verification is not configured.',
+        retryable: false,
+        category: 'configuration'
+      });
+    }
     if (!verification.ok) {
-      return res.status(403).json({
-        success: false,
-        error: {
-          code: 'FORBIDDEN',
-          message: 'Invalid webhook verification token.'
-        }
+      return sendApiError(res, new Error('Invalid verification token.'), context, {
+        status: 403,
+        code: 'FORBIDDEN',
+        message: 'Invalid webhook verification token.',
+        retryable: false,
+        category: 'authorization_denied'
       });
     }
     res.setHeader('Content-Type', 'text/plain');
@@ -135,9 +157,12 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       method: boundedIdentifier(req.method || 'UNKNOWN')
     });
     res.setHeader('Allow', ['GET', 'POST']);
-    return res.status(405).json({
-      success: false,
-      error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed.' }
+    return sendApiError(res, new Error('Method not allowed.'), context, {
+      status: 405,
+      code: 'METHOD_NOT_ALLOWED',
+      message: 'Method not allowed.',
+      retryable: false,
+      category: 'method_not_allowed'
     });
   }
 
@@ -150,28 +175,49 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
         error instanceof Error ? error.message : String(error)
       )
     });
-    return res.status(400).json({
-      success: false,
-      error: { code: 'INVALID_BODY', message: 'Invalid webhook body.' }
+    return sendApiError(res, error, context, {
+      status: 400,
+      code: 'VALIDATION_ERROR',
+      message: 'Invalid webhook body.',
+      retryable: false,
+      category: 'validation'
     });
   }
 
   // Signature validation deliberately happens before parsing or logging payload content.
-  if (!verifyWebhookSignature(req, rawBody)) {
+  let signatureValid: boolean;
+  try {
+    signatureValid = verifyWebhookSignature(req, rawBody);
+  } catch (error) {
+    return sendApiError(res, error, context, {
+      status: 500,
+      code: 'INTERNAL_ERROR',
+      message: 'Webhook signature verification is not configured.',
+      retryable: false,
+      category: 'configuration'
+    });
+  }
+  if (!signatureValid) {
     webhookLog('invalid_signature');
-    return res.status(403).json({
-      success: false,
-      error: { code: 'FORBIDDEN', message: 'Invalid webhook signature.' }
+    return sendApiError(res, new Error('Invalid webhook signature.'), context, {
+      status: 403,
+      code: 'FORBIDDEN',
+      message: 'Invalid webhook signature.',
+      retryable: false,
+      category: 'authorization_denied'
     });
   }
 
   let payload: unknown;
   try {
     payload = parseWebhookPayload(req, rawBody);
-  } catch {
-    return res.status(400).json({
-      success: false,
-      error: { code: 'INVALID_BODY', message: 'Invalid webhook JSON.' }
+  } catch (error) {
+    return sendApiError(res, error, context, {
+      status: 400,
+      code: 'VALIDATION_ERROR',
+      message: 'Invalid webhook JSON.',
+      retryable: false,
+      category: 'validation'
     });
   }
 
@@ -198,12 +244,12 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
   }
 
   if (!succeeded) {
-    return res.status(502).json({
-      success: false,
-      error: {
-        code: 'WHATSAPP_PROCESSING_FAILED',
-        message: 'One or more events failed.'
-      }
+    return sendApiError(res, new Error('One or more events failed.'), context, {
+      status: 502,
+      code: 'UPSTREAM_ERROR',
+      message: 'One or more events failed.',
+      retryable: true,
+      category: 'event_processing_failed'
     });
   }
 

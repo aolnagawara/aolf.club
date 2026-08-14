@@ -14,6 +14,7 @@ import {
 import { getTabName } from '../_lib/sheets/table.js';
 import type { AuthorizationDiagnostics } from '../_lib/sheets/store.js';
 import { readSessionUser, type SessionUser } from '../_lib/auth/session.js';
+import { sendApiError } from '../_lib/http/errors.js';
 
 const MAX_HEALTH_DATA_ROWS = 200;
 
@@ -166,14 +167,29 @@ export function createSheetsHealthHandler(
   }
 
   return async function handler(req: ApiRequest, res: ApiResponse) {
+    const context = {
+      route: 'GET /api/health/sheets',
+      action: 'verify_sheets_health',
+      startedAt: Date.now(),
+      messages: {
+        timeout:
+          'Google Sheets connectivity verification took too long. Please try again.',
+        upstream:
+          'Unable to verify Google Sheets connectivity. Please try again.',
+        upstreamPermission:
+          'Unable to verify Google Sheets access. Please contact an admin.',
+        internal: 'Unable to verify Google Sheets connectivity.'
+      }
+    };
+
     if (req.method !== 'GET') {
       res.setHeader('Allow', 'GET');
-      return res.status(405).json({
-        success: false,
-        error: {
-          code: 'METHOD_NOT_ALLOWED',
-          message: 'Method not allowed.'
-        }
+      return sendApiError(res, new Error('Method not allowed.'), context, {
+        status: 405,
+        code: 'METHOD_NOT_ALLOWED',
+        message: 'Method not allowed.',
+        retryable: false,
+        category: 'method_not_allowed'
       });
     }
 
@@ -181,41 +197,45 @@ export function createSheetsHealthHandler(
     try {
       const user = await dependencies.readSessionUser(req);
       if (!user) {
-        return res.status(401).json({
-          success: false,
-          error: {
+        return sendApiError(
+          res,
+          new Error('Authentication required.'),
+          context,
+          {
+            status: 401,
             code: 'UNAUTHENTICATED',
-            message: 'Authentication required.'
+            message: 'Authentication required.',
+            retryable: false,
+            category: 'unauthenticated'
           }
-        });
+        );
       }
 
       const authorization = await dependencies
         .getApiDataStore()
         .authorizeUser(user, operation);
       if (!authorization.allowed) {
-        return res.status(403).json({
-          success: false,
-          error: {
+        return sendApiError(
+          res,
+          new Error('Authorization denied.'),
+          context,
+          {
+            status: 403,
             code: 'FORBIDDEN',
             message:
-              'Your account is not authorized to view Sheets diagnostics.'
+              'Your account is not authorized to view Sheets diagnostics.',
+            retryable: false,
+            category: 'authorization_denied'
           }
-        });
+        );
       }
 
       return res.status(200).json({
         success: true,
         diagnostics: await loadDiagnostics(authorization.diagnostics, operation)
       });
-    } catch {
-      return res.status(502).json({
-        success: false,
-        error: {
-          code: 'UPSTREAM_ERROR',
-          message: 'Unable to verify Google Sheets connectivity.'
-        }
-      });
+    } catch (error) {
+      return sendApiError(res, error, context);
     } finally {
       operation.dispose();
     }

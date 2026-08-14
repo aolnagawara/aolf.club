@@ -86,19 +86,24 @@ export const BootstrapResponseSchema = z.object({
   leads: z.array(LeadSchema)
 });
 
+export const ApiErrorCodeSchema = z.enum([
+  'METHOD_NOT_ALLOWED',
+  'UNAUTHENTICATED',
+  'FORBIDDEN',
+  'VALIDATION_ERROR',
+  'NOT_FOUND',
+  'UPSTREAM_TIMEOUT',
+  'UPSTREAM_ERROR',
+  'INTERNAL_ERROR'
+]);
+
 export const ApiErrorSchema = z.object({
   success: z.literal(false),
   error: z.object({
-    code: z.enum([
-      'UNAUTHENTICATED',
-      'FORBIDDEN',
-      'VALIDATION_ERROR',
-      'NOT_FOUND',
-      'UPSTREAM_ERROR',
-      'INTERNAL_ERROR'
-    ]),
+    code: ApiErrorCodeSchema,
     message: z.string(),
-    details: z.unknown().optional()
+    retryable: z.boolean(),
+    traceId: z.string().min(1)
   })
 });
 
@@ -158,3 +163,5 @@ export type CreateLeadRequest = z.infer<typeof CreateLeadRequestSchema>;
 export type CreateLeadResponse = z.infer<typeof CreateLeadResponseSchema>;
 export type DeleteLeadRequest = z.infer<typeof DeleteLeadRequestSchema>;
 export type DeleteLeadResponse = z.infer<typeof DeleteLeadResponseSchema>;
+export type ApiErrorCode = z.infer<typeof ApiErrorCodeSchema>;
+export type ApiErrorResponse = z.infer<typeof ApiErrorSchema>;

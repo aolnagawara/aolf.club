@@ -7,6 +7,7 @@ import {
 } from '../_lib/auth/cookies.js';
 import { setSessionCookie } from '../_lib/auth/session.js';
 import { getApiDataStore } from '../_lib/storage/dataStore.js';
+import { reportApiError, sendApiError } from '../_lib/http/errors.js';
 
 const OAUTH_STATE_COOKIE = 'aolf_oauth_state';
 
@@ -30,14 +31,27 @@ function clearOAuthStateCookie(res: ApiResponse) {
 }
 
 export default async function handler(req: ApiRequest, res: ApiResponse) {
+  const context = {
+    route: 'GET /api/auth/callback',
+    action: 'complete_google_signin',
+    startedAt: Date.now(),
+    messages: {
+      timeout: 'Unable to verify access right now. Please try again.',
+      upstream: 'Unable to verify access right now. Please try again.',
+      upstreamPermission:
+        'Unable to verify access. Please contact an admin if this continues.',
+      internal: 'Unable to complete sign in. Please try again.'
+    }
+  };
+
   if (req.method !== 'GET') {
     res.setHeader('Allow', 'GET');
-    return res.status(405).json({
-      success: false,
-      error: {
-        code: 'METHOD_NOT_ALLOWED',
-        message: 'Method not allowed.'
-      }
+    return sendApiError(res, new Error('Method not allowed.'), context, {
+      status: 405,
+      code: 'METHOD_NOT_ALLOWED',
+      message: 'Method not allowed.',
+      retryable: false,
+      category: 'method_not_allowed'
     });
   }
 
@@ -48,6 +62,13 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
 
   if (!queryCode || !queryState || queryState !== stateCookie) {
     clearOAuthStateCookie(res);
+    reportApiError(new Error('Invalid OAuth state.'), context, {
+      status: 400,
+      code: 'VALIDATION_ERROR',
+      message: 'Unable to verify sign-in state.',
+      retryable: false,
+      category: 'invalid_oauth_state'
+    });
     return redirectToLoginWithError(res, 'invalid_oauth_state');
   }
 
@@ -58,6 +79,13 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     const allowed = await dataStore.isUserAllowed(sessionUser);
     if (!allowed) {
       clearOAuthStateCookie(res);
+      reportApiError(new Error('Authorization denied.'), context, {
+        status: 403,
+        code: 'FORBIDDEN',
+        message: 'Your account is not authorized for this workspace.',
+        retryable: false,
+        category: 'authorization_denied'
+      });
       return redirectToLoginWithError(res, 'forbidden');
     }
 
@@ -68,12 +96,13 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     return res.end();
   } catch (error) {
     clearOAuthStateCookie(res);
-
-    const message = error instanceof Error ? error.message : '';
-    if (message.includes('Google Sheets API error')) {
+    const reported = reportApiError(error, context);
+    if (reported.code === 'UPSTREAM_TIMEOUT') {
+      return redirectToLoginWithError(res, 'upstream_timeout');
+    }
+    if (reported.code === 'UPSTREAM_ERROR') {
       return redirectToLoginWithError(res, 'upstream_error');
     }
-
     return redirectToLoginWithError(res, 'oauth_failed');
   }
 }

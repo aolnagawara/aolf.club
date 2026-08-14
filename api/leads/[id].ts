@@ -1,32 +1,47 @@
 import type { ApiRequest, ApiResponse } from '../_lib/http/responses.js';
 import { readSessionUser } from '../_lib/auth/session.js';
 import { getApiDataStore } from '../_lib/storage/dataStore.js';
-import { ZodError } from 'zod';
+import { sendApiError } from '../_lib/http/errors.js';
 
 export default async function handler(req: ApiRequest, res: ApiResponse) {
+  const action = req.method === 'DELETE' ? 'delete_lead' : 'update_lead';
+  const context = {
+    route: String(req.method || 'UNKNOWN') + ' /api/leads/[id]',
+    action,
+    startedAt: Date.now(),
+    messages: {
+      validation: 'Invalid lead update payload.',
+      timeout: 'Unable to save your changes right now. Please try again.',
+      upstream: 'Unable to save your changes right now. Please try again.',
+      upstreamPermission:
+        'Unable to save your changes. Please contact an admin if this continues.',
+      internal: 'Unable to save lead changes.'
+    }
+  };
+
   if (req.method !== 'PUT' && req.method !== 'DELETE') {
     res.setHeader('Allow', 'PUT, DELETE');
-    return res.status(405).json({
-      success: false,
-      error: {
-        code: 'METHOD_NOT_ALLOWED',
-        message: 'Method not allowed.'
-      }
-    });
-  }
-
-  const user = await readSessionUser(req);
-  if (!user) {
-    return res.status(401).json({
-      success: false,
-      error: {
-        code: 'UNAUTHENTICATED',
-        message: 'Authentication required.'
-      }
+    return sendApiError(res, new Error('Method not allowed.'), context, {
+      status: 405,
+      code: 'METHOD_NOT_ALLOWED',
+      message: 'Method not allowed.',
+      retryable: false,
+      category: 'method_not_allowed'
     });
   }
 
   try {
+    const user = await readSessionUser(req);
+    if (!user) {
+      return sendApiError(res, new Error('Authentication required.'), context, {
+        status: 401,
+        code: 'UNAUTHENTICATED',
+        message: 'Authentication required.',
+        retryable: false,
+        category: 'unauthenticated'
+      });
+    }
+
     const id = typeof req.query.id === 'string' ? req.query.id : '';
     const requestBody =
       typeof req.body === 'object' && req.body && !Array.isArray(req.body)
@@ -42,12 +57,12 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
         ? await getApiDataStore().deleteLeadForAuthorizedUser(user, payload)
         : await getApiDataStore().updateLeadForAuthorizedUser(user, payload);
     if (!result.allowed) {
-      return res.status(403).json({
-        success: false,
-        error: {
-          code: 'FORBIDDEN',
-          message: 'Your account is not authorized to access this application.'
-        }
+      return sendApiError(res, new Error('Authorization denied.'), context, {
+        status: 403,
+        code: 'FORBIDDEN',
+        message: 'Your account is not authorized to access this application.',
+        retryable: false,
+        category: 'authorization_denied'
       });
     }
 
@@ -56,83 +71,55 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     const message = error instanceof Error ? error.message : '';
 
     if (message.includes('FORBIDDEN_LEAD_ASSIGNMENT')) {
-      return res.status(403).json({
-        success: false,
-        error: {
-          code: 'FORBIDDEN',
-          message:
-            'You can only update records assigned to your volunteer account.'
-        }
+      return sendApiError(res, error, context, {
+        status: 403,
+        code: 'FORBIDDEN',
+        message:
+          'You can only update records assigned to your volunteer account.',
+        retryable: false,
+        category: 'authorization_denied'
       });
     }
 
     if (message.includes('VOLUNTEER_NOT_ALLOWED')) {
-      return res.status(400).json({
-        success: false,
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'The selected volunteer is not in the allowed list.'
-        }
+      return sendApiError(res, error, context, {
+        status: 400,
+        code: 'VALIDATION_ERROR',
+        message: 'The selected volunteer is not in the allowed list.',
+        retryable: false,
+        category: 'validation'
       });
     }
 
     if (message.includes('Lead not found.')) {
-      return res.status(404).json({
-        success: false,
-        error: {
-          code: 'NOT_FOUND',
-          message: 'Lead not found.'
-        }
+      return sendApiError(res, error, context, {
+        status: 404,
+        code: 'NOT_FOUND',
+        message: 'Lead not found.',
+        retryable: false,
+        category: 'not_found'
       });
     }
 
     if (message.includes('CAMPAIGN_NOT_FOUND')) {
-      return res.status(404).json({
-        success: false,
-        error: {
-          code: 'NOT_FOUND',
-          message: 'Campaign not found.'
-        }
-      });
-    }
-
-    if (message.includes('Google Sheets API')) {
-      return res.status(502).json({
-        success: false,
-        error: {
-          code: 'UPSTREAM_ERROR',
-          message: 'Unable to save lead changes to Google Sheets.'
-        }
+      return sendApiError(res, error, context, {
+        status: 404,
+        code: 'NOT_FOUND',
+        message: 'Campaign not found.',
+        retryable: false,
+        category: 'not_found'
       });
     }
 
     if (message.includes('CAMPAIGN_TYPE_MISMATCH')) {
-      return res.status(400).json({
-        success: false,
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Campaign type does not match the selected campaign.'
-        }
+      return sendApiError(res, error, context, {
+        status: 400,
+        code: 'VALIDATION_ERROR',
+        message: 'Campaign type does not match the selected campaign.',
+        retryable: false,
+        category: 'validation'
       });
     }
-
-    if (error instanceof ZodError) {
-      return res.status(400).json({
-        success: false,
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Invalid lead update payload.'
-        }
-      });
-    }
-
-    console.error('[leads-mutate] unexpected failure', error);
-    return res.status(500).json({
-      success: false,
-      error: {
-        code: 'INTERNAL_ERROR',
-        message: 'Unable to save lead changes.'
-      }
-    });
+    return sendApiError(res, error, context);
   }
 }

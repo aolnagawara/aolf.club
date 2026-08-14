@@ -13,11 +13,14 @@ import { loadEnv } from './_lib/env.mjs';
 const SHOULD_FIX = process.argv.includes('--fix');
 const REQUEST_TIMEOUT_MS = 10_000;
 
-async function withDeadline(promise, timeoutMessage) {
+async function withDeadline(promise, timeoutMessage, onTimeout) {
   let timeout;
   const deadline = new Promise((_, reject) => {
     timeout = setTimeout(
-      () => reject(new Error(timeoutMessage)),
+      () => {
+        onTimeout?.();
+        reject(new Error(timeoutMessage));
+      },
       REQUEST_TIMEOUT_MS
     );
   });
@@ -69,47 +72,19 @@ function columnLabel(columnNumber) {
   return label || 'A';
 }
 
-async function getAccessToken(client) {
-  const token = await withDeadline(
-    client.getAccessToken(),
-    'Service Account access token request timed out.'
-  );
-  const accessToken = typeof token === 'string' ? token : token?.token;
-  if (!accessToken) {
-    throw new Error('Could not obtain Service Account access token.');
-  }
-  return accessToken;
-}
-
 async function fetchJson(client, url, init = {}) {
-  const accessToken = await getAccessToken(client);
-  const res = await fetch(url, {
-    ...init,
-    signal: init.signal || AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-    headers: {
-      Authorization: 'Bearer ' + accessToken,
-      'Content-Type': 'application/json',
-      ...(init.headers || {})
-    }
-  });
-
-  const text = await res.text();
-  let body = {};
-  if (text) {
-    try {
-      body = JSON.parse(text);
-    } catch {
-      body = { message: text };
-    }
-  }
-
-  if (!res.ok) {
-    throw new Error(
-      'Google Sheets API error (' + res.status + '): ' + JSON.stringify(body)
-    );
-  }
-
-  return body;
+  const controller = new AbortController();
+  const response = await withDeadline(
+    client.request({
+      url,
+      method: init.method || 'GET',
+      data: init.data,
+      signal: controller.signal
+    }),
+    'Google Sheets authenticated request timed out.',
+    () => controller.abort()
+  );
+  return response.data;
 }
 
 async function getSpreadsheetTitles(client, spreadsheetId) {
@@ -143,7 +118,7 @@ async function addMissingSheets(client, spreadsheetId, titles) {
     ':batchUpdate';
   await fetchJson(client, url, {
     method: 'POST',
-    body: JSON.stringify({ requests })
+    data: { requests }
   });
 }
 
@@ -167,7 +142,7 @@ async function writeRow(client, spreadsheetId, range, values) {
   );
   await fetchJson(client, url, {
     method: 'PUT',
-    body: JSON.stringify({ values: [values] })
+    data: { values: [values] }
   });
 }
 
@@ -261,7 +236,7 @@ async function insertTopRow(client, spreadsheetId, tabName) {
     ':batchUpdate';
   await fetchJson(client, url, {
     method: 'POST',
-    body: JSON.stringify({
+    data: {
       requests: [
         {
           insertDimension: {
@@ -275,7 +250,7 @@ async function insertTopRow(client, spreadsheetId, tabName) {
           }
         }
       ]
-    })
+    }
   });
 }
 
@@ -331,20 +306,10 @@ async function ensureConfigKeys(client, spreadsheetId, tabName) {
       tabName + '!A:B',
       'valueInputOption=RAW&insertDataOption=INSERT_ROWS'
     );
-    const accessToken = await getAccessToken(client);
-    const res = await fetch(appendUrl, {
+    await fetchJson(client, appendUrl, {
       method: 'POST',
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-      headers: {
-        Authorization: 'Bearer ' + accessToken,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ values: valuesToAppend })
+      data: { values: valuesToAppend }
     });
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error('Failed appending config keys: ' + text);
-    }
     console.log('Missing config keys appended with blank values');
   }
 }

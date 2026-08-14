@@ -6,12 +6,28 @@ import type {
   OptionItem,
   SevaWorkspaceContext
 } from './types';
+import { toUserErrorMessage } from '../../services/apiClient';
 
 const CARD_LONG_PRESS_MS = 500;
 const CARD_MOVE_TOLERANCE_PX = 10;
 
 function getSelectedRecords(context: SevaWorkspaceContext): Lead[] {
   return context.leads.filter((lead) => context.selectedIds.has(lead.id));
+}
+
+function getBulkFailureMessage(
+  results: PromiseSettledResult<unknown>[],
+  succeededCount: number,
+  partialMessage: string,
+  failureMessage: string
+): string {
+  if (succeededCount > 0) {
+    return partialMessage;
+  }
+  const firstFailure = results.find(
+    (result): result is PromiseRejectedResult => result.status === 'rejected'
+  );
+  return toUserErrorMessage(firstFailure?.reason, failureMessage);
 }
 
 function getAllowedVolunteers(context: SevaWorkspaceContext) {
@@ -228,8 +244,12 @@ export function createRecordActionMethods() {
           [...this.selectedIds].filter((id) => !movedIds.has(id))
         );
         if (results.some((result) => result.status === 'rejected')) {
-          this.authError =
-            'Some records could not be moved. The remaining records stay selected.';
+          this.authError = getBulkFailureMessage(
+            results,
+            movedIds.size,
+            'Some records could not be moved. The remaining records stay selected.',
+            'Unable to move the selected records. Please try again.'
+          );
         } else {
           const movedNoun = movedIds.size === 1 ? 'record' : 'records';
           this.actionMessage =
@@ -289,8 +309,12 @@ export function createRecordActionMethods() {
           [...this.selectedIds].filter((id) => !deletedIds.has(id))
         );
         if (results.some((result) => result.status === 'rejected')) {
-          this.authError =
-            'Some records could not be deleted. The remaining records stay selected.';
+          this.authError = getBulkFailureMessage(
+            results,
+            deletedIds.size,
+            'Some records could not be deleted. The remaining records stay selected.',
+            'Unable to delete the selected records. Please try again.'
+          );
         } else {
           const deletedNoun = deletedIds.size === 1 ? 'record' : 'records';
           this.actionMessage =
@@ -360,8 +384,12 @@ export function createRecordActionMethods() {
           [...this.selectedIds].filter((id) => !reassignedIds.has(id))
         );
         if (results.some((result) => result.status === 'rejected')) {
-          this.authError =
-            'Some records could not be reassigned. The remaining records stay selected.';
+          this.authError = getBulkFailureMessage(
+            results,
+            reassignedIds.size,
+            'Some records could not be reassigned. The remaining records stay selected.',
+            'Unable to reassign the selected records. Please try again.'
+          );
         } else {
           const volunteer = getAllowedVolunteers(this).find(
             (item) => item.email === normalizedEmail
@@ -438,8 +466,10 @@ export function createRecordActionMethods() {
           (this.createRecordType === 'Members' ? 'Member' : 'Lead') +
           ' added successfully.';
       } catch (error) {
-        this.authError =
-          error instanceof Error ? error.message : 'Unable to add the record.';
+        this.authError = toUserErrorMessage(
+          error,
+          'Unable to add the record. Please try again.'
+        );
       } finally {
         this.isCreateRecordSaving = false;
       }

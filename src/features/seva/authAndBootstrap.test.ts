@@ -100,7 +100,7 @@ describe('Seva workspace sign-out', () => {
     expect(app.authenticatedUser?.id).toBe('user-1');
     expect(app.leads).toBe(leads);
     expect(app.isVolunteerModalOpen).toBe(false);
-    expect(app.authError).toContain('Network unavailable.');
+    expect(app.authError).toContain('Unable to sign out right now.');
     expect(app.authError).toContain('please try signing out again');
   });
 });

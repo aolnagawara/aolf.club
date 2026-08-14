@@ -4,7 +4,10 @@ import type {
   CampaignUiMeta,
   OptionItem
 } from './types';
-import { isApiClientError } from '../../services/apiClient';
+import {
+  isApiClientError,
+  toUserErrorMessage
+} from '../../services/apiClient';
 import {
   getDefaultCampaignUiMeta,
   getDefaultQualityOptionsForCampaignType,
@@ -12,24 +15,49 @@ import {
 } from '../../config/campaignDefaults';
 
 function toAuthErrorMessage(error: unknown, fallback: string): string {
-  if (isApiClientError(error)) {
-    if (error.code === 'FORBIDDEN') {
-      return 'Your account is not authorized for this workspace. Please contact an admin.';
-    }
-    if (error.code === 'UNAUTHENTICATED') {
-      return 'Your session has expired. Please sign in again.';
-    }
-    if (error.code === 'UPSTREAM_ERROR') {
-      return 'Unable to reach Google Sheets right now. Please try again shortly.';
-    }
-    return error.message || fallback;
+  return toUserErrorMessage(error, fallback);
+}
+
+const AUTH_REDIRECT_MESSAGES: Record<string, string> = {
+  invalid_oauth_state:
+    'Sign-in could not be verified. Please try signing in again.',
+  forbidden:
+    'Your account is not authorized for this workspace. Please contact an admin.',
+  upstream_timeout:
+    'Unable to verify access right now. Please try again shortly.',
+  upstream_error:
+    'Unable to verify access right now. Please try again shortly.',
+  oauth_failed: 'Sign in failed. Please try again.',
+  signin_unavailable: 'Unable to start sign in right now. Please try again.'
+};
+
+function consumeAuthRedirectError(): string {
+  if (
+    typeof window === 'undefined' ||
+    !window.location ||
+    typeof window.location.href !== 'string'
+  ) {
+    return '';
   }
 
-  if (error instanceof Error && error.message) {
-    return error.message;
+  const url = new URL(window.location.href);
+  const errorCode = url.searchParams.get('error') || '';
+  if (!errorCode) {
+    return '';
   }
 
-  return fallback;
+  url.searchParams.delete('error');
+  if (window.history && typeof window.history.replaceState === 'function') {
+    window.history.replaceState(
+      {},
+      '',
+      url.pathname + url.search + url.hash
+    );
+  }
+  return (
+    AUTH_REDIRECT_MESSAGES[errorCode] ||
+    'Sign in could not be completed. Please try again.'
+  );
 }
 
 function captureCampaignView(context: SevaWorkspaceContext) {
@@ -72,6 +100,7 @@ const SIGN_OUT_SAVE_ERROR =
 export function createAuthAndBootstrapMethods() {
   return {
     async init(this: SevaWorkspaceContext): Promise<void> {
+      const redirectError = consumeAuthRedirectError();
       this.globalPointerDownHandler = (event: PointerEvent) =>
         this.handleGlobalPointerDown(event);
       document.addEventListener(
@@ -80,6 +109,9 @@ export function createAuthAndBootstrapMethods() {
         true
       );
       await this.initializeAuthenticatedSession();
+      if (!this.authenticatedUser && !this.authError && redirectError) {
+        this.authError = redirectError;
+      }
     },
     async initializeAuthenticatedSession(
       this: SevaWorkspaceContext

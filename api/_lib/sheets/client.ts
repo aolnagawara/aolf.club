@@ -24,8 +24,42 @@ type SheetsBatchUpdate = {
 
 const SHEETS_OPERATION_TIMEOUT_MS = 10_000;
 
+export type SheetsRequestAction =
+  | 'values.get'
+  | 'values.batchGet'
+  | 'values.batchUpdate'
+  | 'values.append'
+  | 'spreadsheets.get'
+  | 'spreadsheets.batchUpdate';
+
+export type SheetsFailureKind =
+  | 'timeout'
+  | 'authentication'
+  | 'permission'
+  | 'network'
+  | 'upstream';
+
+export class SheetsRequestError extends Error {
+  constructor(
+    message: string,
+    public readonly kind: SheetsFailureKind,
+    public readonly target: SpreadsheetTarget,
+    public readonly action: SheetsRequestAction,
+    public readonly durationMs: number,
+    public readonly retryable: boolean,
+    public readonly upstreamStatus?: number,
+    public readonly safeUpstreamError?: string,
+    public readonly timeoutStage?: 'authenticated_request',
+    cause?: unknown
+  ) {
+    super(message, { cause });
+    this.name = 'SheetsRequestError';
+  }
+}
+
 export type SheetsOperation = {
   signal: AbortSignal;
+  timeoutMs: number;
   dispose: () => void;
 };
 
@@ -45,6 +79,7 @@ export function createSheetsOperation(
 
   return {
     signal: controller.signal,
+    timeoutMs,
     dispose() {
       clearTimeout(timeout);
     }
@@ -115,19 +150,6 @@ function buildSpreadsheetBatchUpdateUrl(target: SpreadsheetTarget) {
   );
 }
 
-async function parseResponseJson(res: Response): Promise<unknown> {
-  const text = await res.text();
-  if (!text) {
-    return {};
-  }
-
-  try {
-    return JSON.parse(text) as unknown;
-  } catch {
-    return { message: text };
-  }
-}
-
 export function waitForSheetsOperation<T>(
   promise: Promise<T>,
   signal: AbortSignal
@@ -152,56 +174,128 @@ export function waitForSheetsOperation<T>(
   });
 }
 
-async function callSheetsApi(
+function readErrorRecord(value: unknown): Record<string, unknown> | null {
+  return typeof value === 'object' && value !== null
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function getUpstreamStatus(error: unknown): number | undefined {
+  const response = readErrorRecord(readErrorRecord(error)?.response);
+  return typeof response?.status === 'number' ? response.status : undefined;
+}
+
+function getErrorCode(error: unknown): string {
+  const code = readErrorRecord(error)?.code;
+  return typeof code === 'string' ? code : '';
+}
+
+function getErrorRequestUrl(error: unknown): string {
+  const config = readErrorRecord(readErrorRecord(error)?.config);
+  const url = config?.url;
+  return url instanceof URL ? url.toString() : typeof url === 'string' ? url : '';
+}
+
+function getSafeUpstreamError(error: unknown): string | undefined {
+  const response = readErrorRecord(readErrorRecord(error)?.response);
+  const data = readErrorRecord(response?.data);
+  const nestedError = readErrorRecord(data?.error);
+  const status = nestedError?.status;
+  const message = nestedError?.message;
+  const parts = [
+    typeof status === 'string' ? status : '',
+    typeof message === 'string' ? message : ''
+  ].filter(Boolean);
+  return parts.length ? parts.join(': ').slice(0, 300) : undefined;
+}
+
+function classifySheetsFailure(
+  error: unknown,
+  upstreamStatus: number | undefined
+): { kind: SheetsFailureKind; retryable: boolean } {
+  const requestUrl = getErrorRequestUrl(error);
+  if (
+    requestUrl.includes('oauth2.googleapis.com') ||
+    requestUrl.includes('accounts.google.com')
+  ) {
+    return { kind: 'authentication', retryable: false };
+  }
+  if (upstreamStatus === 401 || upstreamStatus === 403) {
+    return { kind: 'permission', retryable: false };
+  }
+  if (upstreamStatus !== undefined) {
+    return {
+      kind: 'upstream',
+      retryable: upstreamStatus === 429 || upstreamStatus >= 500
+    };
+  }
+
+  const code = getErrorCode(error).toUpperCase();
+  if (
+    code === 'ENOTFOUND' ||
+    code === 'ECONNRESET' ||
+    code === 'ECONNREFUSED' ||
+    code === 'ETIMEDOUT' ||
+    code === 'UND_ERR_CONNECT_TIMEOUT' ||
+    error instanceof TypeError
+  ) {
+    return { kind: 'network', retryable: true };
+  }
+  return { kind: 'upstream', retryable: false };
+}
+
+async function callSheetsApi<T>(
+  target: SpreadsheetTarget,
+  action: SheetsRequestAction,
   url: string,
-  init: RequestInit,
+  init: { method: 'GET' | 'POST'; data?: unknown },
   operation?: SheetsOperation
-): Promise<unknown> {
+): Promise<T> {
   const ownedOperation = operation ? null : createSheetsOperation();
   const activeOperation = operation || ownedOperation!;
+  const startedAt = Date.now();
 
   try {
     const client = getJwtClient();
-    const token = await waitForSheetsOperation(
-      client.getAccessToken(),
+    const response = await waitForSheetsOperation(
+      client.request<T>({
+        url,
+        method: init.method,
+        data: init.data,
+        signal: activeOperation.signal
+      }),
       activeOperation.signal
     );
-    const accessToken = typeof token === 'string' ? token : token?.token;
-    if (!accessToken) {
-      throw new Error(
-        'Unable to obtain Service Account access token for Google Sheets API.'
-      );
-    }
-
-    const res = await fetch(url, {
-      ...init,
-      signal: activeOperation.signal,
-      headers: {
-        Authorization: 'Bearer ' + accessToken,
-        'Content-Type': 'application/json',
-        ...(init.headers || {})
-      }
-    });
-
-    if (!res.ok) {
-      const body = await parseResponseJson(res);
-      throw new Error(
-        'Google Sheets API error (' +
-          String(res.status) +
-          '): ' +
-          JSON.stringify(body)
-      );
-    }
-
-    return await parseResponseJson(res);
+    return response.data;
   } catch (error) {
     if (activeOperation.signal.aborted) {
-      const reason = activeOperation.signal.reason;
-      throw reason instanceof Error
-        ? reason
-        : new Error('Google Sheets API operation timed out.');
+      throw new SheetsRequestError(
+        'Google Sheets authenticated request timed out.',
+        'timeout',
+        target,
+        action,
+        Date.now() - startedAt,
+        true,
+        undefined,
+        undefined,
+        'authenticated_request',
+        activeOperation.signal.reason
+      );
     }
-    throw error;
+    const upstreamStatus = getUpstreamStatus(error);
+    const classification = classifySheetsFailure(error, upstreamStatus);
+    throw new SheetsRequestError(
+      'Google Sheets authenticated request failed.',
+      classification.kind,
+      target,
+      action,
+      Date.now() - startedAt,
+      classification.retryable,
+      upstreamStatus,
+      getSafeUpstreamError(error),
+      undefined,
+      error
+    );
   } finally {
     ownedOperation?.dispose();
   }
@@ -213,13 +307,15 @@ export async function readSheetValues(
   operation?: SheetsOperation
 ): Promise<string[][]> {
   const url = buildValuesUrl(target, range);
-  const payload = (await callSheetsApi(
+  const payload = await callSheetsApi<SheetsValuesResponse>(
+    target,
+    'values.get',
     url,
     {
       method: 'GET'
     },
     operation
-  )) as SheetsValuesResponse;
+  );
   return Array.isArray(payload.values) ? payload.values : [];
 }
 
@@ -232,13 +328,15 @@ export async function readSheetValuesBatch(
     return [];
   }
 
-  const payload = (await callSheetsApi(
+  const payload = await callSheetsApi<SheetsBatchValuesResponse>(
+    target,
+    'values.batchGet',
     buildBatchValuesUrl(target, ranges),
     {
       method: 'GET'
     },
     operation
-  )) as SheetsBatchValuesResponse;
+  );
   const valueRanges = Array.isArray(payload.valueRanges)
     ? payload.valueRanges
     : [];
@@ -258,13 +356,15 @@ export async function updateSheetValuesBatch(
   }
 
   await callSheetsApi(
+    target,
+    'values.batchUpdate',
     buildBatchUpdateUrl(target),
     {
       method: 'POST',
-      body: JSON.stringify({
+      data: {
         valueInputOption: 'RAW',
         data: updates
-      })
+      }
     },
     operation
   );
@@ -282,10 +382,12 @@ export async function appendSheetRow(
     'valueInputOption=RAW&insertDataOption=INSERT_ROWS'
   );
   await callSheetsApi(
+    target,
+    'values.append',
     url,
     {
       method: 'POST',
-      body: JSON.stringify({ values: [rowValues] })
+      data: { values: [rowValues] }
     },
     operation
   );
@@ -297,15 +399,17 @@ export async function deleteSheetRow(
   rowNumber: number,
   operation?: SheetsOperation
 ) {
-  const spreadsheet = (await callSheetsApi(
+  const spreadsheet = await callSheetsApi<{
+    sheets?: Array<{ properties?: { sheetId?: number; title?: string } }>;
+  }>(
+    target,
+    'spreadsheets.get',
     'https://sheets.googleapis.com/v4/spreadsheets/' +
       getSpreadsheetId(target) +
       '?fields=sheets.properties',
     { method: 'GET' },
     operation
-  )) as {
-    sheets?: Array<{ properties?: { sheetId?: number; title?: string } }>;
-  };
+  );
   const sheetId = spreadsheet.sheets?.find(
     (sheet) => sheet.properties?.title === sheetName
   )?.properties?.sheetId;
@@ -314,10 +418,12 @@ export async function deleteSheetRow(
   }
 
   await callSheetsApi(
+    target,
+    'spreadsheets.batchUpdate',
     buildSpreadsheetBatchUpdateUrl(target),
     {
       method: 'POST',
-      body: JSON.stringify({
+      data: {
         requests: [
           {
             deleteDimension: {
@@ -330,7 +436,7 @@ export async function deleteSheetRow(
             }
           }
         ]
-      })
+      }
     },
     operation
   );

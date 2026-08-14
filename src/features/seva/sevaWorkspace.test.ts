@@ -286,7 +286,7 @@ describe('Seva workspace lead lifecycle', () => {
     expect(app.selectedCampaign).toBe(currentCampaign);
     expect(app.leads).toBe(currentLeads);
     expect(app.leads[0]).toBe(lead);
-    expect(app.authError).toBe('Target failed');
+    expect(app.authError).toBe('Unable to load Seva data. Please try again.');
     expect(app.isCampaignSwitching).toBe(false);
     expect(app.isLoadingBootstrap).toBe(false);
   });
