@@ -128,7 +128,7 @@
               class="inline-block w-4 h-4 border-2 border-slate-300 border-t-indigo-600 rounded-full animate-spin"
             ></span>
             <span
-              x-text="isCampaignSwitching ? 'Saving and switching Seva...' : 'Loading Seva...'"
+              x-text="isCampaignSwitching ? 'Switching Seva…' : (authenticatedUser ? 'Loading your Seva…' : 'Signing you in…')"
             ></span>
           </div>
         </div>
