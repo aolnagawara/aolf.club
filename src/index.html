@@ -1,368 +1,548 @@
 <!doctype html>
-<html lang="en" class="scroll-smooth">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta
-      name="description"
-      content="AOLF Connect - Explore beginner Art of Living programs, free sessions, local activities, member practices and volunteering opportunities."
-    />
-    <meta name="theme-color" content="#f6f0e8" />
-    <meta property="og:title" content="AOLF Connect" />
-    <meta
-      property="og:description"
-      content="Explore beginner programs, free sessions, weekly practices, satsangs and volunteering opportunities with your local Art of Living community."
-    />
-    <meta property="og:type" content="website" />
-    <meta property="og:image" content="/assets/aolf-connect-logo.png" />
-    <title>AOLF Connect</title>
-    <meta name="application-name" content="AOLF Connect" />
-    <meta name="apple-mobile-web-app-title" content="AOLF Connect" />
-    <link rel="canonical" href="https://aolf.club/" />
-    <link rel="icon" type="image/png" href="/assets/aolf-connect-logo.png" />
-    <link rel="apple-touch-icon" href="/assets/aolf-connect-logo.png" />
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="description" content="AOLF Connect - Programs, weekly activities, meditation, community and volunteering." />
+  <meta name="theme-color" content="#fffaf1" />
+  <meta property="og:title" content="AOLF Connect" />
+  <meta property="og:description" content="Programs, weekly activities, meditation and community." />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="assets/hero-main.webp" />
+  <title>AOLF Connect</title>
+  <link rel="icon" type="image/png" href="/assets/aolf-connect-logo.png" />
+  <link rel="apple-touch-icon" href="/assets/aolf-connect-logo.png" />
 
-    <script type="module" src="./publicPage.ts"></script>
-  </head>
+  <style>
+    :root{
+      --ink:#10131a;
+      --muted:#61656d;
+      --cream:#fffaf1;
+      --paper:#fffdf8;
+      --line:rgba(16,19,26,.09);
+      --green:#24b95b;
+      --gold:#f0b844;
+      --shadow:0 14px 40px rgba(32,29,22,.10);
+      --soft-shadow:0 8px 24px rgba(32,29,22,.08);
+    }
 
-  <body
-    class="m-0 overflow-x-hidden bg-[#fbf7f1] font-sans text-[#25221f] antialiased"
-    x-data="{
-      menuOpen: false,
-      activeDay: 'all',
-      year: new Date().getFullYear(),
-      scrollPrograms(direction) {
-        const slider = this.$refs.programSlider;
-        const amount = Math.min(slider.clientWidth * 0.78, 430);
-        slider.scrollBy({ left: direction * amount, behavior: 'smooth' });
-      },
-      scrollFree(direction) {
-        const slider = this.$refs.freeSlider;
-        const amount = Math.min(slider.clientWidth * 0.78, 430);
-        slider.scrollBy({ left: direction * amount, behavior: 'smooth' });
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;
+      color:var(--ink);
+      background:#eee9df;
+      font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      -webkit-font-smoothing:antialiased;
+    }
+    a{color:inherit;text-decoration:none}
+    button{font:inherit}
+    img{display:block;max-width:100%}
+    .svg-icon{width:1.25em;height:1.25em;display:block;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+    .svg-icon .fill-icon{fill:currentColor;stroke:none}
+    .action-icon .svg-icon{width:24px;height:24px}
+    .journey-icon .svg-icon{width:29px;height:29px}
+    .nav-icon .svg-icon{width:24px;height:24px}
+    .meta .svg-icon{width:15px;height:15px;display:inline-block;vertical-align:-3px;margin-right:4px}
+    .whatsapp .svg-icon{width:18px;height:18px}
+
+    /* Mobile-first page. On wide screens it is intentionally shown as a centered mobile canvas. */
+    .app-shell{
+      width:min(100%,820px);
+      min-height:100vh;
+      margin:0 auto;
+      background:var(--paper);
+      box-shadow:0 0 50px rgba(42,36,29,.08);
+      padding-bottom:94px;
+    }
+
+    .topbar{
+      position:sticky;
+      top:0;
+      z-index:70;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px;
+      min-height:78px;
+      padding:12px 20px;
+      padding-top:max(12px,env(safe-area-inset-top));
+      background:rgba(255,253,248,.94);
+      border-bottom:1px solid rgba(0,0,0,.04);
+      backdrop-filter:blur(16px);
+    }
+    .brand{display:flex;align-items:center;gap:11px;min-width:0}
+    .brand img{
+      width:52px;height:52px;object-fit:contain;border-radius:13px;background:white;
+    }
+    .brand-title{font-size:1.08rem;font-weight:850;letter-spacing:-.025em;line-height:1.08}
+    .brand-sub{margin-top:3px;font-size:.78rem;color:var(--muted)}
+    .menu-btn{
+      width:46px;height:46px;border:0;background:transparent;border-radius:14px;
+      display:grid;place-items:center;cursor:pointer;color:var(--ink)
+    }
+    .menu-lines,.menu-lines:before,.menu-lines:after{
+      display:block;width:28px;height:3px;border-radius:9px;background:currentColor;content:"";
+    }
+    .menu-lines{position:relative}
+    .menu-lines:before{position:absolute;top:-9px}
+    .menu-lines:after{position:absolute;top:9px}
+
+    .menu-sheet{
+      position:fixed;
+      z-index:90;
+      inset:0;
+      display:none;
+      background:rgba(15,16,18,.38);
+      backdrop-filter:blur(5px);
+    }
+    .menu-sheet.open{display:block}
+    .menu-panel{
+      width:min(86vw,390px);height:100%;margin-left:auto;background:var(--paper);
+      padding:calc(22px + env(safe-area-inset-top)) 22px 28px;box-shadow:-20px 0 60px rgba(0,0,0,.15)
+    }
+    .menu-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+    .menu-head strong{font-size:1.15rem}
+    .close-btn{border:0;background:#f3eee5;width:42px;height:42px;border-radius:50%;font-size:1.6rem}
+    .menu-link{display:flex;justify-content:space-between;padding:17px 2px;border-bottom:1px solid var(--line);font-weight:800}
+    .menu-call{margin-top:18px;display:flex;justify-content:center;padding:15px;border-radius:17px;background:var(--ink);color:white;font-weight:850}
+
+    .hero{
+      position:relative;
+      min-height:575px;
+      overflow:hidden;
+      background:#f7efdf;
+      isolation:isolate;
+    }
+    .hero-picture{
+      position:absolute;
+      inset:0;
+      z-index:-3;
+      overflow:hidden;
+    }
+    .hero-bg{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      object-position:52% center;
+      transform:scale(1.015);
+    }
+    .hero:before{
+      content:"";position:absolute;inset:0;z-index:-2;
+      background:linear-gradient(90deg,rgba(255,250,240,.98) 0%,rgba(255,250,240,.88) 31%,rgba(255,250,240,.17) 57%,rgba(255,250,240,0) 78%);
+    }
+    .hero:after{
+      content:"";position:absolute;left:0;right:0;bottom:0;height:110px;z-index:-1;
+      background:linear-gradient(0deg,var(--paper),rgba(255,253,248,0));
+    }
+    .hero-copy{
+      width:54%;
+      padding:48px 0 128px 30px;
+    }
+    .hero h1{
+      margin:0;
+      max-width:330px;
+      font-size:clamp(2.72rem,10.7vw,4.35rem);
+      line-height:.96;
+      letter-spacing:-.055em;
+      font-weight:900;
+    }
+    .hero p{
+      max-width:285px;margin:22px 0 0;font-size:1.08rem;line-height:1.45;color:#282a2e;font-weight:510
+    }
+    .hero-actions{
+      position:absolute;
+      left:28px;
+      bottom:54px;
+      width:min(390px,52%);
+      display:grid;
+      gap:12px;
+      z-index:2;
+    }
+    .hero-action{
+      display:flex;align-items:center;gap:14px;
+      min-height:78px;padding:14px 18px;border-radius:17px;
+      box-shadow:var(--soft-shadow);
+    }
+    .hero-action.primary{background:#12151b;color:white}
+    .hero-action.secondary{background:rgba(255,255,255,.94);border:1px solid rgba(0,0,0,.05)}
+    .action-icon{width:42px;height:42px;flex:0 0 42px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.11);font-size:1.35rem;color:currentColor}
+    .secondary .action-icon{background:#f2f2f2}
+    .action-title{font-size:1rem;font-weight:850;line-height:1.1}
+    .action-sub{font-size:.76rem;opacity:.76;margin-top:4px}
+
+    .content{padding:0 18px}
+    .featured-wrap{position:relative;margin-top:-12px;z-index:8}
+    .featured{
+      border:1px solid rgba(255,255,255,.9);
+      background:rgba(255,253,248,.96);
+      border-radius:25px;padding:14px;
+      box-shadow:var(--shadow);
+      display:grid;grid-template-columns:42% 1fr;gap:16px;
+    }
+    .featured-photo{
+      min-height:220px;border-radius:19px;overflow:hidden;background:#ece6db;
+    }
+    .featured-photo img{width:100%;height:100%;object-fit:cover;object-position:50% 42%}
+    .featured-body{padding:8px 8px 8px 0;align-self:center}
+    .pill{
+      display:inline-flex;border-radius:999px;background:#ffe7a8;color:#4c3904;
+      padding:6px 10px;font-size:.66rem;font-weight:900;letter-spacing:.03em;text-transform:uppercase
+    }
+    .featured h2{font-size:1.7rem;line-height:1.02;letter-spacing:-.04em;margin:12px 0 10px}
+    .featured p{font-size:.86rem;line-height:1.48;color:#45484f;margin:0 0 12px}
+    .meta{display:flex;gap:13px;flex-wrap:wrap;font-size:.78rem;font-weight:730;margin-bottom:13px}
+    .whatsapp{
+      display:inline-flex;align-items:center;gap:7px;background:var(--green);color:white;
+      padding:11px 15px;border-radius:999px;font-size:.82rem;font-weight:850
+    }
+
+    .section-title{
+      margin:34px 0 18px;text-align:center;font-size:1.45rem;letter-spacing:-.035em;font-weight:900
+    }
+    .journeys{
+      display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;
+    }
+    .journey{
+      min-height:180px;border-radius:18px;padding:14px 9px 13px;text-align:center;
+      display:flex;flex-direction:column;align-items:center;
+    }
+    .journey:nth-child(1){background:#edf8ef}
+    .journey:nth-child(2){background:#f6eef8}
+    .journey:nth-child(3){background:#fff3e9}
+    .journey:nth-child(4){background:#edf5fb}
+    .journey-icon{
+      width:56px;height:56px;margin-top:-28px;margin-bottom:12px;border-radius:50%;
+      display:grid;place-items:center;background:white;box-shadow:0 6px 18px rgba(0,0,0,.10);font-size:1.55rem
+    }
+    .journey:nth-child(1) .journey-icon{color:#159b43}
+    .journey:nth-child(2) .journey-icon{color:#a32891}
+    .journey:nth-child(3) .journey-icon{color:#ef7808}
+    .journey:nth-child(4) .journey-icon{color:#1266ad}
+    .journey strong{font-size:.86rem;line-height:1.25;letter-spacing:-.01em}
+    .journey small{margin-top:10px;font-size:.68rem;line-height:1.35;color:#35373c}
+
+    .program-head{
+      display:flex;align-items:end;justify-content:space-between;gap:12px;margin-top:32px;margin-bottom:14px;
+    }
+    .program-head h2{font-size:1.48rem;letter-spacing:-.04em;margin:0}
+    .program-head a{font-size:.77rem;font-weight:800;white-space:nowrap}
+    .program-area{position:relative}
+    .program-slider{
+      display:grid;grid-auto-flow:column;grid-auto-columns:42%;
+      gap:12px;overflow:auto;scroll-snap-type:x mandatory;padding:2px 1px 18px;
+      scrollbar-width:none;
+    }
+    .program-slider::-webkit-scrollbar{display:none}
+    .program-card{
+      scroll-snap-align:start;background:white;border:1px solid rgba(0,0,0,.06);
+      border-radius:16px;overflow:hidden;box-shadow:0 6px 18px rgba(25,20,14,.07)
+    }
+    .program-card img{
+      width:100%;
+      aspect-ratio:1.6/1;
+      object-fit:cover;
+      object-position:center;
+      background:#f3eee6;
+    }
+    .program-card:nth-child(1) img{object-position:50% 42%}
+    .program-card:nth-child(2) img{object-position:50% 45%}
+    .program-card:nth-child(3) img{object-position:50% 48%}
+    .program-body{padding:11px 11px 13px}
+    .program-body strong{display:block;font-size:.84rem;line-height:1.2;min-height:2.05em}
+    .program-type{font-size:.69rem;margin-top:6px;color:#922374}
+    .program-card:nth-child(2) .program-type{color:#15843a}
+    .program-card:nth-child(3) .program-type{color:#e26800}
+    .slide-btn{
+      position:absolute;top:42%;z-index:2;width:45px;height:45px;border-radius:50%;border:1px solid rgba(0,0,0,.06);
+      background:white;box-shadow:0 5px 18px rgba(0,0,0,.12);display:grid;place-items:center;font-size:1.55rem;cursor:pointer
+    }
+    .slide-btn.prev{left:-10px}
+    .slide-btn.next{right:-10px}
+
+    .mini-sections{display:grid;gap:12px;padding-bottom:18px}
+    .mini{
+      border-radius:20px;padding:19px;background:#f7f1e8;display:flex;align-items:center;justify-content:space-between;gap:16px
+    }
+    .mini h3{margin:0 0 4px;font-size:1.05rem}
+    .mini p{margin:0;color:var(--muted);font-size:.78rem;line-height:1.35}
+    .mini span{font-size:1.4rem}
+
+    .bottom-nav{
+      position:fixed;z-index:60;bottom:0;left:50%;transform:translateX(-50%);
+      width:min(100%,820px);
+      display:grid;grid-template-columns:repeat(5,1fr);
+      min-height:76px;padding:8px 7px max(8px,env(safe-area-inset-bottom));
+      background:rgba(255,255,255,.96);border-top:1px solid var(--line);backdrop-filter:blur(18px);
+      box-shadow:0 -8px 28px rgba(0,0,0,.06)
+    }
+    .nav-item{display:grid;place-items:center;align-content:center;gap:4px;color:#6d7076;font-size:.67rem}
+    .nav-icon{font-size:1.37rem;line-height:1}
+    .nav-item.active{color:#11151b;font-weight:850}
+
+    @media (max-width:620px){
+      .topbar{min-height:70px;padding-left:14px;padding-right:14px}
+      .brand img{width:44px;height:44px}
+      .brand-title{font-size:1rem}
+      .brand-sub{font-size:.7rem}
+
+      .hero{min-height:455px}
+      .hero-picture .hero-bg{
+        object-fit:cover;
+        object-position:24% 46%;
+        transform:none;
       }
-    }"
-  >
-    <header
-      class="sticky top-0 z-50 border-b border-black/10 bg-[#fbf7f1]/90 backdrop-blur-xl"
-    >
-      <div
-        class="mx-auto flex h-[76px] w-[min(1160px,calc(100%-36px))] items-center justify-between gap-6"
-      >
-        <a href="/" class="flex items-center gap-[11px]" aria-label="AOLF Connect home">
-          <img
-            src="/assets/aolf-connect-logo.png"
-            alt="AOLF Connect"
-            class="h-[42px] w-[42px] rounded-[13px] object-contain"
-          />
-          <div>
-            <div class="text-base font-extrabold">AOLF Connect</div>
-            <div class="mt-0.5 text-[0.66rem] uppercase tracking-[0.14em] text-[#6f6a64]">
-              Local community
-            </div>
-          </div>
-        </a>
+      .hero:before{
+        background:
+          linear-gradient(180deg,rgba(255,250,240,0) 0%,rgba(255,250,240,0) 54%,rgba(255,250,240,.20) 74%,rgba(255,253,248,.82) 100%),
+          linear-gradient(90deg,rgba(255,250,240,.97) 0%,rgba(255,250,240,.90) 27%,rgba(255,250,240,.42) 39%,rgba(255,250,240,.06) 52%,rgba(255,250,240,0) 63%);
+      }
+      .hero-copy{width:55%;padding:34px 0 0 20px}
+      .hero h1{font-size:clamp(2.15rem,10.7vw,2.95rem)}
+      .hero p{font-size:.88rem;line-height:1.40;max-width:195px;margin-top:14px}
+      .hero-actions{
+        left:18px;right:18px;bottom:16px;width:auto;
+        grid-template-columns:1fr;gap:8px;
+      }
+      .hero-action{min-height:58px;padding:9px 14px}
+      .action-icon{width:38px;height:38px;flex-basis:38px}
+      .action-title{font-size:.92rem}
+      .action-sub{font-size:.69rem}
 
-        <nav
-          class="hidden items-center gap-6 text-[0.84rem] font-bold md:flex"
-          aria-label="Main navigation"
-        >
-          <a class="opacity-75 transition hover:opacity-100" href="#programs">Programs</a>
-          <a class="opacity-75 transition hover:opacity-100" href="#free-activities">Free Activities</a>
-          <a class="opacity-75 transition hover:opacity-100" href="#schedule">Schedule</a>
-          <a class="opacity-75 transition hover:opacity-100" href="#members">Members</a>
-          <a class="opacity-75 transition hover:opacity-100" href="/volunteer">Volunteer</a>
-          <a
-            class="rounded-full bg-[#25221f] px-[17px] py-[11px] text-white"
-            href="/volunteer"
-          >Call Tracker</a>
-        </nav>
+      .content{padding:0 12px}
+      .featured-wrap{margin-top:-4px}
+      .featured{grid-template-columns:39% 1fr;gap:11px;padding:10px;border-radius:22px}
+      .featured-photo{min-height:185px;border-radius:15px}
+      .featured-body{padding:4px 4px 4px 0}
+      .pill{font-size:.58rem;padding:5px 8px}
+      .featured h2{font-size:1.18rem;margin:9px 0 8px}
+      .featured p{font-size:.72rem;margin-bottom:8px}
+      .meta{font-size:.63rem;gap:8px;margin-bottom:10px}
+      .whatsapp{font-size:.68rem;padding:9px 11px}
 
-        <button
-          type="button"
-          class="border-0 bg-transparent text-2xl md:hidden"
-          aria-label="Open menu"
-          :aria-expanded="menuOpen.toString()"
-          @click="menuOpen = !menuOpen"
-          x-text="menuOpen ? '×' : '☰'"
-        >☰</button>
-      </div>
+      .section-title{font-size:1.28rem;margin:32px 0 34px}
+      .journeys{gap:7px}
+      .journey{min-height:158px;padding:12px 6px 9px;border-radius:14px}
+      .journey-icon{width:48px;height:48px;margin-top:-24px;font-size:1.25rem}
+      .journey strong{font-size:.72rem}
+      .journey small{font-size:.6rem;margin-top:8px}
 
-      <nav
-        class="mx-auto grid w-[min(1160px,calc(100%-36px))] gap-0 pb-4 md:hidden"
-        x-show="menuOpen"
-        style="display: none"
-        aria-label="Mobile navigation"
-      >
-        <a class="border-t border-black/10 py-[11px] font-bold" href="#programs" @click="menuOpen = false">Programs</a>
-        <a class="border-t border-black/10 py-[11px] font-bold" href="#free-activities" @click="menuOpen = false">Free Activities</a>
-        <a class="border-t border-black/10 py-[11px] font-bold" href="#schedule" @click="menuOpen = false">Schedule</a>
-        <a class="border-t border-black/10 py-[11px] font-bold" href="#members" @click="menuOpen = false">Members</a>
-        <a class="border-t border-black/10 py-[11px] font-bold" href="/volunteer" @click="menuOpen = false">Volunteer</a>
-        <a class="border-t border-black/10 py-[11px] font-bold" href="/volunteer" @click="menuOpen = false">Call Tracker</a>
-      </nav>
+      .program-head{margin-top:28px}
+      .program-head h2{font-size:1.3rem}
+      .program-head a{font-size:.68rem}
+      .program-slider{grid-auto-columns:44%}
+      .slide-btn{width:40px;height:40px;font-size:1.3rem}
+      .program-body{padding:9px 9px 11px}
+      .program-body strong{font-size:.74rem}
+      .program-type{font-size:.62rem}
+    }
+
+    @media (max-width:390px){
+      .hero-copy{width:58%}
+      .hero h1{font-size:2.08rem}
+      .journey strong{font-size:.66rem}
+      .journey small{display:none}
+      .journey{min-height:126px}
+      .program-slider{grid-auto-columns:49%}
+    }
+
+    @media (prefers-reduced-motion:reduce){
+      html{scroll-behavior:auto}
+      *{scroll-behavior:auto!important;transition:none!important}
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app-shell" id="home">
+    <header class="topbar">
+      <a class="brand" href="#home" aria-label="AOLF Connect home">
+        <img src="/assets/aolf-connect-logo.png" alt="AOLF Connect logo" />
+        <div>
+          <div class="brand-title">AOLF Connect</div>
+          <div class="brand-sub">Local Community</div>
+        </div>
+      </a>
+
+      <button class="menu-btn" id="menuButton" aria-label="Open menu" aria-expanded="false">
+        <span class="menu-lines"></span>
+      </button>
     </header>
 
     <main>
-      <section id="top" class="px-0 pb-[14px] pt-[34px] md:pb-[42px] md:pt-[74px]">
-        <div
-          class="mx-auto grid w-[min(1160px,calc(100%-36px))] grid-cols-1 items-center gap-7 md:grid-cols-[1.08fr_.92fr] md:gap-[62px]"
-        >
-          <div>
-            <div class="text-[0.72rem] font-extrabold uppercase tracking-[0.16em] text-[#a85f49]">
-              Breathe • Belong • Serve
-            </div>
-            <h1
-              class="mt-3 mb-4 max-w-[800px] font-serif text-[clamp(3.2rem,15vw,4.8rem)] leading-[0.89] font-medium tracking-[-0.04em] md:mb-[26px] md:text-[clamp(3.7rem,7vw,7.1rem)]"
-            >Come back to yourself.</h1>
-            <p class="max-w-[650px] text-[0.98rem] leading-[1.6] text-[#6f6a64] md:text-[1.08rem] md:leading-[1.75]">
-              Explore beginner programs, join free sessions and community events, continue your regular practices, or find a way to volunteer with your local Art of Living community.
-            </p>
+      <section class="hero" aria-labelledby="hero-title">
+        <picture class="hero-picture">
+          <source media="(max-width: 620px)" srcset="assets/hero-main.webp" />
+          <img class="hero-bg" src="assets/hero-main.webp" alt="Smiling participant at a vibrant community celebration" fetchpriority="high" />
+        </picture>
+        <div class="hero-copy">
+          <h1 id="hero-title">Come back<br/>to yourself.</h1>
+          <p>Discover programs and community for a happier, healthier life.</p>
+        </div>
 
-            <div class="mt-5 border-y border-black/10 md:max-w-[700px]">
-              <div class="grid grid-cols-3 py-3 text-center">
-                <a href="#programs" class="px-1 text-[0.76rem] font-extrabold whitespace-nowrap">
-                  New here? <span class="text-[#a85f49]">→</span>
-                </a>
-                <a href="#members" class="border-x border-black/10 px-1 text-[0.76rem] font-extrabold whitespace-nowrap">
-                  Member <span class="text-[#a85f49]">→</span>
-                </a>
-                <a href="/volunteer" class="px-1 text-[0.76rem] font-extrabold whitespace-nowrap">
-                  Volunteer <span class="text-[#a85f49]">→</span>
-                </a>
+        <div class="hero-actions">
+          <a class="hero-action primary" href="#programs">
+            <div class="action-icon"><svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm6.5-1.5a3.25 3.25 0 1 0 0-6.5 3.25 3.25 0 0 0 0 6.5ZM2.5 20v-1.5A5.5 5.5 0 0 1 8 13h2a5.5 5.5 0 0 1 5.5 5.5V20m0-6.4a5 5 0 0 1 6 4.9V20"/></svg></div>
+            <div>
+              <div class="action-title">Explore Programs</div>
+              <div class="action-sub">Find the right program for you</div>
+            </div>
+          </a>
+          <a class="hero-action secondary" href="#schedule">
+            <div class="action-icon"><svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2v3m12-3v3M3.5 9h17M5 4h14a2 2 0 0 1 2 2v14H3V6a2 2 0 0 1 2-2Zm3 9h.01M12 13h.01M16 13h.01M8 17h.01M12 17h.01"/></svg></div>
+            <div>
+              <div class="action-title">What’s On</div>
+              <div class="action-sub">View this week’s activities</div>
+            </div>
+          </a>
+        </div>
+      </section>
+
+      <div class="content">
+        <section class="featured-wrap" id="upcoming" aria-labelledby="next-program-title">
+          <div class="featured">
+            <div class="featured-photo">
+              <img src="assets/course.webp" alt="Participant meditating during an Art of Living session" loading="lazy" />
+            </div>
+            <div class="featured-body">
+              <span class="pill">Next program</span>
+              <!-- Replace these values later from Course Manager -->
+              <h2 id="next-program-title">Update from Course Manager</h2>
+              <p>Stay tuned! Upcoming program details will appear here.</p>
+              <div class="meta">
+                <span><svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2v3m12-3v3M3.5 9h17M5 4h14a2 2 0 0 1 2 2v14H3V6a2 2 0 0 1 2-2Zm3 9h.01M12 13h.01M16 13h.01M8 17h.01M12 17h.01"/></svg> Dates coming soon</span>
+                <span><svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 5.5-8 12-8 12S4 15.5 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg> Local Center</span>
               </div>
-              <a href="#free-activities" class="block border-t border-black/10 py-2.5 text-center text-[0.7rem] font-extrabold uppercase tracking-[0.08em] text-[#a85f49]">
-                Everyone’s Welcome ↓
+              <a class="whatsapp" href="https://wa.me/918884560660" target="_blank" rel="noopener noreferrer">
+                <svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 11.5a8.5 8.5 0 0 1-12.8 7.3L3 20l1.3-4.5A8.5 8.5 0 1 1 20.5 11.5Z"/><path d="M8.4 7.8c.4-.5.8-.4 1.1-.1l1.2 1.9c.2.3.1.6-.1.9l-.7.8c.7 1.5 1.9 2.7 3.5 3.4l.7-.8c.3-.3.6-.4.9-.2l1.9 1.1c.4.2.5.7.2 1.1-.7 1.1-1.9 1.6-3.1 1.3-4.2-1-7.3-4.1-8.2-8.1-.3-1.1.2-2.5 1.3-3.3"/></svg> Enquire on WhatsApp
               </a>
             </div>
           </div>
+        </section>
 
-          <div class="relative hidden min-h-[500px] md:block" aria-hidden="true">
-            <div class="absolute right-[7%] top-[8%] h-[340px] w-[340px] rounded-full bg-[#d9c4ad]"></div>
-            <div class="absolute bottom-[4%] left-[3%] h-[210px] w-[210px] rounded-full bg-[#9d6c57]"></div>
-            <div class="absolute right-0 bottom-4 w-[min(390px,90%)] rounded-[28px] border border-white/80 bg-white/80 p-[27px] shadow-[0_18px_50px_rgba(49,42,34,0.10)] backdrop-blur-xl">
-              <div class="text-[0.72rem] font-extrabold uppercase tracking-[0.16em] text-[#a85f49]">This week</div>
-              <div class="my-3 font-serif text-[2.15rem] leading-[1.1]">Practice together. Feel the difference.</div>
-              <div class="mt-[18px] flex justify-between gap-4 border-t border-black/10 pt-[15px] text-[0.79rem] text-[#6f6a64]">
-                <span>Weekly follow-up</span><span>Satsang & community</span>
-              </div>
-            </div>
+        <section aria-labelledby="looking-title">
+          <h2 class="section-title" id="looking-title">What are you looking for?</h2>
+          <div class="journeys">
+            <a class="journey" href="#programs">
+              <div class="journey-icon"><svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="7" r="3.2"/><path d="M5.5 20v-1.8A6.5 6.5 0 0 1 12 11.7a6.5 6.5 0 0 1 6.5 6.5V20"/><path d="M9.2 15.2 12 18l2.8-2.8"/></svg></div>
+              <strong>Programs for Adults</strong>
+              <small>Breath, Mind & Wellness</small>
+            </a>
+            <a class="journey" href="#programs">
+              <div class="journey-icon"><svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="8" r="3"/><circle cx="16.5" cy="9" r="2.5"/><path d="M3.5 20v-1.3A4.7 4.7 0 0 1 8.2 14h.3a4.7 4.7 0 0 1 4.7 4.7V20"/><path d="M13.2 15.3a4.1 4.1 0 0 1 3.5-2h.2a4.1 4.1 0 0 1 4.1 4.1V20"/><path d="M6.7 8.6c.4.6.8.9 1.3.9s1-.3 1.3-.9M15.5 9.5c.3.4.6.6 1 .6s.8-.2 1-.6"/></svg></div>
+              <strong>Programs for Kids & Teens</strong>
+              <small>Confidence, Focus & Joy</small>
+            </a>
+            <a class="journey" href="#programs">
+              <div class="journey-icon"><svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="2.5"/><path d="M8.5 10.5 6 14l-3 1.5M15.5 10.5 18 14l3 1.5M8 11.5l4 3 4-3M4.5 20c1.8-2.2 4.2-3.2 7.5-3.2s5.7 1 7.5 3.2M8.5 20 12 17l3.5 3"/></svg></div>
+              <strong>Meditation & Practices</strong>
+              <small>Daily practices for life</small>
+            </a>
+            <a class="journey" href="/volunteer">
+              <div class="journey-icon"><svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9.5c-2.3-3.2-6.5-1.6-6.5 1.6 0 2.6 3 4.7 6.5 7.4 3.5-2.7 6.5-4.8 6.5-7.4 0-3.2-4.2-4.8-6.5-1.6Z"/><path d="M3 13.5 1.8 16a2 2 0 0 0 .5 2.3L7 22m14-8.5 1.2 2.5a2 2 0 0 1-.5 2.3L17 22"/></svg></div>
+              <strong>Volunteer With Us</strong>
+              <small>Serve, Grow, Inspire</small>
+            </a>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section id="programs" class="px-0 py-[54px] pt-[22px] md:py-[78px]">
-        <div class="mx-auto w-[min(1160px,calc(100%-36px))]">
-          <div class="mb-[18px] flex flex-col items-start justify-between gap-6 md:mb-[30px] md:flex-row md:items-end">
-            <div>
-              <div class="text-[0.72rem] font-extrabold uppercase tracking-[0.16em] text-[#a85f49]">Begin your journey</div>
-              <h2 class="mt-[7px] font-serif text-[clamp(2.35rem,12vw,3.5rem)] leading-[0.95] font-medium tracking-[-0.04em] md:text-[clamp(2.6rem,5vw,4.8rem)]">Programs for you & your family</h2>
-            </div>
-            <div>
-              <p class="max-w-[440px] text-[0.9rem] leading-[1.55] text-[#6f6a64] md:text-base md:leading-[1.65]">Explore beginner programs and choose the experience that best fits you or your family.</p>
-              <div class="mt-[14px] hidden gap-2 md:flex">
-                <button type="button" class="h-11 w-11 cursor-pointer rounded-full border border-black/10 bg-white text-lg transition hover:bg-[#25221f] hover:text-white" aria-label="Previous program" @click="scrollPrograms(-1)">←</button>
-                <button type="button" class="h-11 w-11 cursor-pointer rounded-full border border-black/10 bg-white text-lg transition hover:bg-[#25221f] hover:text-white" aria-label="Next program" @click="scrollPrograms(1)">→</button>
-              </div>
-            </div>
-          </div>
-
-          <div x-ref="programSlider" class="grid snap-x snap-mandatory auto-cols-[86%] grid-flow-col gap-[14px] overflow-x-auto px-[3px] pt-1 pb-5 [scrollbar-width:none] md:auto-cols-[minmax(310px,36%)] md:gap-[18px] [&::-webkit-scrollbar]:hidden">
-            <article class="flex min-h-[340px] snap-start flex-col justify-between rounded-[28px] bg-[#eadbca] p-[23px] shadow-[0_18px_50px_rgba(49,42,34,0.10)] transition-transform hover:-translate-y-1 md:min-h-[380px] md:p-[27px]">
-              <div>
-                <span class="inline-flex w-max rounded-full border border-black/20 px-[10px] py-[7px] text-[0.68rem] font-extrabold uppercase tracking-[0.1em]">Adults</span>
-                <h3 class="my-[13px] font-serif text-[1.85rem] leading-[1.03] md:text-[2.1rem]">Happiness Program</h3>
-                <p class="m-0 leading-[1.65] text-[#514c47]">Breathwork, meditation and practical wisdom to reduce stress and bring greater energy, clarity and joy.</p>
-              </div>
-              <a class="flex items-center justify-between border-t border-black/15 pt-[18px] text-[0.85rem] font-extrabold" href="https://wa.me/918884560660" target="_blank" rel="noopener noreferrer"><span>Know more</span><span>↗</span></a>
-            </article>
-
-            <article class="flex min-h-[340px] snap-start flex-col justify-between rounded-[28px] bg-[#d8dfd2] p-[23px] shadow-[0_18px_50px_rgba(49,42,34,0.10)] transition-transform hover:-translate-y-1 md:min-h-[380px] md:p-[27px]">
-              <div>
-                <span class="inline-flex w-max rounded-full border border-black/20 px-[10px] py-[7px] text-[0.68rem] font-extrabold uppercase tracking-[0.1em]">Children & Teens</span>
-                <h3 class="my-[13px] font-serif text-[1.85rem] leading-[1.03] md:text-[2.1rem]">Intuition Process</h3>
-                <p class="m-0 leading-[1.65] text-[#514c47]">A joyful experiential program designed to nurture intuition, confidence, focus, memory and creativity.</p>
-              </div>
-              <a class="flex items-center justify-between border-t border-black/15 pt-[18px] text-[0.85rem] font-extrabold" href="https://wa.me/918884560660" target="_blank" rel="noopener noreferrer"><span>Know more</span><span>↗</span></a>
-            </article>
-
-            <article class="flex min-h-[340px] snap-start flex-col justify-between rounded-[28px] bg-[#d8c4bc] p-[23px] shadow-[0_18px_50px_rgba(49,42,34,0.10)] transition-transform hover:-translate-y-1 md:min-h-[380px] md:p-[27px]">
-              <div>
-                <span class="inline-flex w-max rounded-full border border-black/20 px-[10px] py-[7px] text-[0.68rem] font-extrabold uppercase tracking-[0.1em]">Meditation</span>
-                <h3 class="my-[13px] font-serif text-[1.85rem] leading-[1.03] md:text-[2.1rem]">Sahaj Samadhi Meditation</h3>
-                <p class="m-0 leading-[1.65] text-[#514c47]">Learn an effortless mantra-based meditation technique that allows the mind to settle deeply and naturally.</p>
-              </div>
-              <a class="flex items-center justify-between border-t border-black/15 pt-[18px] text-[0.85rem] font-extrabold" href="https://wa.me/918884560660" target="_blank" rel="noopener noreferrer"><span>Know more</span><span>↗</span></a>
-            </article>
-          </div>
-        </div>
-      </section>
-
-      <section id="free-activities" class="px-0 pb-[54px] md:pb-[78px]">
-        <div class="mx-auto w-[min(1160px,calc(100%-36px))]">
-          <div class="mb-[18px] flex flex-col items-start justify-between gap-6 md:mb-[30px] md:flex-row md:items-end">
-            <div>
-              <div class="text-[0.72rem] font-extrabold uppercase tracking-[0.16em] text-[#a85f49]">Explore for free</div>
-              <h2 class="mt-[7px] font-serif text-[clamp(2.35rem,12vw,3.5rem)] leading-[0.95] font-medium tracking-[-0.04em] md:text-[clamp(2.6rem,5vw,4.8rem)]">Join us before taking a program</h2>
-            </div>
-            <div>
-              <p class="max-w-[440px] text-[0.9rem] leading-[1.55] text-[#6f6a64] md:text-base md:leading-[1.65]">Come experience the community through free online and offline sessions, satsangs and local gatherings.</p>
-              <div class="mt-[14px] hidden gap-2 md:flex">
-                <button type="button" class="h-11 w-11 cursor-pointer rounded-full border border-black/10 bg-white text-lg transition hover:bg-[#25221f] hover:text-white" aria-label="Previous free activity" @click="scrollFree(-1)">←</button>
-                <button type="button" class="h-11 w-11 cursor-pointer rounded-full border border-black/10 bg-white text-lg transition hover:bg-[#25221f] hover:text-white" aria-label="Next free activity" @click="scrollFree(1)">→</button>
-              </div>
-            </div>
+        <section id="programs" aria-labelledby="programs-title">
+          <div class="program-head">
+            <h2 id="programs-title">Our Programs</h2>
+            <a href="https://www.artofliving.org/in-en/programs" target="_blank" rel="noopener noreferrer">View all programs&nbsp; →</a>
           </div>
 
-          <div x-ref="freeSlider" class="grid snap-x snap-mandatory auto-cols-[86%] grid-flow-col gap-[14px] overflow-x-auto px-[3px] pt-1 pb-5 [scrollbar-width:none] md:auto-cols-[minmax(310px,36%)] md:gap-[18px] [&::-webkit-scrollbar]:hidden">
-            <article class="flex min-h-[315px] snap-start flex-col justify-between rounded-[28px] bg-[#e6dfcc] p-[23px] shadow-[0_18px_50px_rgba(49,42,34,0.08)] md:p-[27px]">
-              <div><span class="inline-flex w-max rounded-full border border-black/20 px-[10px] py-[7px] text-[0.68rem] font-extrabold uppercase tracking-[0.1em]">Online & Offline</span><h3 class="my-[13px] font-serif text-[1.85rem] leading-[1.03] md:text-[2.1rem]">Free Intro Session</h3><p class="m-0 leading-[1.65] text-[#514c47]">Experience simple breathing and meditation practices and learn what the Happiness Program offers.</p></div>
-              <a class="flex items-center justify-between border-t border-black/15 pt-[18px] text-[0.85rem] font-extrabold" href="#schedule"><span>See upcoming sessions</span><span>→</span></a>
-            </article>
-            <article class="flex min-h-[315px] snap-start flex-col justify-between rounded-[28px] bg-[#d8dfd2] p-[23px] shadow-[0_18px_50px_rgba(49,42,34,0.08)] md:p-[27px]">
-              <div><span class="inline-flex w-max rounded-full border border-black/20 px-[10px] py-[7px] text-[0.68rem] font-extrabold uppercase tracking-[0.1em]">Everyone Welcome</span><h3 class="my-[13px] font-serif text-[1.85rem] leading-[1.03] md:text-[2.1rem]">Satsang</h3><p class="m-0 leading-[1.65] text-[#514c47]">Music, meditation, wisdom and joyful community gatherings open to everyone.</p></div>
-              <a class="flex items-center justify-between border-t border-black/15 pt-[18px] text-[0.85rem] font-extrabold" href="#schedule"><span>See satsang schedule</span><span>→</span></a>
-            </article>
-            <article class="flex min-h-[315px] snap-start flex-col justify-between rounded-[28px] bg-[#eadbca] p-[23px] shadow-[0_18px_50px_rgba(49,42,34,0.08)] md:p-[27px]">
-              <div><span class="inline-flex w-max rounded-full border border-black/20 px-[10px] py-[7px] text-[0.68rem] font-extrabold uppercase tracking-[0.1em]">Guided Experience</span><h3 class="my-[13px] font-serif text-[1.85rem] leading-[1.03] md:text-[2.1rem]">Intro to Meditation</h3><p class="m-0 leading-[1.65] text-[#514c47]">A simple guided session for anyone who would like to experience meditation in a relaxed setting.</p></div>
-              <a class="flex items-center justify-between border-t border-black/15 pt-[18px] text-[0.85rem] font-extrabold" href="#schedule"><span>Find a session</span><span>→</span></a>
-            </article>
-            <article class="flex min-h-[315px] snap-start flex-col justify-between rounded-[28px] bg-[#d8c4bc] p-[23px] shadow-[0_18px_50px_rgba(49,42,34,0.08)] md:p-[27px]">
-              <div><span class="inline-flex w-max rounded-full border border-black/20 px-[10px] py-[7px] text-[0.68rem] font-extrabold uppercase tracking-[0.1em]">Community</span><h3 class="my-[13px] font-serif text-[1.85rem] leading-[1.03] md:text-[2.1rem]">Special Events & Celebrations</h3><p class="m-0 leading-[1.65] text-[#514c47]">Join local celebrations, spiritual gatherings and special community events throughout the year.</p></div>
-              <a class="flex items-center justify-between border-t border-black/15 pt-[18px] text-[0.85rem] font-extrabold" href="#schedule"><span>See what’s coming up</span><span>→</span></a>
-            </article>
-          </div>
-        </div>
-      </section>
-
-      <section id="schedule" class="bg-[#41473b] px-0 py-[54px] text-[#f7f2eb] md:py-[78px]">
-        <div class="mx-auto w-[min(1160px,calc(100%-36px))]">
-          <div class="flex flex-col items-start justify-between gap-[30px] md:flex-row md:items-end">
-            <div>
-              <div class="text-[0.72rem] font-extrabold uppercase tracking-[0.16em] text-[#e4c4a3]">Stay connected</div>
-              <h2 class="mt-2 font-serif text-[clamp(3rem,6vw,5.3rem)] leading-none font-medium tracking-[-0.04em]">Schedule</h2>
-              <p class="mt-4 max-w-[560px] text-[0.9rem] leading-[1.65] text-[#cbc9c3]">Find free activities open to everyone, regular member practices and special community events.</p>
-            </div>
-            <a class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full border border-white px-5 py-[13px] text-[0.88rem] font-extrabold text-white" href="https://wa.me/918884560660" target="_blank" rel="noopener noreferrer">Ask for timings ↗</a>
-          </div>
-
-          <div class="flex gap-2 overflow-x-auto py-6 pb-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="tablist" aria-label="Schedule categories">
-            <button type="button" @click="activeDay = 'all'" :class="activeDay === 'all' ? 'bg-[#f1e5d7] text-[#25221f] border-[#f1e5d7]' : 'border-white/20 text-white'" class="whitespace-nowrap rounded-full border px-4 py-[11px] text-[0.8rem] font-bold">This week</button>
-            <button type="button" @click="activeDay = 'free'" :class="activeDay === 'free' ? 'bg-[#f1e5d7] text-[#25221f] border-[#f1e5d7]' : 'border-white/20 text-white'" class="whitespace-nowrap rounded-full border px-4 py-[11px] text-[0.8rem] font-bold">Free & Open</button>
-            <button type="button" @click="activeDay = 'practice'" :class="activeDay === 'practice' ? 'bg-[#f1e5d7] text-[#25221f] border-[#f1e5d7]' : 'border-white/20 text-white'" class="whitespace-nowrap rounded-full border px-4 py-[11px] text-[0.8rem] font-bold">Follow-ups</button>
-            <button type="button" @click="activeDay = 'community'" :class="activeDay === 'community' ? 'bg-[#f1e5d7] text-[#25221f] border-[#f1e5d7]' : 'border-white/20 text-white'" class="whitespace-nowrap rounded-full border px-4 py-[11px] text-[0.8rem] font-bold">Satsang</button>
-            <button type="button" @click="activeDay = 'special'" :class="activeDay === 'special' ? 'bg-[#f1e5d7] text-[#25221f] border-[#f1e5d7]' : 'border-white/20 text-white'" class="whitespace-nowrap rounded-full border px-4 py-[11px] text-[0.8rem] font-bold">Special Events</button>
-          </div>
-
-          <div class="border-t border-white/20">
-            <div x-show="activeDay === 'all' || activeDay === 'free'" class="grid grid-cols-[95px_1fr] items-center gap-7 border-b border-white/20 py-6 md:grid-cols-[140px_1fr_auto]">
-              <div class="font-serif text-[1.45rem]">Upcoming</div>
-              <div><h3 class="mb-1.5 text-[1.08rem] font-bold">Free Intro Sessions</h3><p class="m-0 text-[0.84rem] text-[#cbc9c3]">Online and offline introductions for anyone exploring the Art of Living.</p></div>
-              <span class="col-start-2 w-max whitespace-nowrap rounded-full border border-white/25 px-[11px] py-2 text-[0.7rem] font-extrabold md:col-auto">Everyone welcome</span>
-            </div>
-            <div x-show="activeDay === 'all' || activeDay === 'practice'" class="grid grid-cols-[95px_1fr] items-center gap-7 border-b border-white/20 py-6 md:grid-cols-[140px_1fr_auto]">
-              <div class="font-serif text-[1.45rem]">Weekly</div>
-              <div><h3 class="mb-1.5 text-[1.08rem] font-bold">Community Follow-up</h3><p class="m-0 text-[0.84rem] text-[#cbc9c3]">Practice together and refresh your techniques with fellow course graduates.</p></div>
-              <span class="col-start-2 w-max whitespace-nowrap rounded-full border border-white/25 px-[11px] py-2 text-[0.7rem] font-extrabold md:col-auto">Members</span>
-            </div>
-            <div x-show="activeDay === 'all' || activeDay === 'community'" class="grid grid-cols-[95px_1fr] items-center gap-7 border-b border-white/20 py-6 md:grid-cols-[140px_1fr_auto]">
-              <div class="font-serif text-[1.45rem]">Weekly</div>
-              <div><h3 class="mb-1.5 text-[1.08rem] font-bold">Satsang & Chapter Gatherings</h3><p class="m-0 text-[0.84rem] text-[#cbc9c3]">Music, meditation, knowledge and celebrations with the local community.</p></div>
-              <span class="col-start-2 w-max whitespace-nowrap rounded-full border border-white/25 px-[11px] py-2 text-[0.7rem] font-extrabold md:col-auto">Open to all</span>
-            </div>
-            <div x-show="activeDay === 'all' || activeDay === 'special'" class="grid grid-cols-[95px_1fr] items-center gap-7 border-b border-white/20 py-6 md:grid-cols-[140px_1fr_auto]">
-              <div class="font-serif text-[1.45rem]">Upcoming</div>
-              <div><h3 class="mb-1.5 text-[1.08rem] font-bold">Special Programs & Celebrations</h3><p class="m-0 text-[0.84rem] text-[#cbc9c3]">Festivals, spiritual gatherings and special local events.</p></div>
-              <span class="col-start-2 w-max whitespace-nowrap rounded-full border border-white/25 px-[11px] py-2 text-[0.7rem] font-extrabold md:col-auto">Events</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="members" class="px-0 py-[54px] md:py-[78px]">
-        <div class="mx-auto grid w-[min(1160px,calc(100%-36px))] grid-cols-1 items-center gap-7 md:grid-cols-[.9fr_1.1fr] md:gap-[70px]">
-          <div class="flex min-h-[420px] flex-col justify-between rounded-[32px] bg-[#f0e7dc] p-9">
-            <div class="font-serif text-[5rem] leading-[0.7] text-[#a85f49]">“</div>
-            <blockquote class="m-0 font-serif text-[2.15rem] leading-[1.17]">Community makes practice easier, richer and more joyful.</blockquote>
-            <div class="text-[0.72rem] font-extrabold uppercase tracking-[0.16em] text-[#a85f49]">Your local chapter</div>
-          </div>
-
-          <div>
-            <div class="text-[0.72rem] font-extrabold uppercase tracking-[0.16em] text-[#a85f49]">For course graduates</div>
-            <h2 class="mt-2 mb-[22px] font-serif text-[clamp(2.8rem,5vw,4.7rem)] leading-[0.96] font-medium tracking-[-0.04em]">Stay connected. Keep growing.</h2>
-            <p class="leading-[1.75] text-[#6f6a64]">Continue your journey through regular practices, satsangs, advanced programs and seva with your local community.</p>
-            <div class="mt-[30px] border-t border-black/10">
-              <a class="flex justify-between border-b border-black/10 py-4 font-extrabold" href="#schedule"><span>Weekly Practices & Follow-ups</span><span>→</span></a>
-              <a class="flex justify-between border-b border-black/10 py-4 font-extrabold" href="#schedule"><span>Satsang & Community</span><span>→</span></a>
-              <a class="flex justify-between border-b border-black/10 py-4 font-extrabold" href="https://wa.me/918884560660" target="_blank" rel="noopener noreferrer"><span>Advanced Programs</span><span>↗</span></a>
-              <a class="flex justify-between border-b border-black/10 py-4 font-extrabold" href="/volunteer"><span>Volunteer / Seva Opportunities</span><span>→</span></a>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="volunteer" class="px-0 pb-[54px] md:pb-[78px]">
-        <div class="mx-auto w-[min(1160px,calc(100%-36px))]">
-          <div class="rounded-[34px] bg-[#f0e7dc] p-[30px] md:p-[42px]">
-            <div class="grid gap-8 md:grid-cols-[.9fr_1.1fr] md:items-center">
-              <div>
-                <div class="text-[0.72rem] font-extrabold uppercase tracking-[0.16em] text-[#a85f49]">Want to contribute?</div>
-                <h2 class="mt-2 font-serif text-[clamp(2.4rem,5vw,4.3rem)] leading-[0.96] font-medium tracking-[-0.04em]">There’s always a way to serve.</h2>
-                <p class="mt-5 leading-[1.7] text-[#6f6a64]">Choose a seva that fits your time and interests. You can help occasionally or take up a regular responsibility.</p>
-              </div>
-              <div>
-                <div class="grid gap-3 sm:grid-cols-2">
-                  <div class="rounded-[18px] bg-white/70 p-4 font-bold">Help with upcoming programs</div>
-                  <div class="rounded-[18px] bg-white/70 p-4 font-bold">Welcome desk & registrations</div>
-                  <div class="rounded-[18px] bg-white/70 p-4 font-bold">Satsang & event setup</div>
-                  <div class="rounded-[18px] bg-white/70 p-4 font-bold">Calling & outreach</div>
-                  <div class="rounded-[18px] bg-white/70 p-4 font-bold">Social media & creative help</div>
-                  <div class="rounded-[18px] bg-white/70 p-4 font-bold">Other local seva</div>
+          <div class="program-area">
+            <button class="slide-btn prev" id="prevProgram" aria-label="Previous programs">‹</button>
+            <div class="program-slider" id="programSlider">
+              <a class="program-card" href="https://wa.me/918884560660" target="_blank" rel="noopener noreferrer">
+                <img src="assets/course-hp.webp" alt="Happiness Program" loading="lazy" />
+                <div class="program-body">
+                  <strong>Happiness Program</strong>
+                  <div class="program-type">Adults</div>
                 </div>
-                <a class="mt-5 inline-flex items-center justify-center gap-2 rounded-full bg-[#25221f] px-5 py-[13px] text-[0.88rem] font-extrabold text-white" href="/volunteer">See current volunteer opportunities →</a>
-              </div>
+              </a>
+
+              <a class="program-card" href="https://wa.me/918884560660" target="_blank" rel="noopener noreferrer">
+                <img src="assets/course-ip.webp" alt="Intuition Program" loading="lazy" />
+                <div class="program-body">
+                  <strong>Art of Living Intuition Program (IP)</strong>
+                  <div class="program-type">Kids & Teens</div>
+                </div>
+              </a>
+
+              <a class="program-card" href="https://wa.me/918884560660" target="_blank" rel="noopener noreferrer">
+                <img src="assets/course-sahaj.webp" alt="Sahaj Samadhi Meditation" loading="lazy" />
+                <div class="program-body">
+                  <strong>Sahaj Samadhi Meditation</strong>
+                  <div class="program-type">Adults</div>
+                </div>
+              </a>
             </div>
+            <button class="slide-btn next" id="nextProgram" aria-label="Next programs">›</button>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section class="px-0 pt-1 pb-[54px] md:pb-[78px]">
-        <div class="mx-auto w-[min(1160px,calc(100%-36px))]">
-          <div class="flex flex-col items-start justify-between gap-8 rounded-[34px] bg-[#b06b54] p-[30px] text-white md:flex-row md:items-center md:p-[42px]">
-            <div>
-              <h2 class="m-0 max-w-[680px] font-serif text-[clamp(2.25rem,4vw,4rem)] leading-none font-medium tracking-[-0.04em]">Not sure where to begin?</h2>
-              <p class="mt-4 mb-0 max-w-[680px] text-[0.92rem] leading-[1.65] text-white/80">Whether you’re looking for a program, a free introductory session or a local community activity, we’re happy to help.</p>
-            </div>
-            <a class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full border border-white px-5 py-[13px] text-[0.88rem] font-extrabold text-white" href="https://wa.me/918884560660" target="_blank" rel="noopener noreferrer">Chat on WhatsApp ↗</a>
-          </div>
-        </div>
-      </section>
-    </main>
-
-    <a class="fixed right-5 bottom-5 z-40 grid h-14 w-14 place-items-center rounded-full bg-[#316b4c] text-xl text-white shadow-[0_10px_30px_rgba(0,0,0,0.18)]" href="https://wa.me/918884560660" target="_blank" rel="noopener noreferrer" aria-label="Chat with us on WhatsApp">✆</a>
-
-    <footer class="mt-[70px] border-t border-black/10 px-0 pt-[42px] pb-[50px]">
-      <div class="mx-auto flex w-[min(1160px,calc(100%-36px))] flex-col items-start justify-between gap-[30px] md:flex-row md:items-end">
-        <div>
-          <a href="/" class="flex items-center gap-[11px]">
-            <img src="/assets/aolf-connect-logo.png" alt="AOLF Connect" class="h-[42px] w-[42px] rounded-[13px] object-contain" />
-            <div><div class="text-base font-extrabold">AOLF Connect</div><div class="mt-0.5 text-[0.66rem] uppercase tracking-[0.14em] text-[#6f6a64]">Breathe • Belong • Serve</div></div>
+        <!-- These compact targets give the fixed navigation somewhere useful to go.
+             Replace with dynamic schedule/course data in your next phase. -->
+        <section class="mini-sections">
+          <a class="mini" id="schedule" href="https://wa.me/918884560660" target="_blank" rel="noopener noreferrer">
+            <div><h3>This Week</h3><p>Ask for intro sessions, follow-ups, satsangs and special events.</p></div><span>→</span>
           </a>
-          <div class="mt-[14px] text-[0.72rem] text-[#99918a]">© <span x-text="year">2026</span> AOLF Connect. Built in the spirit of seva.</div>
-        </div>
-
-        <div class="flex flex-wrap justify-start gap-[18px] text-[0.78rem] font-bold text-[#6f6a64] md:justify-end">
-          <a href="#programs">Programs</a>
-          <a href="#free-activities">Free Activities</a>
-          <a href="#schedule">Schedule</a>
-          <a href="#members">Members</a>
-          <a href="/volunteer">Volunteer</a>
-          <a href="/volunteer">Call Tracker</a>
-          <a href="/privacy.html">Privacy Policy</a>
-          <a href="/terms.html">Terms of Service</a>
-          <a href="https://www.artofliving.org/" target="_blank" rel="noopener noreferrer">Official Art of Living site</a>
-        </div>
+          <a class="mini" id="contact" href="https://wa.me/918884560660" target="_blank" rel="noopener noreferrer">
+            <div><h3>Need help choosing?</h3><p>Chat with the local team on WhatsApp.</p></div><span>→</span>
+          </a>
+        </section>
       </div>
-    </footer>
-  </body>
+    </main>
+  </div>
+
+  <nav class="bottom-nav" aria-label="Primary mobile navigation">
+    <a class="nav-item active" href="#home"><span class="nav-icon"><svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 11 9-8 9 8v10h-6v-6H9v6H3V11Z"/></svg></span><span>Home</span></a>
+    <a class="nav-item" href="#programs"><span class="nav-icon"><svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span><span>Programs</span></a>
+    <a class="nav-item" href="#schedule"><span class="nav-icon"><svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2v3m12-3v3M4 9h16M5 4h14a2 2 0 0 1 2 2v15H3V6a2 2 0 0 1 2-2Z"/><path d="m8 15 2.2 2.2L16 12"/></svg></span><span>Schedule</span></a>
+    <a class="nav-item" href="https://wa.me/918884560660" target="_blank" rel="noopener noreferrer"><span class="nav-icon"><svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 11.5a8.5 8.5 0 0 1-12.8 7.3L3 20l1.3-4.5A8.5 8.5 0 1 1 20.5 11.5Z"/><path d="M8.4 7.8c.4-.5.8-.4 1.1-.1l1.2 1.9c.2.3.1.6-.1.9l-.7.8c.7 1.5 1.9 2.7 3.5 3.4l.7-.8c.3-.3.6-.4.9-.2l1.9 1.1c.4.2.5.7.2 1.1-.7 1.1-1.9 1.6-3.1 1.3-4.2-1-7.3-4.1-8.2-8.1-.3-1.1.2-2.5 1.3-3.3"/></svg></span><span>Contact</span></a>
+    <button class="nav-item" id="moreButton" type="button" style="border:0;background:transparent"><span class="nav-icon"><svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.6" class="fill-icon"/><circle cx="12" cy="12" r="1.6" class="fill-icon"/><circle cx="19" cy="12" r="1.6" class="fill-icon"/></svg></span><span>More</span></button>
+  </nav>
+
+  <div class="menu-sheet" id="menuSheet" aria-hidden="true">
+    <div class="menu-panel">
+      <div class="menu-head">
+        <strong>Explore AOLF Connect</strong>
+        <button class="close-btn" id="closeMenu" aria-label="Close menu">×</button>
+      </div>
+      <a class="menu-link" href="#programs">Programs <span>→</span></a>
+      <a class="menu-link" href="#schedule">Schedule <span>→</span></a>
+      <a class="menu-link" href="https://wa.me/918884560660" target="_blank" rel="noopener noreferrer">Contact <span>↗</span></a>
+      <a class="menu-link" href="/volunteer">Volunteer <span>→</span></a>
+      <a class="menu-link" href="/privacy.html">Privacy Policy <span>→</span></a>
+      <a class="menu-link" href="/terms.html">Terms of Service <span>→</span></a>
+      <a class="menu-call" href="/volunteer">Open Call Tracker</a>
+    </div>
+  </div>
+
+  <script>
+    const slider = document.getElementById('programSlider');
+    const step = () => Math.max(170, slider.clientWidth * .48);
+    document.getElementById('prevProgram').addEventListener('click', () => slider.scrollBy({left:-step(),behavior:'smooth'}));
+    document.getElementById('nextProgram').addEventListener('click', () => slider.scrollBy({left:step(),behavior:'smooth'}));
+
+    const sheet = document.getElementById('menuSheet');
+    const menuButton = document.getElementById('menuButton');
+    const moreButton = document.getElementById('moreButton');
+    const closeMenu = document.getElementById('closeMenu');
+
+    function setMenu(open){
+      sheet.classList.toggle('open', open);
+      sheet.setAttribute('aria-hidden', String(!open));
+      menuButton.setAttribute('aria-expanded', String(open));
+      document.body.style.overflow = open ? 'hidden' : '';
+    }
+    menuButton.addEventListener('click', () => setMenu(true));
+    moreButton.addEventListener('click', () => setMenu(true));
+    closeMenu.addEventListener('click', () => setMenu(false));
+    sheet.addEventListener('click', (e) => { if(e.target === sheet) setMenu(false); });
+    sheet.querySelectorAll('a[href^="#"]').forEach(a => a.addEventListener('click', () => setMenu(false)));
+  </script>
+</body>
 </html>
