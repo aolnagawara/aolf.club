@@ -150,6 +150,16 @@
     .hero p{
       max-width:285px;margin:22px 0 0;font-size:1.08rem;line-height:1.45;color:#282a2e;font-weight:510
     }
+    .hero-benefits{
+      position:absolute;left:28px;bottom:224px;width:min(390px,52%);z-index:2;
+      display:flex;align-items:center;justify-content:center;gap:6px;
+      padding:8px 10px;border-radius:999px;background:rgba(255,255,255,.72);
+      border:1px solid rgba(255,255,255,.82);box-shadow:0 5px 18px rgba(32,29,22,.06);
+      backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px);
+    }
+    .hero-benefit{display:flex;align-items:center;gap:4px;font-size:.67rem;font-weight:820;white-space:nowrap;color:#25282d}
+    .hero-benefit + .hero-benefit:before{content:"•";margin:0 3px;color:#b78b35;font-size:.72rem}
+    .hero-benefit .svg-icon{width:14px;height:14px;stroke-width:2}
     .hero-actions{
       position:absolute;
       left:28px;
@@ -173,24 +183,39 @@
 
     .content{padding:0 18px}
     .featured-wrap{position:relative;margin-top:-12px;z-index:8}
-    .featured{
-      border:1px solid rgba(255,255,255,.9);
-      background:rgba(255,253,248,.96);
-      border-radius:25px;padding:14px;
-      box-shadow:var(--shadow);
-      display:grid;grid-template-columns:42% 1fr;gap:16px;
+    .upcoming-shell{
+      position:relative;border:1px solid rgba(255,255,255,.9);background:rgba(255,253,248,.96);
+      border-radius:25px;padding:14px;box-shadow:var(--shadow);overflow:hidden;
     }
-    .featured-photo{
-      min-height:220px;border-radius:19px;overflow:hidden;background:#ece6db;
+    .upcoming-track{
+      display:grid;grid-auto-flow:column;grid-auto-columns:100%;overflow:auto;scroll-snap-type:x mandatory;
+      scroll-behavior:smooth;scrollbar-width:none;
     }
+    .upcoming-track::-webkit-scrollbar{display:none}
+    .upcoming-slide{
+      scroll-snap-align:start;display:grid;grid-template-columns:42% 1fr;gap:16px;min-width:0;
+    }
+    .featured-photo{min-height:220px;border-radius:19px;overflow:hidden;background:#ece6db}
     .featured-photo img{width:100%;height:100%;object-fit:cover;object-position:50% 42%}
-    .featured-body{padding:8px 8px 8px 0;align-self:center}
+    .featured-body{padding:8px 8px 8px 0;align-self:center;min-width:0}
     .pill{
       display:inline-flex;border-radius:999px;background:#ffe7a8;color:#4c3904;
       padding:6px 10px;font-size:.66rem;font-weight:900;letter-spacing:.03em;text-transform:uppercase
     }
-    .featured h2{font-size:1.7rem;line-height:1.02;letter-spacing:-.04em;margin:12px 0 10px}
-    .featured p{font-size:.86rem;line-height:1.48;color:#45484f;margin:0 0 12px}
+    .upcoming-slide h2{font-size:1.7rem;line-height:1.02;letter-spacing:-.04em;margin:12px 0 10px}
+    .upcoming-slide p{font-size:.86rem;line-height:1.48;color:#45484f;margin:0 0 12px}
+    .upcoming-meta{display:grid;gap:5px;margin:0 0 13px;font-size:.73rem;font-weight:730;color:#34373c}
+    .upcoming-meta span{display:flex;align-items:center;gap:6px}
+    .upcoming-meta .svg-icon{width:15px;height:15px;flex:0 0 15px}
+    .upcoming-controls{display:none;align-items:center;justify-content:center;gap:10px;margin-top:10px}
+    .upcoming-shell.has-multiple .upcoming-controls{display:flex}
+    .upcoming-arrow{
+      width:36px;height:36px;border:1px solid var(--line);border-radius:50%;background:white;cursor:pointer;
+      display:grid;place-items:center;font-size:1.2rem;box-shadow:0 4px 12px rgba(0,0,0,.08)
+    }
+    .upcoming-dots{display:flex;align-items:center;justify-content:center;gap:6px}
+    .upcoming-dot{width:7px;height:7px;border:0;padding:0;border-radius:999px;background:#c9c3ba;cursor:pointer}
+    .upcoming-dot.active{width:20px;background:#25282d}
     .meta{display:flex;gap:13px;flex-wrap:wrap;font-size:.78rem;font-weight:730;margin-bottom:13px}
     .whatsapp{
       display:inline-flex;align-items:center;gap:7px;background:var(--green);color:white;
@@ -260,6 +285,29 @@
     .slide-btn.prev{left:-10px}
     .slide-btn.next{right:-10px}
 
+    .schedule-section{margin:34px -18px 0;padding:30px 18px 32px;background:#41473b;color:#f7f2eb}
+    .schedule-head{display:flex;align-items:end;justify-content:space-between;gap:18px}
+    .schedule-head h2{margin:0;font-size:1.55rem;letter-spacing:-.04em}
+    .schedule-head p{margin:7px 0 0;max-width:520px;color:#cbc9c3;font-size:.8rem;line-height:1.5}
+    .schedule-ask{border:1px solid rgba(255,255,255,.65);border-radius:999px;padding:10px 13px;font-size:.72rem;font-weight:850;white-space:nowrap}
+    .schedule-tabs{display:flex;gap:7px;overflow:auto;padding:20px 0 15px;scrollbar-width:none}
+    .schedule-tabs::-webkit-scrollbar{display:none}
+    .schedule-tab{border:1px solid rgba(255,255,255,.22);background:transparent;color:white;border-radius:999px;padding:9px 12px;font-size:.7rem;font-weight:800;white-space:nowrap;cursor:pointer}
+    .schedule-tab.active{background:#f1e5d7;color:#25221f;border-color:#f1e5d7}
+    .schedule-list{border-top:1px solid rgba(255,255,255,.2)}
+    .schedule-item{display:grid;grid-template-columns:82px 1fr auto;gap:16px;align-items:center;padding:18px 0;border-bottom:1px solid rgba(255,255,255,.2)}
+    .schedule-when{font-size:.9rem;font-weight:850}
+    .schedule-item h3{margin:0 0 4px;font-size:.9rem}
+    .schedule-item p{margin:0;color:#cbc9c3;font-size:.7rem;line-height:1.4}
+    .schedule-badge{border:1px solid rgba(255,255,255,.24);border-radius:999px;padding:7px 9px;font-size:.62rem;font-weight:850;white-space:nowrap}
+    .community-sections{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:20px}
+    .community-card{border-radius:20px;padding:20px;background:#f7f1e8}
+    .contribute-card{grid-column:1/-1}
+    .community-card h3{margin:0 0 7px;font-size:1.05rem}
+    .community-card p{margin:0 0 12px;color:var(--muted);font-size:.77rem;line-height:1.45}
+    .community-links{display:grid;gap:7px;font-size:.73rem;font-weight:800}
+    .community-links a{padding-top:7px;border-top:1px solid var(--line)}
+
     .mini-sections{display:grid;gap:12px;padding-bottom:18px}
     .mini{
       border-radius:20px;padding:19px;background:#f7f1e8;display:flex;align-items:center;justify-content:space-between;gap:16px
@@ -299,24 +347,34 @@
       }
       .hero-copy{width:55%;padding:34px 0 0 20px}
       .hero h1{font-size:clamp(2.15rem,10.7vw,2.95rem)}
-      .hero p{font-size:.88rem;line-height:1.40;max-width:195px;margin-top:14px}
-      .hero-actions{
-        left:18px;right:18px;bottom:16px;width:auto;
-        grid-template-columns:1fr;gap:8px;
+      /* Center the supporting copy in the open vertical space below the headline. */
+      .hero p{font-size:.88rem;line-height:1.40;max-width:195px;margin-top:64px}
+      /* Keep the three benefits on one compact line, above the actions and clear of the face. */
+      .hero-benefits{
+        left:18px;right:auto;bottom:142px;width:max-content;max-width:calc(100% - 36px);margin:0;padding:7px 11px;gap:5px;
+        flex-direction:row;align-items:center;justify-content:flex-start;border-radius:999px;
       }
-      .hero-action{min-height:58px;padding:9px 14px}
-      .action-icon{width:38px;height:38px;flex-basis:38px}
+      .hero-benefit{font-size:.57rem;gap:4px}
+      .hero-benefit + .hero-benefit:before{display:block;margin:0 2px}
+      .hero-benefit .svg-icon{width:12px;height:12px;flex:0 0 12px}
+      .hero-actions{
+        left:18px;right:auto;bottom:18px;width:min(88%,560px);
+        grid-template-columns:1fr;gap:7px;
+      }
+      .hero-action{min-height:52px;padding:7px 13px}
+      .action-icon{width:36px;height:36px;flex-basis:36px}
       .action-title{font-size:.92rem}
       .action-sub{font-size:.69rem}
 
       .content{padding:0 12px}
       .featured-wrap{margin-top:-4px}
-      .featured{grid-template-columns:39% 1fr;gap:11px;padding:10px;border-radius:22px}
+      .upcoming-shell{padding:10px;border-radius:22px}
+      .upcoming-slide{grid-template-columns:39% 1fr;gap:11px}
       .featured-photo{min-height:185px;border-radius:15px}
       .featured-body{padding:4px 4px 4px 0}
       .pill{font-size:.58rem;padding:5px 8px}
-      .featured h2{font-size:1.18rem;margin:9px 0 8px}
-      .featured p{font-size:.72rem;margin-bottom:8px}
+      .upcoming-slide h2{font-size:1.18rem;margin:9px 0 8px}
+      .upcoming-slide p{font-size:.72rem;margin-bottom:8px}
       .meta{font-size:.63rem;gap:8px;margin-bottom:10px}
       .whatsapp{font-size:.68rem;padding:9px 11px}
 
@@ -335,11 +393,20 @@
       .program-body{padding:9px 9px 11px}
       .program-body strong{font-size:.74rem}
       .program-type{font-size:.62rem}
+      .schedule-section{margin-left:-12px;margin-right:-12px;padding:27px 14px 28px}
+      .schedule-head{align-items:flex-start;flex-direction:column}
+      .schedule-item{grid-template-columns:70px 1fr;gap:12px}
+      .schedule-badge{grid-column:2;width:max-content}
+      .community-sections{grid-template-columns:1fr}
     }
 
     @media (max-width:390px){
       .hero-copy{width:58%}
       .hero h1{font-size:2.08rem}
+      .hero-benefits{width:max-content;max-width:calc(100% - 28px);padding:6px 8px;gap:3px}
+      .hero-benefit{font-size:.50rem;gap:3px}
+      .hero-benefit + .hero-benefit:before{display:block;margin:0 1px}
+      .hero-benefit .svg-icon{width:11px;height:11px}
       .journey strong{font-size:.66rem}
       .journey small{display:none}
       .journey{min-height:126px}
@@ -380,6 +447,12 @@
           <p>Discover programs and community for a happier, healthier life.</p>
         </div>
 
+        <div class="hero-benefits" aria-label="Breathe, meditate and connect">
+            <span class="hero-benefit"><svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10c3 0 3-3 6-3s3 3 6 3 3-3 4-3M4 15c3 0 3-3 6-3s3 3 6 3 3-3 4-3"/></svg>Breathe</span>
+            <span class="hero-benefit"><svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="6" r="2.3"/><path d="M8.5 11.5 6 15l-3 1.5m12.5-5L18 15l3 1.5M8 12l4 3 4-3M5 21c1.8-2.2 4.1-3.3 7-3.3s5.2 1.1 7 3.3"/></svg>Meditate</span>
+            <span class="hero-benefit"><svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.3-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.7-7 10-7 10Z"/></svg>Connect</span>
+          </div>
+
         <div class="hero-actions">
           <a class="hero-action primary" href="#programs">
             <div class="action-icon"><svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm6.5-1.5a3.25 3.25 0 1 0 0-6.5 3.25 3.25 0 0 0 0 6.5ZM2.5 20v-1.5A5.5 5.5 0 0 1 8 13h2a5.5 5.5 0 0 1 5.5 5.5V20m0-6.4a5 5 0 0 1 6 4.9V20"/></svg></div>
@@ -399,23 +472,33 @@
       </section>
 
       <div class="content">
-        <section class="featured-wrap" id="upcoming" aria-labelledby="next-program-title">
-          <div class="featured">
-            <div class="featured-photo">
-              <img src="assets/course.webp" alt="Participant meditating during an Art of Living session" loading="lazy" />
+        <section class="featured-wrap" id="upcoming" aria-label="Coming up programs">
+          <div class="upcoming-shell" id="upcomingShell">
+            <!-- Course Manager: render one .upcoming-slide per announced program.
+                 With one slide this stays a static feature card; with 2+ slides, controls appear automatically. -->
+            <div class="upcoming-track" id="upcomingTrack">
+              <article class="upcoming-slide">
+                <div class="featured-photo">
+                  <img src="assets/course.webp" alt="Upcoming Art of Living program" loading="lazy" />
+                </div>
+                <div class="featured-body">
+                  <span class="pill">Coming Up</span>
+                  <h2>Upcoming program</h2>
+                  <p>Program details will appear here as soon as the next program is announced.</p>
+                  <div class="upcoming-meta">
+                    <span><svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2v3m12-3v3M3.5 9h17M5 4h14a2 2 0 0 1 2 2v14H3V6a2 2 0 0 1 2-2Z"/></svg>Date coming soon</span>
+                    <span><svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 5.5-8 12-8 12S4 15.5 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>Local Center</span>
+                  </div>
+                  <a class="whatsapp" href="https://wa.me/918884560660" target="_blank" rel="noopener noreferrer">
+                    <svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 11.5a8.5 8.5 0 0 1-12.8 7.3L3 20l1.3-4.5A8.5 8.5 0 1 1 20.5 11.5Z"/><path d="M8.4 7.8c.4-.5.8-.4 1.1-.1l1.2 1.9c.2.3.1.6-.1.9l-.7.8c.7 1.5 1.9 2.7 3.5 3.4l.7-.8c.3-.3.6-.4.9-.2l1.9 1.1c.4.2.5.7.2 1.1-.7 1.1-1.9 1.6-3.1 1.3-4.2-1-7.3-4.1-8.2-8.1-.3-1.1.2-2.5 1.3-3.3"/></svg> Enquire on WhatsApp
+                  </a>
+                </div>
+              </article>
             </div>
-            <div class="featured-body">
-              <span class="pill">Next program</span>
-              <!-- Replace these values later from Course Manager -->
-              <h2 id="next-program-title">Update from Course Manager</h2>
-              <p>Stay tuned! Upcoming program details will appear here.</p>
-              <div class="meta">
-                <span><svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2v3m12-3v3M3.5 9h17M5 4h14a2 2 0 0 1 2 2v14H3V6a2 2 0 0 1 2-2Zm3 9h.01M12 13h.01M16 13h.01M8 17h.01M12 17h.01"/></svg> Dates coming soon</span>
-                <span><svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 5.5-8 12-8 12S4 15.5 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg> Local Center</span>
-              </div>
-              <a class="whatsapp" href="https://wa.me/918884560660" target="_blank" rel="noopener noreferrer">
-                <svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 11.5a8.5 8.5 0 0 1-12.8 7.3L3 20l1.3-4.5A8.5 8.5 0 1 1 20.5 11.5Z"/><path d="M8.4 7.8c.4-.5.8-.4 1.1-.1l1.2 1.9c.2.3.1.6-.1.9l-.7.8c.7 1.5 1.9 2.7 3.5 3.4l.7-.8c.3-.3.6-.4.9-.2l1.9 1.1c.4.2.5.7.2 1.1-.7 1.1-1.9 1.6-3.1 1.3-4.2-1-7.3-4.1-8.2-8.1-.3-1.1.2-2.5 1.3-3.3"/></svg> Enquire on WhatsApp
-              </a>
+            <div class="upcoming-controls" id="upcomingControls" aria-label="Upcoming program navigation">
+              <button class="upcoming-arrow" id="prevUpcoming" type="button" aria-label="Previous upcoming program">‹</button>
+              <div class="upcoming-dots" id="upcomingDots" aria-label="Choose upcoming program"></div>
+              <button class="upcoming-arrow" id="nextUpcoming" type="button" aria-label="Next upcoming program">›</button>
             </div>
           </div>
         </section>
@@ -423,35 +506,36 @@
         <section aria-labelledby="looking-title">
           <h2 class="section-title" id="looking-title">What are you looking for?</h2>
           <div class="journeys">
-            <a class="journey" href="#programs">
-              <div class="journey-icon"><svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="7" r="3.2"/><path d="M5.5 20v-1.8A6.5 6.5 0 0 1 12 11.7a6.5 6.5 0 0 1 6.5 6.5V20"/><path d="M9.2 15.2 12 18l2.8-2.8"/></svg></div>
-              <strong>Programs for Adults</strong>
-              <small>Breath, Mind & Wellness</small>
+            <a class="journey" href="#schedule" data-schedule-target="free">
+              <div class="journey-icon"><svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10c3 0 3-3 6-3s3 3 6 3 3-3 4-3M4 15c3 0 3-3 6-3s3 3 6 3 3-3 4-3"/><circle cx="12" cy="4" r="1.5"/></svg></div>
+              <strong>Free Intro Session</strong>
+              <small>Open to all • Online & Offline</small>
             </a>
             <a class="journey" href="#programs">
-              <div class="journey-icon"><svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="8" r="3"/><circle cx="16.5" cy="9" r="2.5"/><path d="M3.5 20v-1.3A4.7 4.7 0 0 1 8.2 14h.3a4.7 4.7 0 0 1 4.7 4.7V20"/><path d="M13.2 15.3a4.1 4.1 0 0 1 3.5-2h.2a4.1 4.1 0 0 1 4.1 4.1V20"/><path d="M6.7 8.6c.4.6.8.9 1.3.9s1-.3 1.3-.9M15.5 9.5c.3.4.6.6 1 .6s.8-.2 1-.6"/></svg></div>
-              <strong>Programs for Kids & Teens</strong>
-              <small>Confidence, Focus & Joy</small>
+              <div class="journey-icon"><svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="8" r="3"/><circle cx="16.5" cy="9" r="2.5"/><path d="M3.5 20v-1.3A4.7 4.7 0 0 1 8.2 14h.3a4.7 4.7 0 0 1 4.7 4.7V20"/><path d="M13.2 15.3a4.1 4.1 0 0 1 3.5-2h.2a4.1 4.1 0 0 1 4.1 4.1V20"/></svg></div>
+              <strong>Programs for All Ages</strong>
+              <small>Children, Teens & Adults</small>
             </a>
-            <a class="journey" href="#programs">
-              <div class="journey-icon"><svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="2.5"/><path d="M8.5 10.5 6 14l-3 1.5M15.5 10.5 18 14l3 1.5M8 11.5l4 3 4-3M4.5 20c1.8-2.2 4.2-3.2 7.5-3.2s5.7 1 7.5 3.2M8.5 20 12 17l3.5 3"/></svg></div>
-              <strong>Meditation & Practices</strong>
-              <small>Daily practices for life</small>
+            <a class="journey" href="#schedule" data-schedule-target="practice">
+              <div class="journey-icon"><svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="2.5"/><path d="M8.5 10.5 6 14l-3 1.5M15.5 10.5 18 14l3 1.5M8 11.5l4 3 4-3M4.5 20c1.8-2.2 4.2-3.2 7.5-3.2s5.7 1 7.5 3.2"/></svg></div>
+              <strong>Member Activities</strong>
+              <small>Follow-ups, Satsang & More</small>
             </a>
-            <a class="journey" href="/volunteer">
+            <a class="journey" href="#contribute">
               <div class="journey-icon"><svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9.5c-2.3-3.2-6.5-1.6-6.5 1.6 0 2.6 3 4.7 6.5 7.4 3.5-2.7 6.5-4.8 6.5-7.4 0-3.2-4.2-4.8-6.5-1.6Z"/><path d="M3 13.5 1.8 16a2 2 0 0 0 .5 2.3L7 22m14-8.5 1.2 2.5a2 2 0 0 1-.5 2.3L17 22"/></svg></div>
-              <strong>Volunteer With Us</strong>
-              <small>Serve, Grow, Inspire</small>
+              <strong>Contribute</strong>
+              <small>Give time, skills or support</small>
             </a>
           </div>
         </section>
 
         <section id="programs" aria-labelledby="programs-title">
           <div class="program-head">
-            <h2 id="programs-title">Our Programs</h2>
+            <h2 id="programs-title">Programs We Offer</h2>
             <a href="https://www.artofliving.org/in-en/programs" target="_blank" rel="noopener noreferrer">View all programs&nbsp; →</a>
           </div>
 
+          <!-- This is the catalogue of programs offered at this location, not only programs currently running. -->
           <div class="program-area">
             <button class="slide-btn prev" id="prevProgram" aria-label="Previous programs">‹</button>
             <div class="program-slider" id="programSlider">
@@ -483,12 +567,61 @@
           </div>
         </section>
 
-        <!-- These compact targets give the fixed navigation somewhere useful to go.
-             Replace with dynamic schedule/course data in your next phase. -->
+        <section class="schedule-section" id="schedule" aria-labelledby="schedule-title">
+          <div class="schedule-head">
+            <div>
+              <h2 id="schedule-title">Schedule</h2>
+              <p>Find free activities open to everyone, regular member practices and special community events.</p>
+            </div>
+            <a class="schedule-ask" href="https://wa.me/918884560660" target="_blank" rel="noopener noreferrer">Ask for timings ↗</a>
+          </div>
+
+          <div class="schedule-tabs" role="tablist" aria-label="Schedule categories">
+            <button class="schedule-tab active" type="button" data-filter="all">This week</button>
+            <button class="schedule-tab" type="button" data-filter="free">Free & Open</button>
+            <button class="schedule-tab" type="button" data-filter="practice">Follow-ups</button>
+            <button class="schedule-tab" type="button" data-filter="community">Satsang</button>
+            <button class="schedule-tab" type="button" data-filter="special">Special Events</button>
+          </div>
+
+          <div class="schedule-list">
+            <div class="schedule-item" data-category="free">
+              <div class="schedule-when">Upcoming</div>
+              <div><h3>Free Intro Sessions</h3><p>Online and offline introductions for anyone exploring the Art of Living.</p></div>
+              <span class="schedule-badge">Everyone welcome</span>
+            </div>
+            <div class="schedule-item" data-category="practice">
+              <div class="schedule-when">Weekly</div>
+              <div><h3>Community Follow-up</h3><p>Practice together and refresh your techniques with fellow course graduates.</p></div>
+              <span class="schedule-badge">Members</span>
+            </div>
+            <div class="schedule-item" data-category="community">
+              <div class="schedule-when">Weekly</div>
+              <div><h3>Satsang & Chapter Gatherings</h3><p>Music, meditation, knowledge and celebrations with the local community.</p></div>
+              <span class="schedule-badge">Open to all</span>
+            </div>
+            <div class="schedule-item" data-category="special">
+              <div class="schedule-when">Upcoming</div>
+              <div><h3>Special Programs & Celebrations</h3><p>Festivals, spiritual gatherings and special local events.</p></div>
+              <span class="schedule-badge">Events</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="community-sections">
+          <!-- Member activities are already covered in Schedule; keep this area focused on contributing. -->
+          <div class="community-card contribute-card" id="contribute">
+            <h3>Want to contribute?</h3>
+            <p>Choose a way to contribute that fits your time and interests—occasionally or as a regular responsibility.</p>
+            <div class="community-links">
+              <a href="/volunteer">Programs, events & registrations →</a>
+              <a href="/volunteer">Calling, outreach & creative help →</a>
+              <a href="/volunteer">Other ways to contribute →</a>
+            </div>
+          </div>
+        </section>
+
         <section class="mini-sections">
-          <a class="mini" id="schedule" href="https://wa.me/918884560660" target="_blank" rel="noopener noreferrer">
-            <div><h3>This Week</h3><p>Ask for intro sessions, follow-ups, satsangs and special events.</p></div><span>→</span>
-          </a>
           <a class="mini" id="contact" href="https://wa.me/918884560660" target="_blank" rel="noopener noreferrer">
             <div><h3>Need help choosing?</h3><p>Chat with the local team on WhatsApp.</p></div><span>→</span>
           </a>
@@ -514,7 +647,7 @@
       <a class="menu-link" href="#programs">Programs <span>→</span></a>
       <a class="menu-link" href="#schedule">Schedule <span>→</span></a>
       <a class="menu-link" href="https://wa.me/918884560660" target="_blank" rel="noopener noreferrer">Contact <span>↗</span></a>
-      <a class="menu-link" href="/volunteer">Volunteer <span>→</span></a>
+      <a class="menu-link" href="#contribute">Contribute <span>→</span></a>
       <a class="menu-link" href="/privacy.html">Privacy Policy <span>→</span></a>
       <a class="menu-link" href="/terms.html">Terms of Service <span>→</span></a>
       <a class="menu-call" href="/volunteer">Open Call Tracker</a>
@@ -526,6 +659,33 @@
     const step = () => Math.max(170, slider.clientWidth * .48);
     document.getElementById('prevProgram').addEventListener('click', () => slider.scrollBy({left:-step(),behavior:'smooth'}));
     document.getElementById('nextProgram').addEventListener('click', () => slider.scrollBy({left:step(),behavior:'smooth'}));
+
+    const upcomingShell = document.getElementById('upcomingShell');
+    const upcomingTrack = document.getElementById('upcomingTrack');
+    const upcomingSlides = Array.from(upcomingTrack.querySelectorAll('.upcoming-slide'));
+    const upcomingDots = document.getElementById('upcomingDots');
+    const prevUpcoming = document.getElementById('prevUpcoming');
+    const nextUpcoming = document.getElementById('nextUpcoming');
+
+    if(upcomingSlides.length > 1){
+      upcomingShell.classList.add('has-multiple');
+      upcomingSlides.forEach((slide, index) => {
+        const dot = document.createElement('button');
+        dot.type = 'button';
+        dot.className = 'upcoming-dot' + (index === 0 ? ' active' : '');
+        dot.setAttribute('aria-label', `Show upcoming program ${index + 1}`);
+        dot.addEventListener('click', () => slide.scrollIntoView({behavior:'smooth',block:'nearest',inline:'start'}));
+        upcomingDots.appendChild(dot);
+      });
+
+      const updateUpcomingDots = () => {
+        const index = Math.max(0, Math.min(upcomingSlides.length - 1, Math.round(upcomingTrack.scrollLeft / upcomingTrack.clientWidth)));
+        upcomingDots.querySelectorAll('.upcoming-dot').forEach((dot, i) => dot.classList.toggle('active', i === index));
+      };
+      upcomingTrack.addEventListener('scroll', updateUpcomingDots, {passive:true});
+      prevUpcoming.addEventListener('click', () => upcomingTrack.scrollBy({left:-upcomingTrack.clientWidth,behavior:'smooth'}));
+      nextUpcoming.addEventListener('click', () => upcomingTrack.scrollBy({left:upcomingTrack.clientWidth,behavior:'smooth'}));
+    }
 
     const sheet = document.getElementById('menuSheet');
     const menuButton = document.getElementById('menuButton');
@@ -543,6 +703,19 @@
     closeMenu.addEventListener('click', () => setMenu(false));
     sheet.addEventListener('click', (e) => { if(e.target === sheet) setMenu(false); });
     sheet.querySelectorAll('a[href^="#"]').forEach(a => a.addEventListener('click', () => setMenu(false)));
+
+    const scheduleTabs = document.querySelectorAll('.schedule-tab');
+    const scheduleItems = document.querySelectorAll('.schedule-item');
+    function filterSchedule(filter){
+      scheduleTabs.forEach(tab => tab.classList.toggle('active', tab.dataset.filter === filter));
+      scheduleItems.forEach(item => {
+        item.style.display = (filter === 'all' || item.dataset.category === filter) ? '' : 'none';
+      });
+    }
+    scheduleTabs.forEach(tab => tab.addEventListener('click', () => filterSchedule(tab.dataset.filter)));
+    document.querySelectorAll('[data-schedule-target]').forEach(link => link.addEventListener('click', () => {
+      filterSchedule(link.dataset.scheduleTarget);
+    }));
   </script>
 </body>
 </html>
