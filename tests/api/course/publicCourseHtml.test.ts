@@ -4,13 +4,16 @@ import {
   renderPublicCourseHtml,
   toPublicCourseView
 } from '../../../api/_lib/courses/publicHtml.js';
+import { formatWhatsappHtml } from '../../../api/_lib/courses/whatsappHtml.js';
+import { publicCourseSlug } from '../../../shared/contracts/courseDefaults.mjs';
 
 const COURSE = {
   id: 'crsHpNcr01AbcDefGhiJK',
   title: 'HP · August 2026',
   courseType: 'HP',
   month: '2026-08',
-  whatsappTemplate: 'Join {course} in {dates}. {courseUrl}',
+  whatsappTemplate:
+    '_*HAPPINESS PROGRAM*_\n*Benefits You\'ll Experience:*\nRegister at https://aolt.in/874234',
   hasPamphlet: true
 };
 
@@ -30,12 +33,43 @@ describe('public course HTML', () => {
     expect(rendered.html).toContain(
       'content="https://aolf.club/course/crsHpNcr01AbcDefGhiJK/pamphlet"'
     );
-    expect(rendered.html).toContain(
-      'content="https://aolf.club/course/crsHpNcr01AbcDefGhiJK"'
-    );
+    expect(rendered.html).toContain('content="https://aolf.club/c/hp-aug"');
+    expect(rendered.html).not.toContain('<h1>');
+    expect(rendered.html).not.toContain('<dt>Type</dt>');
+    expect(rendered.html).not.toContain('<dt>Month</dt>');
     expect(rendered.html).not.toContain('alpinejs');
     expect(rendered.html).not.toContain('sevaWorkspace');
-    expect(PUBLIC_COURSE_CONTENT_FIELDS).toHaveLength(5);
+    expect(PUBLIC_COURSE_CONTENT_FIELDS).toHaveLength(3);
+  });
+
+  it('renders WhatsApp *bold* _italic_ and links as HTML', () => {
+    expect(formatWhatsappHtml('_*Hello*_ and *bold* and _italic_')).toBe(
+      '<em><strong>Hello</strong></em> and <strong>bold</strong> and <em>italic</em>'
+    );
+    const rendered = renderPublicCourseHtml({
+      course: toPublicCourseView(COURSE),
+      origin: 'https://aolf.club',
+      logoUrl: 'https://aolf.club/assets/aolf-connect-logo.png'
+    });
+    expect(rendered.html).toContain('<em><strong>HAPPINESS PROGRAM</strong></em>');
+    expect(rendered.html).toContain(
+      '<strong>Benefits You&#39;ll Experience:</strong>'
+    );
+    expect(rendered.html).toContain(
+      'href="https://aolt.in/874234"'
+    );
+    expect(rendered.html).toContain('target="_blank"');
+    expect(rendered.html).not.toContain('*Benefits');
+  });
+
+  it('turns URLs and Indian mobile numbers into clickable links', () => {
+    const html = formatWhatsappHtml(
+      'See www.example.com and *https://aolt.in/1*\nCall 8884560660 or +91 8884561661'
+    );
+    expect(html).toContain('href="https://www.example.com"');
+    expect(html).toContain('href="https://aolt.in/1"');
+    expect(html).toContain('href="tel:8884560660"');
+    expect(html).toContain('href="tel:+918884561661"');
   });
 
   it('uses the public Blob URL for og:image when one is stored', () => {
@@ -67,7 +101,7 @@ describe('public course HTML', () => {
       logoUrl: 'https://aolf.club/assets/aolf-connect-logo.png'
     });
 
-    expect(rendered.html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
+    expect(rendered.html).toContain('Hello &lt;b&gt;there&lt;/b&gt;');
     expect(rendered.html).not.toContain('<script>alert(1)</script>');
     expect(rendered.html).not.toContain('volunteer@example.com');
     expect(rendered.html).not.toContain('GOOGLE_SHEETS');
@@ -86,5 +120,12 @@ describe('public course HTML', () => {
     expect(rendered.html).toContain('Course not found');
     expect(rendered.html).not.toContain('/pamphlet');
     expect(rendered.html).not.toContain('og:image');
+  });
+});
+
+describe('public course slug', () => {
+  it('builds a type-month slug', () => {
+    expect(publicCourseSlug('HP', '2026-08')).toBe('hp-aug');
+    expect(publicCourseSlug('YES+', '2026-09')).toBe('yes-sep');
   });
 });

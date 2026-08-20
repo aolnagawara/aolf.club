@@ -2,7 +2,8 @@ import type { Course } from '../../../shared/contracts/appContracts.js';
 import {
   DEFAULT_HP_WHATSAPP_TEMPLATE,
   DEFAULT_COURSE_WHATSAPP_TEMPLATE,
-  formatCourseTitle
+  formatCourseTitle,
+  publicCoursePath
 } from '../../../shared/contracts/courseDefaults.mjs';
 
 export const mockCourses: Course[] = [
@@ -15,6 +16,7 @@ export const mockCourses: Course[] = [
     isActive: true,
     hasPamphlet: false,
     pamphletImageUrl: '',
+    publicPath: publicCoursePath('HP', '2026-08'),
     createdAt: '2026-08-01T12:00:00.000Z',
     updatedAt: '2026-08-01T12:00:00.000Z',
     createdBy: 'volunteer@example.com',
@@ -29,6 +31,7 @@ export const mockCourses: Course[] = [
     isActive: false,
     hasPamphlet: false,
     pamphletImageUrl: '',
+    publicPath: publicCoursePath('DSN', '2026-09'),
     createdAt: '2026-08-01T12:00:00.000Z',
     updatedAt: '2026-08-01T12:00:00.000Z',
     createdBy: 'volunteer@example.com',
@@ -43,6 +46,7 @@ export const mockCourses: Course[] = [
     isActive: true,
     hasPamphlet: false,
     pamphletImageUrl: '',
+    publicPath: publicCoursePath('VTP', '2026-09'),
     createdAt: '2026-08-01T12:00:00.000Z',
     updatedAt: '2026-08-01T12:00:00.000Z',
     createdBy: 'volunteer@example.com',

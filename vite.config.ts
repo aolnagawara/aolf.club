@@ -1,13 +1,15 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'node:path';
 import { mockCourses } from './src/repositories/mock/mockCourses';
+import { pickPublicCourseByKey } from './shared/contracts/courseDefaults.mjs';
 import {
   renderPublicCourseHtml,
   toPublicCourseView
 } from './api/_lib/courses/publicHtml';
 
-const COURSE_PAMPHLET_PATH = /^\/course\/([^/?#]+)\/pamphlet\/?$/;
-const COURSE_PATH = /^\/course\/([^/?#]+)\/?$/;
+const COURSE_PAMPHLET_PATH =
+  /^\/(?:course|c)\/([^/?#]+)\/pamphlet\/?$/;
+const COURSE_PATH = /^\/(?:course|c)\/([^/?#]+)\/?$/;
 
 type MiddlewareRes = {
   statusCode: number;
@@ -24,8 +26,8 @@ function servePublicCoursePamphlet(
   if (!match) {
     return false;
   }
-  const id = decodeURIComponent(match[1] || '');
-  const course = mockCourses.find((item) => item.id === id) || null;
+  const key = decodeURIComponent(match[1] || '');
+  const course = pickPublicCourseByKey(mockCourses, key);
   if (!course?.hasPamphlet) {
     res.statusCode = 404;
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
@@ -51,10 +53,10 @@ function servePublicCoursePage(
   if (!match) {
     return false;
   }
-  const id = decodeURIComponent(match[1] || '');
+  const key = decodeURIComponent(match[1] || '');
   const hostname = Array.isArray(host) ? host[0] : host || 'localhost:5173';
   const origin = 'http://' + hostname;
-  const course = mockCourses.find((item) => item.id === id) || null;
+  const course = pickPublicCourseByKey(mockCourses, key);
   const rendered = renderPublicCourseHtml({
     course: course ? toPublicCourseView(course) : null,
     origin,

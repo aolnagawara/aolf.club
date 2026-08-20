@@ -198,6 +198,7 @@ export const CourseSchema = z.object({
   isActive: z.boolean().default(true),
   hasPamphlet: z.boolean().default(false),
   pamphletImageUrl: z.string().default(''),
+  publicPath: z.string().default(''),
   createdAt: z.string().default(''),
   updatedAt: z.string().default(''),
   createdBy: z.string().default(''),

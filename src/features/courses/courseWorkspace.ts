@@ -9,6 +9,7 @@ import { findUniqueActiveCourse } from '../../../shared/contracts/courseMatching
 import {
   formatCourseMonthLabel,
   formatCourseTitle,
+  publicCoursePath,
   templateForCourseType
 } from '../../../shared/contracts/courseDefaults.mjs';
 import { MAX_PAMPHLET_BYTES } from '../../../shared/contracts/pamphlet';
@@ -150,7 +151,8 @@ export function createCourseWorkspaceMethods() {
       this.courseDraft = createEmptyCourseDraft();
     },
     previewCourse(this: SevaWorkspaceContext, course: Course): void {
-      window.location.href = '/course/' + encodeURIComponent(course.id);
+      window.location.href =
+        course.publicPath || publicCoursePath(course.courseType, course.month);
     },
     async saveCourse(this: SevaWorkspaceContext): Promise<void> {
       if (this.isCourseSaving) {

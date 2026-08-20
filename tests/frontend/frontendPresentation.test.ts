@@ -64,6 +64,10 @@ describe('AOLF Connect frontend presentation', () => {
       destination: '/api/course/:id?asset=pamphlet'
     });
     expect(vercelConfig.rewrites).toContainEqual({
+      source: '/c/:id',
+      destination: '/api/course/:id'
+    });
+    expect(vercelConfig.rewrites).toContainEqual({
       source: '/course/:id',
       destination: '/api/course/:id'
     });

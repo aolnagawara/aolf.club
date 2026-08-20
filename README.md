@@ -152,7 +152,7 @@ id,courseType,month,title,whatsappTemplate,pamphletFileId,pamphletMimeType,isAct
 courseType,template
 ```
 
-Course Management only stores type, month (`YYYY-MM`), the WhatsApp template, and a pamphlet file. Dates, time, venue, and registration belong in the template. The Happiness Program default template is seeded on `CourseTemplates` and includes `{courseUrl}` so WhatsApp can preview `/course/<id>`.
+Course Management only stores type, month (`YYYY-MM`), the WhatsApp template, and a pamphlet file. Dates, time, venue, and registration belong in the template. The Happiness Program default template is seeded on `CourseTemplates` and puts `{courseUrl}` just before the registration URL so WhatsApp previews `/c/hp-aug` instead of aolt.in. If a saved template has the course URL at the end, send still moves it in front of the first other URL. Old `/course/<id>` links still work.
 
 Pamphlets are uploaded from Course Management (JPEG, PNG, or WebP, max 1.5 MB). They are stored in a **public Vercel Blob** store and WhatsApp reads `og:image` from that Blob URL. `/course/<id>/pamphlet` still works as a same-origin fallback. WhatsApp may cache an older pamphlet after you replace the image.
 

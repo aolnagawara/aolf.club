@@ -5,8 +5,6 @@ import {
   toPublicCourseView
 } from '../_lib/courses/publicHtml.js';
 
-const COURSE_ID_PATTERN = /^[A-Za-z0-9_-]{21}$/;
-
 function headerValue(
   headers: ApiRequest['headers'],
   name: string
@@ -48,7 +46,7 @@ export function getRequestOrigin(req: ApiRequest): string {
 async function servePamphlet(
   req: ApiRequest,
   res: ApiResponse,
-  id: string
+  key: string
 ) {
   res.setHeader('Cache-Control', 'public, max-age=60');
 
@@ -58,13 +56,13 @@ async function servePamphlet(
     return res.status(405).end('Method not allowed.');
   }
 
-  if (!COURSE_ID_PATTERN.test(id)) {
+  if (!key) {
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
     return res.status(404).end('Pamphlet not found.');
   }
 
   try {
-    const pamphlet = await getApiDataStore().getPublicCoursePamphlet(id);
+    const pamphlet = await getApiDataStore().getPublicCoursePamphlet(key);
     if (!pamphlet) {
       res.setHeader('Content-Type', 'text/plain; charset=utf-8');
       return res.status(404).end('Pamphlet not found.');
@@ -78,9 +76,9 @@ async function servePamphlet(
 }
 
 export default async function handler(req: ApiRequest, res: ApiResponse) {
-  const id = firstQueryValue(req, 'id');
+  const key = firstQueryValue(req, 'id');
   if (wantsPamphlet(req)) {
-    return servePamphlet(req, res, id);
+    return servePamphlet(req, res, key);
   }
 
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
@@ -99,7 +97,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
   const origin = getRequestOrigin(req);
   const logoUrl = origin + '/assets/aolf-connect-logo.png';
 
-  if (!COURSE_ID_PATTERN.test(id)) {
+  if (!key) {
     const missing = renderPublicCourseHtml({
       course: null,
       origin,
@@ -109,7 +107,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
   }
 
   try {
-    const course = await getApiDataStore().getPublicCourseById(id);
+    const course = await getApiDataStore().getPublicCourseById(key);
     const rendered = renderPublicCourseHtml({
       course: course ? toPublicCourseView(course) : null,
       origin,

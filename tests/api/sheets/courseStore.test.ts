@@ -192,6 +192,7 @@ describe('Sheets course store', () => {
       return;
     }
     expect(created.value.course.hasPamphlet).toBe(true);
+    expect(created.value.course.publicPath).toBe('/c/hp-aug');
     expect(created.value.course.pamphletImageUrl).toBe(
       '/course/' + created.value.course.id + '/pamphlet'
     );

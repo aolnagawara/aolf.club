@@ -8,6 +8,7 @@ import { isHttpsUrl } from './blobPamphlet.js';
 import {
   formatCourseTitle,
   publicCoursePamphletPath,
+  publicCoursePath,
   templateForCourseType
 } from '../../../shared/contracts/courseDefaults.mjs';
 import { SHEET_HEADERS } from '../../../shared/contracts/sheetContract.mjs';
@@ -57,6 +58,7 @@ export function toCourseResponse(record: CourseRecord): Course {
     isActive: record.isActive,
     hasPamphlet: Boolean(record.pamphletFileId),
     pamphletImageUrl: pamphletPublicUrl(record.id, record.pamphletFileId),
+    publicPath: publicCoursePath(record.courseType, record.month),
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
     createdBy: record.createdBy,
@@ -93,6 +95,7 @@ export function applyCourseDefaults(
     isActive: input.isActive,
     hasPamphlet: Boolean(pamphletFileId),
     pamphletImageUrl: pamphletPublicUrl(options.id, pamphletFileId),
+    publicPath: publicCoursePath(courseType, month),
     createdAt: options.existing?.createdAt || timestamp,
     updatedAt: timestamp,
     createdBy: options.existing?.createdBy || actorEmail,
@@ -147,6 +150,7 @@ export function courseFromRow(
           isActive: parseBooleanCell(record.isActive, true),
           hasPamphlet: Boolean(record.pamphletFileId),
           pamphletImageUrl: '',
+          publicPath: publicCoursePath(courseType, month),
           createdAt: record.createdAt || '',
           updatedAt: record.updatedAt || '',
           createdBy: record.createdBy || '',

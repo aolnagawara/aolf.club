@@ -86,4 +86,30 @@ describe('public course handler', () => {
     expect(state.statusCode).toBe(404);
     expect(state.endBody).toBe('Pamphlet not found.');
   });
+
+  it('looks up a public course by type-month slug', async () => {
+    mockStore.getPublicCourseById.mockResolvedValue({
+      id: COURSE_ID,
+      courseType: 'HP',
+      month: '2026-08',
+      title: 'HP · August 2026',
+      whatsappTemplate: '*Hello*',
+      hasPamphlet: false,
+      pamphletImageUrl: '',
+      publicPath: '/c/hp-aug'
+    });
+    const { response, state } = createResponse();
+    await publicCourseHandler(
+      {
+        method: 'GET',
+        headers: { host: 'aolf.club' },
+        query: { id: 'hp-aug' }
+      },
+      response
+    );
+    expect(mockStore.getPublicCourseById).toHaveBeenCalledWith('hp-aug');
+    expect(state.statusCode).toBe(200);
+    expect(String(state.endBody)).toContain('content="https://aolf.club/c/hp-aug"');
+    expect(String(state.endBody)).toContain('<strong>Hello</strong>');
+  });
 });

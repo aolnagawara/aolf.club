@@ -30,7 +30,10 @@ import {
   type UpdateLeadResponse
 } from '../../../shared/contracts/appContracts.js';
 import { nanoid } from 'nanoid';
-import { defaultCourseTemplates } from '../../../shared/contracts/courseDefaults.mjs';
+import {
+  defaultCourseTemplates,
+  pickPublicCourseByKey
+} from '../../../shared/contracts/courseDefaults.mjs';
 import { normalizeEmail } from '../http/normalization.js';
 import {
   applyCourseDefaults,
@@ -816,19 +819,20 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
     });
   }
 
-  async function getCourseById(
+  async function getCourseByPublicKey(
     operation: SheetsOperation,
-    id: string
+    key: string
   ): Promise<CourseRecord | null> {
-    const { headers, rows } = await readCourseRows(operation);
-    const idColumn = resolveCourseIdColumn(headers);
-    const rowIndex = rows.findIndex(
-      (row, index) => index > 0 && getCell(row, idColumn) === id
-    );
-    if (rowIndex < 0) {
+    const wanted = String(key || '').trim();
+    if (!wanted) {
       return null;
     }
-    return parseCourseAt(headers, rows, rowIndex);
+    const { headers, rows } = await readCourseRows(operation);
+    const courses = rows
+      .slice(1)
+      .map((row, index) => parseCourseAt(headers, rows, index + 1))
+      .filter((course): course is CourseRecord => Boolean(course));
+    return pickPublicCourseByKey(courses, wanted);
   }
 
   async function createCourse(
@@ -969,7 +973,7 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
     id: string,
     operation: SheetsOperation
   ) {
-    const course = await getCourseById(operation, id);
+    const course = await getCourseByPublicKey(operation, id);
     if (!course?.pamphletFileId) {
       return null;
     }
@@ -1143,7 +1147,7 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
       operation?: SheetsOperation
     ): Promise<Course | null> {
       return withStoreOperation(operation, async (activeOperation) => {
-        const course = await getCourseById(activeOperation, id);
+        const course = await getCourseByPublicKey(activeOperation, id);
         return course ? toCourseResponse(course) : null;
       });
     },

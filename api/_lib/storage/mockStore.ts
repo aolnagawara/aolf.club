@@ -23,7 +23,10 @@ import {
   type UpdateLeadRequest
 } from '../../../shared/contracts/appContracts.js';
 import { nanoid } from 'nanoid';
-import { defaultCourseTemplates } from '../../../shared/contracts/courseDefaults.mjs';
+import {
+  defaultCourseTemplates,
+  pickPublicCourseByKey
+} from '../../../shared/contracts/courseDefaults.mjs';
 import { mockBootstrapData } from '../../../src/repositories/mock/mockData.js';
 import { mockCourses } from '../../../src/repositories/mock/mockCourses.js';
 import {
@@ -307,12 +310,12 @@ export async function deleteCourseForUser(payload: DeleteCourseRequest) {
 }
 
 export async function getPublicCourseById(id: string) {
-  const course = getStore().courses.find((item) => item.id === id) || null;
+  const course = pickPublicCourseByKey(getStore().courses, id);
   return course ? toCourseResponse(course) : null;
 }
 
 export async function getPublicCoursePamphlet(id: string) {
-  const course = getStore().courses.find((item) => item.id === id) || null;
+  const course = pickPublicCourseByKey(getStore().courses, id);
   if (!course?.pamphletFileId) {
     return null;
   }

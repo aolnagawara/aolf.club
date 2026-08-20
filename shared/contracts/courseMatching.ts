@@ -47,14 +47,38 @@ export function fillCourseWhatsappTemplate(
     .replaceAll('{courseUrl}', values.courseUrl || '');
 }
 
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+const OTHER_URL_RE = /https?:\/\/[^\s]+|www\.[^\s]+/i;
+
 export function ensureCourseUrlInMessage(
   message: string,
   courseUrl: string
 ): string {
   const url = String(courseUrl || '').trim();
-  const text = String(message || '');
-  if (!url || text.includes(url)) {
+  let text = String(message || '');
+  if (!url) {
     return text;
   }
-  return text.replace(/\s*$/, '') + '\n\n' + url;
+
+  text = text.replace(new RegExp(escapeRegExp(url), 'g'), '');
+  text = text.replace(/\n{3,}/g, '\n\n').replace(/[ \t]+\n/g, '\n');
+
+  const match = OTHER_URL_RE.exec(text);
+  if (match && match.index !== undefined) {
+    const before = text.slice(0, match.index).replace(/[ \t]+$/, '');
+    const after = text.slice(match.index);
+    const glue = before.length === 0 || before.endsWith('\n') ? '' : '\n';
+    return (before + glue + url + '\n' + after)
+      .replace(/\n{3,}/g, '\n\n')
+      .trimEnd();
+  }
+
+  const trimmed = text.replace(/\s+$/, '');
+  if (!trimmed) {
+    return url;
+  }
+  return trimmed + '\n\n' + url;
 }

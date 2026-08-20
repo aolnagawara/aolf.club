@@ -1,10 +1,12 @@
-import { formatCourseMonthLabel } from '../../../shared/contracts/courseDefaults.mjs';
+import {
+  formatCourseMonthLabel,
+  publicCoursePath
+} from '../../../shared/contracts/courseDefaults.mjs';
 import { fillCourseWhatsappTemplate } from '../../../shared/contracts/courseMatching.js';
+import { formatWhatsappHtml } from './whatsappHtml.js';
 
 export const PUBLIC_COURSE_CONTENT_FIELDS = [
   'title',
-  'courseType',
-  'month',
   'detailsText',
   'pamphletImageUrl'
 ] as const;
@@ -14,6 +16,7 @@ export type PublicCourseView = {
   title: string;
   courseType: string;
   month: string;
+  publicPath: string;
   detailsText: string;
   hasPamphlet: boolean;
   pamphletImageUrl: string;
@@ -32,6 +35,8 @@ function stripMarkupMarkers(value: string): string {
   return String(value || '')
     .replaceAll('*', '')
     .replaceAll('_', '')
+    .replaceAll('~', '')
+    .replaceAll('`', '')
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -55,6 +60,7 @@ export function toPublicCourseView(course: {
   title?: string;
   courseType?: string;
   month?: string;
+  publicPath?: string;
   whatsappTemplate?: string;
   hasPamphlet?: boolean;
   pamphletImageUrl?: string;
@@ -62,6 +68,9 @@ export function toPublicCourseView(course: {
   const courseType = course.courseType || '';
   const month = course.month || '';
   const title = course.title || '';
+  const publicPath =
+    String(course.publicPath || '').trim() ||
+    publicCoursePath(courseType, month);
   const detailsText = fillCourseWhatsappTemplate(
     course.whatsappTemplate || '',
     {
@@ -77,17 +86,11 @@ export function toPublicCourseView(course: {
     title,
     courseType,
     month,
+    publicPath,
     detailsText,
     hasPamphlet: Boolean(course.hasPamphlet || course.pamphletImageUrl),
     pamphletImageUrl: String(course.pamphletImageUrl || '').trim()
   };
-}
-
-function detailRow(label: string, value: string): string {
-  if (!value) {
-    return '';
-  }
-  return `<div class="row"><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`;
 }
 
 export function renderPublicCourseHtml(options: {
@@ -117,7 +120,7 @@ export function renderPublicCourseHtml(options: {
 
   const course = options.course;
   const origin = options.origin.replace(/\/$/, '');
-  const pageUrl = `${origin}/course/${encodeURIComponent(course.id)}`;
+  const pageUrl = `${origin}${course.publicPath || '/c/' + encodeURIComponent(course.id)}`;
   const pamphletUrl = absolutePamphletUrl(origin, course);
   const ogImage = pamphletUrl || options.logoUrl;
   const ogDescription =
@@ -127,6 +130,9 @@ export function renderPublicCourseHtml(options: {
       .join(' — ');
   const pamphlet = pamphletUrl
     ? `<img src="${escapeHtml(pamphletUrl)}" alt="${escapeHtml(course.title)} pamphlet" />`
+    : '';
+  const details = course.detailsText
+    ? `<div class="details">${formatWhatsappHtml(course.detailsText)}</div>`
     : '';
 
   return {
@@ -145,21 +151,15 @@ export function renderPublicCourseHtml(options: {
       body { font-family: sans-serif; margin: 0; background: #f8fafc; color: #0f172a; }
       main { max-width: 40rem; margin: 0 auto; padding: 1.5rem; }
       img { width: 100%; height: auto; border-radius: 0.75rem; }
-      .row { display: grid; grid-template-columns: 7rem 1fr; gap: 0.5rem; margin: 0.4rem 0; }
-      dt { color: #64748b; font-size: 0.8rem; }
-      dd { margin: 0; }
       .details { white-space: pre-wrap; font-size: 0.95rem; line-height: 1.45; }
+      .details a { color: #0f766e; text-decoration: underline; word-break: break-word; }
+      .details code { font-family: ui-monospace, monospace; font-size: 0.9em; }
     </style>
   </head>
   <body>
     <main>
       ${pamphlet}
-      <h1>${escapeHtml(course.title)}</h1>
-      <dl>
-        ${detailRow('Type', course.courseType)}
-        ${detailRow('Month', formatCourseMonthLabel(course.month))}
-      </dl>
-      ${course.detailsText ? `<p class="details">${escapeHtml(course.detailsText)}</p>` : ''}
+      ${details}
     </main>
   </body>
 </html>`

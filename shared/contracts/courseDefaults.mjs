@@ -28,14 +28,14 @@ _📍Venue:_
 *Behind Elements Mall*
 *North Bengaluru*
 
-📞 For Registration & Details: https://aolt.in/874234
+📞 For Registration & Details:
+{courseUrl}
+https://aolt.in/874234
 
 📲 8884560660
 📲 8884561661
 
- _🌸 A simple breath. A powerful shift. A happier you. 🌸_
-
-{courseUrl}`;
+ _🌸 A simple breath. A powerful shift. A happier you. 🌸_`;
 
 export const DEFAULT_COURSE_TEMPLATE_TYPES = Object.freeze([
   'HP',
@@ -93,6 +93,62 @@ export function formatCourseTitle(courseType, month) {
 
 export function publicCoursePamphletPath(id) {
   return '/course/' + encodeURIComponent(String(id || '')) + '/pamphlet';
+}
+
+export function publicCourseSlug(courseType, month) {
+  const type = normalizeCourseType(courseType)
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');
+  const match = /^(\d{4})-(0[1-9]|1[0-2])$/.exec(String(month || '').trim());
+  if (!type || !match) {
+    return '';
+  }
+  const date = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, 1));
+  const abbr = date
+    .toLocaleString('en-US', { month: 'short', timeZone: 'UTC' })
+    .toLowerCase()
+    .replace('.', '');
+  return type + '-' + abbr;
+}
+
+export function publicCoursePath(courseType, month) {
+  const slug = publicCourseSlug(courseType, month);
+  return slug ? '/c/' + encodeURIComponent(slug) : '';
+}
+
+export function isCourseNanoId(value) {
+  return /^[A-Za-z0-9_-]{21}$/.test(String(value || '').trim());
+}
+
+export function pickPublicCourseByKey(courses, key) {
+  const wanted = String(key || '').trim();
+  if (!wanted) {
+    return null;
+  }
+  const list = Array.isArray(courses) ? courses : [];
+  if (isCourseNanoId(wanted)) {
+    return list.find((course) => course && course.id === wanted) || null;
+  }
+  const slug = wanted.toLowerCase();
+  const matches = list.filter(
+    (course) =>
+      publicCourseSlug(course?.courseType, course?.month) === slug
+  );
+  matches.sort((left, right) => {
+    if (Boolean(left.isActive) !== Boolean(right.isActive)) {
+      return left.isActive ? -1 : 1;
+    }
+    const monthCmp = String(right.month || '').localeCompare(
+      String(left.month || '')
+    );
+    if (monthCmp) {
+      return monthCmp;
+    }
+    return String(right.updatedAt || '').localeCompare(
+      String(left.updatedAt || '')
+    );
+  });
+  return matches[0] || null;
 }
 
 export function defaultCourseTemplates() {

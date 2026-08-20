@@ -45,13 +45,34 @@ describe('unique active course matching', () => {
       course: 'HP',
       dates: 'August 2026',
       registrationLink: '',
-      courseUrl: 'https://aolf.club/course/crsHpNcr01AbcDefGhiJK'
+      courseUrl: 'https://aolf.club/c/hp-aug'
     });
     expect(
-      ensureCourseUrlInMessage(
-        filled,
-        'https://aolf.club/course/crsHpNcr01AbcDefGhiJK'
-      )
-    ).toContain('https://aolf.club/course/crsHpNcr01AbcDefGhiJK');
+      ensureCourseUrlInMessage(filled, 'https://aolf.club/c/hp-aug')
+    ).toContain('https://aolf.club/c/hp-aug');
+  });
+
+  it('places the course URL immediately before the first other URL', () => {
+    const courseUrl = 'https://aolf.club/c/hp-aug';
+    const filled = fillCourseWhatsappTemplate(
+      'Hi {name}\nRegister: https://aolt.in/874234\n\n{courseUrl}',
+      {
+        name: 'Aarav',
+        course: 'HP',
+        dates: 'August 2026',
+        registrationLink: '',
+        courseUrl
+      }
+    );
+    const message = ensureCourseUrlInMessage(filled, courseUrl);
+    expect(message.indexOf(courseUrl)).toBeGreaterThan(
+      message.indexOf('Hi Aarav')
+    );
+    expect(message.indexOf(courseUrl)).toBeLessThan(
+      message.indexOf('https://aolt.in/874234')
+    );
+    expect(message.match(new RegExp(courseUrl.replace(/\//g, '\\/'), 'g'))).toHaveLength(
+      1
+    );
   });
 });
