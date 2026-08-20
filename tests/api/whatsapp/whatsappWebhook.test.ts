@@ -11,7 +11,8 @@ const {
   mockHandleIncomingText,
   mockHandleButtonReply,
   mockWasMessageProcessed,
-  mockMarkMessageProcessed
+  mockMarkMessageProcessed,
+  mockRemovePendingLead
 } = vi.hoisted(() => ({
   mockSendConfirmationButtons: vi.fn(async () => {}),
   mockSendTextMessage: vi.fn(async () => {}),
@@ -19,7 +20,8 @@ const {
   mockHandleIncomingText: vi.fn(),
   mockHandleButtonReply: vi.fn(),
   mockWasMessageProcessed: vi.fn(() => false),
-  mockMarkMessageProcessed: vi.fn()
+  mockMarkMessageProcessed: vi.fn(),
+  mockRemovePendingLead: vi.fn(async () => true)
 }));
 
 vi.mock('../../../api/_lib/whatsapp/cloudApi.js', async (importOriginal) => {
@@ -44,7 +46,8 @@ vi.mock('../../../api/_lib/whatsapp/leadCaptureService.js', () => {
 
 vi.mock('../../../api/_lib/whatsapp/pendingStore.js', () => ({
   wasMessageProcessed: mockWasMessageProcessed,
-  markMessageProcessed: mockMarkMessageProcessed
+  markMessageProcessed: mockMarkMessageProcessed,
+  removePendingLead: mockRemovePendingLead
 }));
 
 import handler from '../../../api/whatsapp/webhook.js';
@@ -104,6 +107,7 @@ function createRequest(body: unknown): ApiRequest {
 describe('whatsapp webhook event routing', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
     mockVerifyWebhookSignature.mockReturnValue(true);
     mockWasMessageProcessed.mockReturnValue(false);
   });
@@ -247,7 +251,7 @@ describe('whatsapp webhook event routing', () => {
     expect(capture.jsonBody).toEqual({ success: true });
   });
 
-  it('does not mark the message processed when sending a reply fails', async () => {
+  it('acknowledges Meta with 200 when sending a reply fails', async () => {
     mockHandleIncomingText.mockResolvedValue({
       action: 'send_text',
       message: 'Please resend with mobile.'
@@ -269,7 +273,51 @@ describe('whatsapp webhook event routing', () => {
 
     await handler(req, res);
 
-    expect(capture.statusCode).toBe(502);
+    expect(capture.statusCode).toBe(200);
+    expect(capture.jsonBody).toEqual({ success: true });
+    expect(mockMarkMessageProcessed).not.toHaveBeenCalled();
+    expect(mockSendTextMessage).toHaveBeenNthCalledWith(
+      2,
+      '919876543210',
+      'We could not finish that WhatsApp reply. Please resend the lead or tap Confirm again.'
+    );
+  });
+
+  it('discards a pending confirmation when Confirm buttons cannot be sent', async () => {
+    mockHandleIncomingText.mockResolvedValue({
+      action: 'show_confirmation',
+      parsed: {
+        mobile: '9876543210',
+        name: 'Sandip',
+        course: 'HP',
+        leadQuality: 'Hot',
+        month: 'Aug',
+        notes: '',
+        originalMessage: 'Sandip 9876543210 HP Hot Aug'
+      },
+      confirmationToken: 'token'
+    });
+    mockSendConfirmationButtons.mockRejectedValueOnce(
+      new Error('Meta unavailable')
+    );
+    const req = createRequest({
+      value: {
+        messages: [
+          {
+            id: 'msg-buttons-fail',
+            from: '919876543210',
+            type: 'text',
+            text: { body: 'Sandip 9876543210 HP Hot Aug' }
+          }
+        ]
+      }
+    });
+    const { res, capture } = createResponseCapture();
+
+    await handler(req, res);
+
+    expect(capture.statusCode).toBe(200);
+    expect(mockRemovePendingLead).toHaveBeenCalledWith('919876543210');
     expect(mockMarkMessageProcessed).not.toHaveBeenCalled();
   });
 

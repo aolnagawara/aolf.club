@@ -7,6 +7,7 @@ import type {
   SevaWorkspaceContext
 } from './types';
 import { toUserErrorMessage } from '../../services/apiClient';
+import { normalizeIndianMobile } from '../../../shared/contracts/indianMobile';
 
 const CARD_LONG_PRESS_MS = 500;
 const CARD_MOVE_TOLERANCE_PX = 10;
@@ -28,6 +29,22 @@ function getBulkFailureMessage(
     (result): result is PromiseRejectedResult => result.status === 'rejected'
   );
   return toUserErrorMessage(firstFailure?.reason, failureMessage);
+}
+
+async function runSequentialLeadRequests(
+  records: Lead[],
+  run: (lead: Lead) => Promise<unknown>
+): Promise<PromiseSettledResult<unknown>[]> {
+  const results: PromiseSettledResult<unknown>[] = [];
+  for (const lead of records) {
+    try {
+      const value = await run(lead);
+      results.push({ status: 'fulfilled', value });
+    } catch (reason) {
+      results.push({ status: 'rejected', reason });
+    }
+  }
+  return results;
 }
 
 function getAllowedVolunteers(context: SevaWorkspaceContext) {
@@ -226,10 +243,8 @@ export function createRecordActionMethods() {
           this.authError = 'Save pending edits before moving these records.';
           return;
         }
-        const results = await Promise.allSettled(
-          records.map((lead) =>
-            window.appRuntime.updateLead(toUpdateRequest(this, lead, campaign))
-          )
+        const results = await runSequentialLeadRequests(records, (lead) =>
+          window.appRuntime.updateLead(toUpdateRequest(this, lead, campaign))
         );
         const movedIds = new Set(
           records
@@ -284,18 +299,12 @@ export function createRecordActionMethods() {
           this.authError = 'Save pending edits before deleting these records.';
           return;
         }
-        const results: PromiseSettledResult<unknown>[] = [];
-        for (const lead of records) {
-          try {
-            const value = await window.appRuntime.deleteLead({
-              id: lead.id,
-              campaignType: lead.campaignType
-            });
-            results.push({ status: 'fulfilled', value });
-          } catch (reason) {
-            results.push({ status: 'rejected', reason });
-          }
-        }
+        const results = await runSequentialLeadRequests(records, (lead) =>
+          window.appRuntime.deleteLead({
+            id: lead.id,
+            campaignType: lead.campaignType
+          })
+        );
         const deletedIds = new Set(
           records
             .filter((_, index) => results[index].status === 'fulfilled')
@@ -356,13 +365,11 @@ export function createRecordActionMethods() {
             'Save pending edits before reassigning these records.';
           return;
         }
-        const results = await Promise.allSettled(
-          records.map((lead) =>
-            window.appRuntime.updateLead({
-              ...toUpdateRequest(this, lead, campaign),
-              assignedVolunteerEmail: normalizedEmail
-            })
-          )
+        const results = await runSequentialLeadRequests(records, (lead) =>
+          window.appRuntime.updateLead({
+            ...toUpdateRequest(this, lead, campaign),
+            assignedVolunteerEmail: normalizedEmail
+          })
         );
         const reassignedIds = new Set(
           records
@@ -442,9 +449,12 @@ export function createRecordActionMethods() {
     },
     async saveCreatedRecord(this: SevaWorkspaceContext): Promise<void> {
       const name = this.createRecordDraft.name.trim();
-      const mobile = this.createRecordDraft.mobile.trim();
+      const mobile = normalizeIndianMobile(this.createRecordDraft.mobile);
       if (!name || !mobile || !this.createRecordDraft.campaignId) {
-        this.authError = 'Name, mobile, and destination Seva are required.';
+        this.authError =
+          this.createRecordDraft.mobile.trim() && !mobile
+            ? 'Enter a valid 10-digit Indian mobile number.'
+            : 'Name, mobile, and destination Seva are required.';
         return;
       }
       this.isCreateRecordSaving = true;

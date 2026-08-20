@@ -1,6 +1,7 @@
 node_modules/
 dist/
 .env
+.scaffolding
 .env.*
 !.env.example
 *.log

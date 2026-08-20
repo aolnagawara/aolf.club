@@ -530,6 +530,85 @@ describe('WhatsApp lead Sheet upsert', () => {
     expect(mockReadSheetValues).not.toHaveBeenCalledWith('data', 'Config!A:B');
   });
 
+  it('parses Sept as Sep and stores it on the pending lead', async () => {
+    mockReadSheetValues.mockImplementation(async (target, range) => {
+      if (target === 'access' && range === 'AllowedUsers!A:Z') {
+        return [
+          ['email', 'name', 'mobile'],
+          ['volunteer@example.com', 'Volunteer', '919876543210']
+        ];
+      }
+      if (target === 'data' && range === 'Config!A:B') {
+        return [
+          ['key', 'value'],
+          [
+            'programs',
+            JSON.stringify([{ code: 'HP', label: 'Happiness Program' }])
+          ]
+        ];
+      }
+      throw new Error(`Unexpected Sheet read: ${target} ${range}`);
+    });
+    const message = 'Priya 9123456789 HP Warm Sept Call tomorrow';
+
+    const result = await handleIncomingText(
+      '919876543210',
+      message,
+      'source-message-sept'
+    );
+
+    expect(result).toMatchObject({
+      action: 'show_confirmation',
+      parsed: {
+        mobile: '9123456789',
+        name: 'Priya',
+        course: 'HP',
+        leadQuality: 'Warm',
+        month: 'Sep',
+        notes: 'Call tomorrow'
+      }
+    });
+  });
+
+  it('asks for shorter notes instead of Confirm buttons when the token will not fit', async () => {
+    mockReadSheetValues.mockImplementation(async (target, range) => {
+      if (target === 'access' && range === 'AllowedUsers!A:Z') {
+        return [
+          ['email', 'name', 'mobile'],
+          ['volunteer@example.com', 'Volunteer', '919876543210']
+        ];
+      }
+      if (target === 'data' && range === 'Config!A:B') {
+        return [
+          ['key', 'value'],
+          [
+            'programs',
+            JSON.stringify([{ code: 'HP', label: 'Happiness Program' }])
+          ]
+        ];
+      }
+      throw new Error(`Unexpected Sheet read: ${target} ${range}`);
+    });
+    const longNotes = Array.from(
+      { length: 80 },
+      (_, index) => `detail${String(index)}`
+    ).join(' ');
+    const message = `Sandip 9876543210 HP Hot Aug ${longNotes}`;
+
+    const result = await handleIncomingText(
+      '919876543210',
+      message,
+      'source-message-long-notes'
+    );
+
+    expect(result).toEqual({
+      action: 'send_text',
+      message:
+        'The notes are too long to confirm in WhatsApp. Please resend with shorter notes.'
+    });
+    await expect(getPendingLead('919876543210')).resolves.toBeNull();
+  });
+
   it('does not save to the first Leads campaign when its name does not match the month', async () => {
     await upsertPendingLead(
       '919876543210',
@@ -555,7 +634,8 @@ describe('WhatsApp lead Sheet upsert', () => {
       handleButtonReply('919876543210', 'confirm_save')
     ).resolves.toEqual({
       action: 'send_text',
-      message: 'No leads campaign configured. Please contact admin.'
+      message:
+        'No leads campaign matches Aug. Please ask an admin to name a campaign with that month, or resend using a matching month.'
     });
     expect(mockAppendSheetRow).not.toHaveBeenCalled();
     await expect(getPendingLead('919876543210')).resolves.toMatchObject({
@@ -588,7 +668,8 @@ describe('WhatsApp lead Sheet upsert', () => {
       handleButtonReply('919876543210', 'confirm_save')
     ).resolves.toEqual({
       action: 'send_text',
-      message: 'No leads campaign configured. Please contact admin.'
+      message:
+        "More than one leads campaign matches Aug. Please ask an admin to make that month's campaign name unique."
     });
     expect(mockAppendSheetRow).not.toHaveBeenCalled();
     await expect(getPendingLead('919876543210')).resolves.toMatchObject({

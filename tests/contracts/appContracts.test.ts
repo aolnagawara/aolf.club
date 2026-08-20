@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   ApiErrorSchema,
+  CreateLeadRequestSchema,
   LeadSchema,
   UpdateLeadRequestSchema
 } from '../../shared/contracts/appContracts';
@@ -65,5 +66,29 @@ describe('UpdateLeadRequestSchema', () => {
         campaignType: 'Leads'
       })
     ).toThrow();
+  });
+});
+
+describe('CreateLeadRequestSchema', () => {
+  it('stores a normalized 10-digit Indian mobile', () => {
+    expect(
+      CreateLeadRequestSchema.parse({
+        name: 'Aarav',
+        mobile: '+91 98765 43210',
+        campaignId: 'cmpLeads01AbcDefGhIJk',
+        campaignType: 'Leads'
+      }).mobile
+    ).toBe('9876543210');
+  });
+
+  it('rejects a mobile that is not a valid Indian number', () => {
+    expect(() =>
+      CreateLeadRequestSchema.parse({
+        name: 'Aarav',
+        mobile: '12345',
+        campaignId: 'cmpLeads01AbcDefGhIJk',
+        campaignType: 'Leads'
+      })
+    ).toThrow('Enter a valid 10-digit Indian mobile number.');
   });
 });

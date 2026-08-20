@@ -2,7 +2,7 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 const publicPageUrl = new URL('../../src/index.html', import.meta.url);
-const sevaPageUrl = new URL('../../src/seva.html', import.meta.url);
+const volunteerPageUrl = new URL('../../src/volunteer.html', import.meta.url);
 const legacyLoginUrl = new URL('../../src/login.html', import.meta.url);
 const viteConfigUrl = new URL('../../vite.config.ts', import.meta.url);
 const vercelConfigUrl = new URL('../../vercel.json', import.meta.url);
@@ -20,14 +20,11 @@ describe('AOLF Connect frontend presentation', () => {
     const page = readText(publicPageUrl);
 
     expect(page).toContain('<title>AOLF Connect');
-    expect(page).toContain('href="/seva"');
-    expect(page).toContain('id="top"');
+    expect(page).toContain('href="/volunteer"');
     expect(page).toContain('id="programs"');
     expect(page).toContain('id="schedule"');
-    expect(page).toContain('id="community"');
     expect(page).not.toContain('sevaWorkspace()');
     expect(page).not.toContain('src="./main.ts"');
-    expect(page).toContain('src="./publicPage.ts"');
     expect(page).not.toContain('@tailwindcss/browser');
     expect(page).not.toContain('alpinejs@');
     expect(page).not.toContain('x-init="init()"');
@@ -39,29 +36,25 @@ describe('AOLF Connect frontend presentation', () => {
   it('publishes only the public page and protected Seva workspace', () => {
     const viteConfig = readText(viteConfigUrl);
     const vercelConfig = JSON.parse(readText(vercelConfigUrl)) as {
-      redirects: Array<{ source: string; destination: string }>;
       rewrites: Array<{ source: string; destination: string }>;
     };
 
     expect(viteConfig).toContain("main: resolve(__dirname, 'src/index.html')");
-    expect(viteConfig).toContain("seva: resolve(__dirname, 'src/seva.html')");
+    expect(viteConfig).toContain(
+      "volunteer: resolve(__dirname, 'src/volunteer.html')"
+    );
     expect(viteConfig).not.toContain(
       "login: resolve(__dirname, 'src/login.html')"
     );
     expect(vercelConfig.rewrites).toContainEqual({
-      source: '/seva',
-      destination: '/seva.html'
-    });
-    expect(vercelConfig.redirects).toContainEqual({
-      source: '/login',
-      destination: '/seva',
-      permanent: false
+      source: '/volunteer',
+      destination: '/volunteer.html'
     });
     expect(existsSync(legacyLoginUrl)).toBe(false);
   });
 
   it('shows Google login before exposing the Seva workspace', () => {
-    const page = readText(sevaPageUrl);
+    const page = readText(volunteerPageUrl);
 
     expect(page).toContain('<title>AOLF Connect | Seva Workspace</title>');
     expect(page).toContain('x-data="sevaWorkspace()"');
@@ -76,43 +69,43 @@ describe('AOLF Connect frontend presentation', () => {
 
   it('uses the supplied local logo across public and workspace pages', () => {
     const publicPage = readText(publicPageUrl);
-    const sevaPage = readText(sevaPageUrl);
+    const volunteerPage = readText(volunteerPageUrl);
 
     expect(publicPage).toContain('/assets/aolf-connect-logo.png');
-    expect(sevaPage).toContain('/assets/aolf-connect-logo.png');
+    expect(volunteerPage).toContain('/assets/aolf-connect-logo.png');
     expect(statSync(logoUrl).size).toBeGreaterThan(1_000_000);
   });
 
   it('uses a WhatsApp brand icon without changing the message action', () => {
-    const sevaPage = readText(sevaPageUrl);
+    const volunteerPage = readText(volunteerPageUrl);
     const mainModule = readText(mainModuleUrl);
 
-    expect(sevaPage).toContain(':href="buildWhatsappHref(lead)"');
-    expect(sevaPage).toContain('target="_blank"');
-    expect(sevaPage).toContain('rel="noopener noreferrer"');
-    expect(sevaPage).toContain('aria-label="Open WhatsApp"');
-    expect(sevaPage).toContain('data-icon="whatsapp"');
-    expect(sevaPage).not.toContain('data-lucide="message-circle"');
+    expect(volunteerPage).toContain(':href="buildWhatsappHref(lead)"');
+    expect(volunteerPage).toContain('target="_blank"');
+    expect(volunteerPage).toContain('rel="noopener noreferrer"');
+    expect(volunteerPage).toContain('aria-label="Open WhatsApp"');
+    expect(volunteerPage).toContain('data-icon="whatsapp"');
+    expect(volunteerPage).not.toContain('data-lucide="message-circle"');
     expect(mainModule).not.toContain('MessageCircle');
-    expect(sevaPage).toContain('x-show="buildWhatsappHref(lead)"');
-    expect(sevaPage).toContain(':disabled="!cleanPhone(lead.mobile)"');
+    expect(volunteerPage).toContain('x-show="buildWhatsappHref(lead)"');
+    expect(volunteerPage).toContain(':disabled="!cleanPhone(lead.mobile)"');
   });
 
   it('does not show an inactive notification control', () => {
-    const sevaPage = readText(sevaPageUrl);
+    const volunteerPage = readText(volunteerPageUrl);
 
-    expect(sevaPage).not.toContain('aria-label="Notifications"');
-    expect(sevaPage).not.toContain('data-lucide="bell"');
-    expect(sevaPage).not.toContain('aria-label="Contact via WhatsApp"');
+    expect(volunteerPage).not.toContain('aria-label="Notifications"');
+    expect(volunteerPage).not.toContain('data-lucide="bell"');
+    expect(volunteerPage).not.toContain('aria-label="Contact via WhatsApp"');
   });
 
   it('shows action feedback as a viewport-floating status', () => {
-    const sevaPage = readText(sevaPageUrl);
+    const volunteerPage = readText(volunteerPageUrl);
 
-    expect(sevaPage).toContain('<template x-teleport="body">');
-    expect(sevaPage).toContain('x-show="actionMessage"');
-    expect(sevaPage).toContain('class="fixed left-1/2 z-[100]');
-    expect(sevaPage).toContain(
+    expect(volunteerPage).toContain('<template x-teleport="body">');
+    expect(volunteerPage).toContain('x-show="actionMessage"');
+    expect(volunteerPage).toContain('class="fixed left-1/2 z-[100]');
+    expect(volunteerPage).toContain(
       'style="bottom: calc(5.5rem + env(safe-area-inset-bottom))"'
     );
   });

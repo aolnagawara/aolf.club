@@ -17,7 +17,7 @@ const catalog: LeadParserCatalog = {
   ],
   months: [
     { canonical: 'Aug', aliases: ['August'] },
-    { canonical: 'Sep', aliases: ['September'] }
+    { canonical: 'Sep', aliases: ['September', 'Sept'] }
   ]
 };
 
@@ -102,5 +102,15 @@ describe('parseLeadMessage', () => {
     expect(parsed.name).toBe('Saurabh');
     expect(parsed.course).toBe('HP,DSN');
     expect(parsed.notes).toBe('Need More info');
+  });
+
+  it('treats Sept as the Sep month', () => {
+    const parsed = parseLeadMessage(
+      'Priya 9123456789 HP Warm Sept Call tomorrow',
+      catalog
+    );
+
+    expect(parsed.month).toBe('Sep');
+    expect(parsed.notes).toBe('Call tomorrow');
   });
 });

@@ -44,7 +44,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
   } catch (error) {
     reportApiError(error, context);
     res.status(302);
-    res.setHeader('Location', '/login?error=signin_unavailable');
+    res.setHeader('Location', '/volunteer?error=signin_unavailable');
     return res.end();
   }
 }

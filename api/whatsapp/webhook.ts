@@ -15,12 +15,15 @@ import {
 } from '../_lib/whatsapp/leadCaptureService.js';
 import {
   markMessageProcessed,
+  removePendingLead,
   wasMessageProcessed
 } from '../_lib/whatsapp/pendingStore.js';
 import { sendApiError } from '../_lib/http/errors.js';
 
 const MAX_LOG_IDENTIFIER_CHARS = 128;
 const inFlightEvents = new Map<string, Promise<boolean>>();
+const WEBHOOK_RETRY_HINT =
+  'We could not finish that WhatsApp reply. Please resend the lead or tap Confirm again.';
 
 export const config = {
   api: {
@@ -40,6 +43,19 @@ function webhookLog(message: string, details?: Record<string, unknown>) {
   console.log('[whatsapp-webhook]', message);
 }
 
+async function notifyVolunteerToRetry(from: string): Promise<void> {
+  try {
+    await sendTextMessage(from, WEBHOOK_RETRY_HINT);
+  } catch (error) {
+    console.error('[whatsapp-webhook] retry notice failed', {
+      from: boundedIdentifier(from),
+      error: boundedIdentifier(
+        error instanceof Error ? error.message : String(error)
+      )
+    });
+  }
+}
+
 async function processEventOnce(
   event: IncomingWhatsAppEvent
 ): Promise<boolean> {
@@ -52,11 +68,16 @@ async function processEventOnce(
       );
 
       if (result.action === 'show_confirmation' && result.parsed) {
-        await sendConfirmationButtons(
-          event.from,
-          result.parsed,
-          result.confirmationToken
-        );
+        try {
+          await sendConfirmationButtons(
+            event.from,
+            result.parsed,
+            result.confirmationToken
+          );
+        } catch (error) {
+          await removePendingLead(event.from);
+          throw error;
+        }
       } else if (result.action === 'send_text' && result.message) {
         await sendTextMessage(event.from, result.message);
       }
@@ -82,6 +103,7 @@ async function processEventOnce(
         error instanceof Error ? error.message : String(error)
       )
     });
+    await notifyVolunteerToRetry(event.from);
     return false;
   }
 }
@@ -140,13 +162,18 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       });
     }
     if (!verification.ok) {
-      return sendApiError(res, new Error('Invalid verification token.'), context, {
-        status: 403,
-        code: 'FORBIDDEN',
-        message: 'Invalid webhook verification token.',
-        retryable: false,
-        category: 'authorization_denied'
-      });
+      return sendApiError(
+        res,
+        new Error('Invalid verification token.'),
+        context,
+        {
+          status: 403,
+          code: 'FORBIDDEN',
+          message: 'Invalid webhook verification token.',
+          retryable: false,
+          category: 'authorization_denied'
+        }
+      );
     }
     res.setHeader('Content-Type', 'text/plain');
     return res.end(verification.challenge);
@@ -234,23 +261,10 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     return res.status(200).json({ success: true, ignored: true });
   }
 
-  // Events in one delivery are handled in order. Concurrent deliveries of the
-  // same message id are coalesced by processEvent's in-memory promise map.
-  let succeeded = true;
+  // Always 200 after a valid payload so Meta does not replay work that may
+  // already have been saved. Volunteer-visible retry text covers send failures.
   for (const event of events) {
-    if (!(await processEvent(event))) {
-      succeeded = false;
-    }
-  }
-
-  if (!succeeded) {
-    return sendApiError(res, new Error('One or more events failed.'), context, {
-      status: 502,
-      code: 'UPSTREAM_ERROR',
-      message: 'One or more events failed.',
-      retryable: true,
-      category: 'event_processing_failed'
-    });
+    await processEvent(event);
   }
 
   return res.status(200).json({ success: true });

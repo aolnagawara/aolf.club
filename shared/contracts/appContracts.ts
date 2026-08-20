@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { normalizeIndianMobile } from './indianMobile.js';
 
 const NanoIdSchema = z
   .string()
@@ -131,7 +132,14 @@ export const UpdateLeadResponseSchema = z.object({
 
 export const CreateLeadRequestSchema = z.object({
   name: z.string().trim().min(1),
-  mobile: z.string().trim().min(1),
+  mobile: z
+    .string()
+    .trim()
+    .min(1)
+    .refine((value) => Boolean(normalizeIndianMobile(value)), {
+      message: 'Enter a valid 10-digit Indian mobile number.'
+    })
+    .transform((value) => normalizeIndianMobile(value)),
   notes: z.string().optional(),
   campaignId: NanoIdSchema,
   campaignType: z.enum(['Leads', 'Members'])

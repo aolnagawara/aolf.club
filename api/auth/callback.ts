@@ -13,7 +13,10 @@ const OAUTH_STATE_COOKIE = 'aolf_oauth_state';
 
 function redirectToLoginWithError(res: ApiResponse, errorCode: string) {
   res.status(302);
-  res.setHeader('Location', '/login?error=' + encodeURIComponent(errorCode));
+  res.setHeader(
+    'Location',
+    '/volunteer?error=' + encodeURIComponent(errorCode)
+  );
   return res.end();
 }
 
@@ -92,7 +95,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     await setSessionCookie(res, sessionUser);
     clearOAuthStateCookie(res);
     res.status(302);
-    res.setHeader('Location', '/seva');
+    res.setHeader('Location', '/volunteer');
     return res.end();
   } catch (error) {
     clearOAuthStateCookie(res);

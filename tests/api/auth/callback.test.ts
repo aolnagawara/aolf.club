@@ -76,7 +76,7 @@ describe('Google OAuth callback error distinction', () => {
     await handler(request, response);
 
     expect(state.statusCode).toBe(302);
-    expect(headers.get('Location')).toBe('/login?error=forbidden');
+    expect(headers.get('Location')).toBe('/volunteer?error=forbidden');
   });
 
   it('redirects a Sheets timeout as an upstream timeout, not forbidden', async () => {
@@ -98,6 +98,17 @@ describe('Google OAuth callback error distinction', () => {
     await handler(request, response);
 
     expect(state.statusCode).toBe(302);
-    expect(headers.get('Location')).toBe('/login?error=upstream_timeout');
+    expect(headers.get('Location')).toBe('/volunteer?error=upstream_timeout');
+  });
+
+  it('redirects a successful sign-in to the volunteer workspace', async () => {
+    mockStore.isUserAllowed.mockResolvedValue(true);
+    const { response, state, headers } = createResponse();
+
+    await handler(request, response);
+
+    expect(state.statusCode).toBe(302);
+    expect(headers.get('Location')).toBe('/volunteer');
+    expect(mockSetSessionCookie).toHaveBeenCalledOnce();
   });
 });

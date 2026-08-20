@@ -211,7 +211,7 @@ Without this sharing permission, Vercel will not be able to read or update the S
 
 ## 7. Configure Google sign-in
 
-Google OAuth is used to identify the volunteer signing in to the private `/seva` workspace.
+Google OAuth is used to identify the volunteer signing in to the private `/volunteer` workspace.
 
 AOLF Connect only needs basic identity information such as:
 
@@ -505,7 +505,7 @@ The public website should load normally.
 Open:
 
 ```text
-https://YOUR-DOMAIN/seva
+https://YOUR-DOMAIN/volunteer
 ```
 
 1. Click **Continue with Google**.

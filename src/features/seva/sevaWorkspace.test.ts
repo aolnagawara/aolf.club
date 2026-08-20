@@ -515,7 +515,26 @@ describe('Seva workspace selection and bulk actions', () => {
     app.toggleLeadSelection(first);
     app.toggleLeadSelection(second);
 
-    await app.moveSelectedRecords(app.campaigns[1].id);
+    let releaseFirst!: () => void;
+    const firstGate = new Promise<void>((resolve) => {
+      releaseFirst = resolve;
+    });
+    updateLead.mockImplementation(async (payload) => {
+      if (payload.id === first.id) {
+        await firstGate;
+      }
+      return {
+        success: true as const,
+        lead: { id: payload.id, lastUpdated: 'moved' }
+      };
+    });
+    const movePromise = app.moveSelectedRecords(app.campaigns[1].id);
+    await vi.waitFor(() => {
+      expect(updateLead).toHaveBeenCalledTimes(1);
+    });
+    expect(updateLead.mock.calls[0][0].id).toBe(first.id);
+    releaseFirst();
+    await movePromise;
 
     expect(updateLead).toHaveBeenCalledTimes(2);
     expect(updateLead.mock.calls.map((call) => call[0].id)).toEqual([
@@ -645,5 +664,27 @@ describe('Seva workspace selection and bulk actions', () => {
       name: 'New lead'
     });
     expect(app.isCreateRecordModalOpen).toBe(false);
+  });
+
+  it('rejects an invalid mobile number before creating a record', async () => {
+    const campaign = {
+      id: 'cmpLeads01AbcDefGhIJk',
+      name: 'Current',
+      type: 'Leads' as const
+    };
+    const createLead = vi.fn();
+    vi.stubGlobal('window', { appRuntime: { createLead } });
+    const app = sevaWorkspace();
+    app.campaigns = [campaign];
+    app.selectedCampaignId = campaign.id;
+    app.openCreateRecord('Leads');
+    app.createRecordDraft.name = 'New lead';
+    app.createRecordDraft.mobile = '12345';
+
+    await app.saveCreatedRecord();
+
+    expect(createLead).not.toHaveBeenCalled();
+    expect(app.authError).toBe('Enter a valid 10-digit Indian mobile number.');
+    expect(app.isCreateRecordModalOpen).toBe(true);
   });
 });

@@ -463,6 +463,37 @@ describe('Sheets store campaign and access scoping', () => {
     expect(row[7]).toBe(CAMPAIGN_B);
   });
 
+  it('normalizes a +91 mobile and rejects an invalid create mobile', async () => {
+    const headers = [
+      'id',
+      'mobile',
+      ...LEAD_HEADERS.filter((header) => header !== 'id')
+    ];
+    const fixture = createFixture([], headers);
+
+    const created = await fixture.store.createLeadForAuthorizedUser(USER, {
+      name: 'Created lead',
+      mobile: '+91 98765 43210',
+      campaignId: CAMPAIGN_B,
+      campaignType: 'Leads'
+    });
+    expect(created.allowed).toBe(true);
+    if (!created.allowed) {
+      throw new Error('Expected user to be authorized.');
+    }
+    expect(created.value.lead.mobile).toBe('9876543210');
+    expect(fixture.appendSheetRow.mock.calls[0][2][1]).toBe('9876543210');
+
+    await expect(
+      fixture.store.createLeadForAuthorizedUser(USER, {
+        name: 'Bad mobile',
+        mobile: '12345',
+        campaignId: CAMPAIGN_B,
+        campaignType: 'Leads'
+      })
+    ).rejects.toThrow('Enter a valid 10-digit Indian mobile number.');
+  });
+
   it('persists deletion by removing the physical Sheet row', async () => {
     const fixture = createFixture([
       [

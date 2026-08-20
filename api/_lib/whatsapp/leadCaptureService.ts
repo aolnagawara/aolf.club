@@ -66,19 +66,48 @@ type VolunteerInfo = {
   mobile: string;
 };
 
+function expandMonthAliases(
+  shortName: string,
+  aliases: readonly string[]
+): string[] {
+  const expanded = new Set<string>(aliases);
+  for (const alias of aliases) {
+    for (
+      let length = shortName.length + 1;
+      length < alias.length;
+      length += 1
+    ) {
+      expanded.add(alias.slice(0, length));
+    }
+  }
+  return [...expanded];
+}
+
+function monthMatchesTerm(
+  monthValue: string,
+  shortName: string,
+  aliases: readonly string[]
+): boolean {
+  const lowered = monthValue.toLowerCase();
+  if (!lowered) {
+    return false;
+  }
+  if (shortName.toLowerCase() === lowered) {
+    return true;
+  }
+  return expandMonthAliases(shortName, aliases).some(
+    (alias) => alias.toLowerCase() === lowered
+  );
+}
+
 function toShortMonth(monthValue: string): string {
   if (!monthValue) {
     return '';
   }
 
-  const lowered = monthValue.toLowerCase();
-  const match = DEFAULT_MONTH_TERMS.find(([shortName, aliases]) => {
-    if (shortName.toLowerCase() === lowered) {
-      return true;
-    }
-
-    return aliases.some((alias) => alias.toLowerCase() === lowered);
-  });
+  const match = DEFAULT_MONTH_TERMS.find(([shortName, aliases]) =>
+    monthMatchesTerm(monthValue, shortName, aliases)
+  );
 
   return match ? match[0] : '';
 }
@@ -136,7 +165,7 @@ async function loadParserCatalog(): Promise<LeadParserCatalog> {
       }))
     : DEFAULT_MONTH_TERMS.map(([shortName, aliases]) => ({
         canonical: shortName,
-        aliases: [...aliases]
+        aliases: expandMonthAliases(shortName, aliases)
       }));
 
   return {
@@ -203,35 +232,67 @@ async function findVolunteerByPhone(
   return null;
 }
 
+type CampaignMonthResolution =
+  | { status: 'matched'; campaign: Campaign }
+  | { status: 'no_leads_campaigns' }
+  | { status: 'no_month_match'; month: string }
+  | { status: 'ambiguous_month'; month: string };
+
+function campaignMonthErrorMessage(
+  resolution: Exclude<CampaignMonthResolution, { status: 'matched' }>
+): string {
+  if (resolution.status === 'no_leads_campaigns') {
+    return 'No leads campaign is configured. Please ask an admin to add a Leads campaign.';
+  }
+  if (resolution.status === 'no_month_match') {
+    return (
+      'No leads campaign matches ' +
+      resolution.month +
+      '. Please ask an admin to name a campaign with that month, or resend using a matching month.'
+    );
+  }
+  return (
+    'More than one leads campaign matches ' +
+    resolution.month +
+    ". Please ask an admin to make that month's campaign name unique."
+  );
+}
+
 function resolveLeadCampaign(
   campaigns: Campaign[],
   monthShort: string
-): Campaign | null {
+): CampaignMonthResolution {
   const leadsCampaigns = campaigns.filter(
     (campaign) => campaign.type === 'Leads'
   );
   if (!leadsCampaigns.length) {
-    return null;
+    return { status: 'no_leads_campaigns' };
   }
 
-  const shortMonth = toShortMonth(monthShort);
+  const shortMonth = toShortMonth(monthShort) || monthShort;
   if (!shortMonth) {
-    return null;
+    return { status: 'no_month_match', month: monthShort };
   }
   const longMonth =
     DEFAULT_MONTH_TERMS.find(
       ([shortName]) => shortName === shortMonth
     )?.[1]?.[0] || shortMonth;
+  const monthAliases = expandMonthAliases(shortMonth, [longMonth]);
 
   const matches = leadsCampaigns.filter((campaign) => {
     const lowered = campaign.name.toLowerCase();
-    return (
-      lowered.includes(shortMonth.toLowerCase()) ||
-      lowered.includes(longMonth.toLowerCase())
+    return [shortMonth, longMonth, ...monthAliases].some((alias) =>
+      lowered.includes(alias.toLowerCase())
     );
   });
 
-  return matches.length === 1 ? matches[0] : null;
+  if (matches.length === 1) {
+    return { status: 'matched', campaign: matches[0] };
+  }
+  if (matches.length === 0) {
+    return { status: 'no_month_match', month: shortMonth };
+  }
+  return { status: 'ambiguous_month', month: shortMonth };
 }
 
 function appendNotes(existing: string, extra: string): string {
@@ -342,12 +403,12 @@ export async function upsertLeadByMobileAndCampaign(
 
 async function savePendingLead(
   pending: PendingLeadConfirmation
-): Promise<UpsertResult | null> {
+): Promise<UpsertResult | { error: string }> {
   const campaigns = await loadCampaigns();
   const monthForCampaign = pending.parsed.month || getCurrentShortMonth();
-  const campaign = resolveLeadCampaign(campaigns, monthForCampaign);
-  if (!campaign) {
-    return null;
+  const resolved = resolveLeadCampaign(campaigns, monthForCampaign);
+  if (resolved.status !== 'matched') {
+    return { error: campaignMonthErrorMessage(resolved) };
   }
 
   return upsertLeadByMobileAndCampaign(
@@ -356,7 +417,7 @@ async function savePendingLead(
       ...pending.parsed,
       month: monthForCampaign
     },
-    campaign
+    resolved.campaign
   );
 }
 
@@ -426,10 +487,19 @@ export async function handleIncomingText(
   const pending = await getPendingLead(volunteerPhone);
   if (pending) {
     if (messageId && pending.sourceMessageId === messageId) {
+      const confirmationToken = createConfirmationToken(pending);
+      if (!confirmationToken) {
+        await removePendingLead(volunteerPhone, pending.id);
+        return {
+          action: 'send_text',
+          message:
+            'The notes are too long to confirm in WhatsApp. Please resend with shorter notes.'
+        };
+      }
       return {
         action: 'show_confirmation',
         parsed: pending.parsed,
-        confirmationToken: createConfirmationToken(pending) || undefined
+        confirmationToken
       };
     }
     return {
@@ -480,12 +550,21 @@ export async function handleIncomingText(
     parsed,
     messageId
   );
+  const confirmationToken = createConfirmationToken(createdPending);
+  if (!confirmationToken) {
+    await removePendingLead(volunteerPhone, createdPending.id);
+    return {
+      action: 'send_text',
+      message:
+        'The notes are too long to confirm in WhatsApp. Please resend with shorter notes.'
+    };
+  }
   schedulePendingLeadTimeout(createdPending);
 
   return {
     action: 'show_confirmation',
     parsed,
-    confirmationToken: createConfirmationToken(createdPending) || undefined
+    confirmationToken
   };
 }
 
@@ -528,10 +607,10 @@ export async function handleButtonReply(
   }
 
   const saved = await savePendingLead(pending);
-  if (!saved) {
+  if ('error' in saved) {
     return {
       action: 'send_text',
-      message: 'No leads campaign configured. Please contact admin.'
+      message: saved.error
     };
   }
   await removePendingLead(volunteerPhone, pending.id);
