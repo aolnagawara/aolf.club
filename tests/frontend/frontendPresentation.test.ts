@@ -52,8 +52,16 @@ describe('AOLF Connect frontend presentation', () => {
       destination: '/volunteer.html'
     });
     expect(vercelConfig.rewrites).toContainEqual({
+      source: '/api/courses/:id',
+      destination: '/api/courses?id=:id'
+    });
+    expect(vercelConfig.rewrites).toContainEqual({
       source: '/course/:id/pamphlet',
-      destination: '/api/course/:id/pamphlet'
+      destination: '/api/course/:id?asset=pamphlet'
+    });
+    expect(vercelConfig.rewrites).toContainEqual({
+      source: '/api/course/:id/pamphlet',
+      destination: '/api/course/:id?asset=pamphlet'
     });
     expect(vercelConfig.rewrites).toContainEqual({
       source: '/course/:id',

@@ -508,6 +508,8 @@ No local build or local testing is required.
 
 If Vercel reports a deployment error, open that deployment and read the build/function logs.
 
+If the log says **No more than 12 Serverless Functions can be added to a Deployment on the Hobby plan**, this repo stays at or below 12 API entry files by combining course update/delete and pamphlet serving into existing routes. Redeploy this revision. Do not add a new file under `api/` (outside `_lib`) without folding it into an existing handler.
+
 ---
 
 ## 14. Test the live installation

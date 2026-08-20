@@ -13,8 +13,16 @@
       "destination": "/terms.html"
     },
     {
+      "source": "/api/courses/:id",
+      "destination": "/api/courses?id=:id"
+    },
+    {
       "source": "/course/:id/pamphlet",
-      "destination": "/api/course/:id/pamphlet"
+      "destination": "/api/course/:id?asset=pamphlet"
+    },
+    {
+      "source": "/api/course/:id/pamphlet",
+      "destination": "/api/course/:id?asset=pamphlet"
     },
     {
       "source": "/course/:id",

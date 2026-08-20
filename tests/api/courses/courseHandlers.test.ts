@@ -21,7 +21,6 @@ vi.mock('../../../api/_lib/storage/dataStore.js', () => ({
 }));
 
 import createCourseHandler from '../../../api/courses/index.js';
-import mutateCourseHandler from '../../../api/courses/[id].js';
 
 function createResponse() {
   const state: { statusCode: number; body: unknown } = {
@@ -103,7 +102,7 @@ describe('course API handlers', () => {
       new Error('Course not found.')
     );
     const { response, state } = createResponse();
-    await mutateCourseHandler(
+    await createCourseHandler(
       {
         method: 'PUT',
         headers: {},
@@ -113,5 +112,15 @@ describe('course API handlers', () => {
       response
     );
     expect(state.statusCode).toBe(404);
+  });
+
+  it('rejects PUT without a course id so Hobby can share one courses function', async () => {
+    const { response, state } = createResponse();
+    await createCourseHandler(
+      { method: 'PUT', headers: {}, query: {}, body: {} },
+      response
+    );
+    expect(state.statusCode).toBe(405);
+    expect(mockStore.updateCourseForAuthorizedUser).not.toHaveBeenCalled();
   });
 });
