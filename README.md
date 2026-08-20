@@ -6,6 +6,7 @@ AOLF Connect uses:
 
 - **GitHub** for the application source code
 - **Vercel** for hosting the website and backend
+- **Vercel Blob** for course pamphlet images
 - **Google OAuth** for volunteer sign-in
 - **Google Sheets** for application data
 - **Meta WhatsApp Cloud API** for WhatsApp lead capture
@@ -153,7 +154,7 @@ courseType,template
 
 Course Management only stores type, month (`YYYY-MM`), the WhatsApp template, and a pamphlet file. Dates, time, venue, and registration belong in the template. The Happiness Program default template is seeded on `CourseTemplates` and includes `{courseUrl}` so WhatsApp can preview `/course/<id>`.
 
-Pamphlets are uploaded from Course Management (JPEG, PNG, or WebP, max 1.5 MB). They are stored with the existing Google service account on Drive and served at `/course/<id>/pamphlet`. Enable the **Google Drive API** on the same Cloud project as Sheets. WhatsApp may cache an older pamphlet after you replace the image.
+Pamphlets are uploaded from Course Management (JPEG, PNG, or WebP, max 1.5 MB). They are stored in a **public Vercel Blob** store and WhatsApp reads `og:image` from that Blob URL. `/course/<id>/pamphlet` still works as a same-origin fallback. WhatsApp may cache an older pamphlet after you replace the image.
 
 If you already had a Courses tab with the previous columns, doctor will rewrite the header. Re-add those courses in Course Management.
 
@@ -403,6 +404,22 @@ For the recommended single-spreadsheet installation, leave this unset:
 GOOGLE_SHEETS_ACCESS_SPREADSHEET_ID
 ```
 
+### Vercel Blob (course pamphlets)
+
+In the Vercel project:
+
+1. Open **Storage**.
+2. Create a **Blob** store.
+3. Set access to **Public** (WhatsApp must be able to fetch `og:image`).
+4. Connect the store to **Production** (and Preview if you use it).
+5. Confirm this environment variable was added:
+
+```text
+BLOB_READ_WRITE_TOKEN=
+```
+
+If you create a course without a pamphlet, Blob is not used. Uploading a pamphlet requires this token.
+
 ### WhatsApp / Meta
 
 ```text
@@ -601,6 +618,16 @@ Check:
 - Meta webhook URL
 - webhook subscription in Meta
 
+### Course pamphlet upload fails
+
+Check:
+
+- a **public** Vercel Blob store exists on the project
+- `BLOB_READ_WRITE_TOKEN` is set for Production
+- the store access is **Public**, not Private
+
+Then redeploy and try the upload again.
+
 ### Environment variable changed but app still behaves the old way
 
 Redeploy the application in Vercel after changing environment variables.
@@ -624,6 +651,7 @@ Redeploy the application in Vercel after changing environment variables.
 - [ ] WhatsApp Cloud API configured
 - [ ] Dedicated WhatsApp number connected
 - [ ] Vercel project created from GitHub
+- [ ] Public Vercel Blob store created and `BLOB_READ_WRITE_TOKEN` added
 - [ ] All required Vercel environment variables added
 - [ ] Domain connected to Vercel
 - [ ] Latest Vercel production deployment shows **Ready**

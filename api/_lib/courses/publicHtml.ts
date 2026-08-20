@@ -16,6 +16,7 @@ export type PublicCourseView = {
   month: string;
   detailsText: string;
   hasPamphlet: boolean;
+  pamphletImageUrl: string;
 };
 
 function escapeHtml(value: string): string {
@@ -35,6 +36,20 @@ function stripMarkupMarkers(value: string): string {
     .trim();
 }
 
+function absolutePamphletUrl(
+  origin: string,
+  course: PublicCourseView
+): string {
+  const stored = String(course.pamphletImageUrl || '').trim();
+  if (/^https:\/\//i.test(stored)) {
+    return stored;
+  }
+  if (course.hasPamphlet || stored.startsWith('/')) {
+    return `${origin}/course/${encodeURIComponent(course.id)}/pamphlet`;
+  }
+  return '';
+}
+
 export function toPublicCourseView(course: {
   id: string;
   title?: string;
@@ -42,6 +57,7 @@ export function toPublicCourseView(course: {
   month?: string;
   whatsappTemplate?: string;
   hasPamphlet?: boolean;
+  pamphletImageUrl?: string;
 }): PublicCourseView {
   const courseType = course.courseType || '';
   const month = course.month || '';
@@ -62,7 +78,8 @@ export function toPublicCourseView(course: {
     courseType,
     month,
     detailsText,
-    hasPamphlet: Boolean(course.hasPamphlet)
+    hasPamphlet: Boolean(course.hasPamphlet || course.pamphletImageUrl),
+    pamphletImageUrl: String(course.pamphletImageUrl || '').trim()
   };
 }
 
@@ -101,9 +118,7 @@ export function renderPublicCourseHtml(options: {
   const course = options.course;
   const origin = options.origin.replace(/\/$/, '');
   const pageUrl = `${origin}/course/${encodeURIComponent(course.id)}`;
-  const pamphletUrl = course.hasPamphlet
-    ? `${origin}/course/${encodeURIComponent(course.id)}/pamphlet`
-    : '';
+  const pamphletUrl = absolutePamphletUrl(origin, course);
   const ogImage = pamphletUrl || options.logoUrl;
   const ogDescription =
     stripMarkupMarkers(course.detailsText).slice(0, 160) ||

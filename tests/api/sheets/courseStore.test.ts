@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createSheetsStore } from '../../../api/_lib/sheets/store.js';
-import { createMemoryPamphletStore } from '../../../api/_lib/courses/pamphletStore.js';
+import {
+  createMemoryPamphletStore,
+  type PamphletStore
+} from '../../../api/_lib/courses/pamphletStore.js';
 import { SHEET_HEADERS } from '../../../shared/contracts/sheetContract.mjs';
 import type {
   SheetsOperation,
@@ -42,7 +45,10 @@ function courseRow(overrides: Record<string, string> = {}) {
   return SHEET_HEADERS.courses.map((header) => values[header] || '');
 }
 
-function createFixture(courseRows: string[][]) {
+function createFixture(
+  courseRows: string[][],
+  pamphletStore: PamphletStore = createMemoryPamphletStore()
+) {
   let rows = [[...SHEET_HEADERS.courses], ...courseRows];
   const appendSheetRow = vi.fn(async (_t, _r, row: string[]) => {
     rows = [...rows, row];
@@ -117,7 +123,7 @@ function createFixture(courseRows: string[][]) {
       deleteSheetRow,
       getSheetLayout: () => LAYOUT,
       now: () => new Date('2026-08-20T08:00:00.000Z'),
-      pamphletStore: createMemoryPamphletStore()
+      pamphletStore
     }),
     appendSheetRow,
     deleteSheetRow
@@ -194,6 +200,33 @@ describe('Sheets course store', () => {
     );
     expect(pamphlet?.mimeType).toBe('image/png');
     expect(pamphlet?.bytes.length).toBeGreaterThan(0);
+  });
+
+  it('exposes a Blob HTTPS url as pamphletImageUrl', async () => {
+    const blobUrl =
+      'https://store123.public.blob.vercel-storage.com/courses/x/pamphlet.png';
+    const pamphletStore: PamphletStore = {
+      upload: vi.fn(async () => blobUrl),
+      download: vi.fn(async () => ({
+        mimeType: 'image/png',
+        bytes: Buffer.from('png')
+      })),
+      remove: vi.fn(async () => undefined)
+    };
+    const { store } = createFixture([], pamphletStore);
+    const pamphletBase64 =
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+    const created = await store.createCourseForAuthorizedUser(USER, {
+      courseType: 'HP',
+      month: '2026-08',
+      pamphletBase64,
+      pamphletMimeType: 'image/png'
+    });
+    expect(created.allowed).toBe(true);
+    if (!created.allowed) {
+      return;
+    }
+    expect(created.value.course.pamphletImageUrl).toBe(blobUrl);
   });
 
   it('rejects invalid pamphlet files without appending a row', async () => {

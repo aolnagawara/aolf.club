@@ -19,7 +19,8 @@ const requiredApiAuth = [
 const requiredSheets = [
   'GOOGLE_SHEETS_DATA_SPREADSHEET_ID',
   'GOOGLE_SERVICE_ACCOUNT_EMAIL',
-  'GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY'
+  'GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY',
+  'BLOB_READ_WRITE_TOKEN'
 ];
 
 const requiredWhatsApp = [

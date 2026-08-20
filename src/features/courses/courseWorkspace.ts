@@ -36,7 +36,8 @@ function courseToDraft(course: Course): CourseDraft {
     pamphletBase64: '',
     pamphletMimeType: '',
     pamphletPreviewUrl: course.hasPamphlet
-      ? '/course/' + encodeURIComponent(course.id) + '/pamphlet'
+      ? course.pamphletImageUrl ||
+        '/course/' + encodeURIComponent(course.id) + '/pamphlet'
       : ''
   };
 }

@@ -38,6 +38,24 @@ describe('public course HTML', () => {
     expect(PUBLIC_COURSE_CONTENT_FIELDS).toHaveLength(5);
   });
 
+  it('uses the public Blob URL for og:image when one is stored', () => {
+    const blobUrl =
+      'https://store123.public.blob.vercel-storage.com/courses/crsHpNcr01AbcDefGhiJK/pamphlet.png';
+    const rendered = renderPublicCourseHtml({
+      course: toPublicCourseView({
+        ...COURSE,
+        pamphletImageUrl: blobUrl
+      }),
+      origin: 'https://aolf.club',
+      logoUrl: 'https://aolf.club/assets/aolf-connect-logo.png'
+    });
+
+    expect(rendered.html).toContain('content="' + blobUrl + '"');
+    expect(rendered.html).not.toContain(
+      'content="https://aolf.club/course/crsHpNcr01AbcDefGhiJK/pamphlet"'
+    );
+  });
+
   it('escapes stored markup and omits audit fields', () => {
     const rendered = renderPublicCourseHtml({
       course: toPublicCourseView({

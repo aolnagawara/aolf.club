@@ -4,6 +4,7 @@ import {
   type CreateCourseRequest,
   type UpdateCourseRequest
 } from '../../../shared/contracts/appContracts.js';
+import { isHttpsUrl } from './blobPamphlet.js';
 import {
   formatCourseTitle,
   publicCoursePamphletPath,
@@ -13,6 +14,20 @@ import { SHEET_HEADERS } from '../../../shared/contracts/sheetContract.mjs';
 import { findHeaderIndex } from '../sheets/table.js';
 
 const COURSE_HEADERS = SHEET_HEADERS.courses;
+
+export function pamphletPublicUrl(
+  courseId: string,
+  pamphletFileId: string
+): string {
+  const stored = String(pamphletFileId || '').trim();
+  if (!stored) {
+    return '';
+  }
+  if (isHttpsUrl(stored)) {
+    return stored;
+  }
+  return publicCoursePamphletPath(courseId);
+}
 
 export type CourseRecord = Course & {
   pamphletFileId: string;
@@ -41,9 +56,7 @@ export function toCourseResponse(record: CourseRecord): Course {
     whatsappTemplate: record.whatsappTemplate,
     isActive: record.isActive,
     hasPamphlet: Boolean(record.pamphletFileId),
-    pamphletImageUrl: record.pamphletFileId
-      ? publicCoursePamphletPath(record.id)
-      : '',
+    pamphletImageUrl: pamphletPublicUrl(record.id, record.pamphletFileId),
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
     createdBy: record.createdBy,
@@ -79,7 +92,7 @@ export function applyCourseDefaults(
       templateForCourseType(courseType),
     isActive: input.isActive,
     hasPamphlet: Boolean(pamphletFileId),
-    pamphletImageUrl: pamphletFileId ? publicCoursePamphletPath(options.id) : '',
+    pamphletImageUrl: pamphletPublicUrl(options.id, pamphletFileId),
     createdAt: options.existing?.createdAt || timestamp,
     updatedAt: timestamp,
     createdBy: options.existing?.createdBy || actorEmail,

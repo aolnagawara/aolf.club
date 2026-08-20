@@ -41,9 +41,7 @@ import {
   toCourseResponse,
   type CourseRecord
 } from '../courses/sheetMapping.js';
-import {
-  createDrivePamphletStore
-} from '../courses/drivePamphlet.js';
+import { createBlobPamphletStore } from '../courses/blobPamphlet.js';
 import {
   decodePamphletBase64,
   type PamphletStore
@@ -428,7 +426,7 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
   const getSheetLayout = dependencies.getSheetLayout || defaultGetSheetLayout;
   const now = dependencies.now || (() => new Date());
   const pamphletStore =
-    dependencies.pamphletStore || createDrivePamphletStore();
+    dependencies.pamphletStore || createBlobPamphletStore();
 
   async function withStoreOperation<T>(
     operation: SheetsOperation | undefined,
