@@ -174,6 +174,13 @@ export function waitForSheetsOperation<T>(
   });
 }
 
+function readGoogleResponseData<T>(response: unknown): T {
+  if (typeof response !== 'object' || response === null || !('data' in response)) {
+    throw new Error('Google API response was missing a body.');
+  }
+  return (response as { data: T }).data;
+}
+
 function readErrorRecord(value: unknown): Record<string, unknown> | null {
   return typeof value === 'object' && value !== null
     ? (value as Record<string, unknown>)
@@ -257,8 +264,8 @@ async function callSheetsApi<T>(
 
   try {
     const client = getJwtClient();
-    const response = await waitForSheetsOperation(
-      client.request<T>({
+    const response: unknown = await waitForSheetsOperation(
+      client.request({
         url,
         method: init.method,
         data: init.data,
@@ -266,7 +273,7 @@ async function callSheetsApi<T>(
       }),
       activeOperation.signal
     );
-    return response.data;
+    return readGoogleResponseData<T>(response);
   } catch (error) {
     if (activeOperation.signal.aborted) {
       throw new SheetsRequestError(

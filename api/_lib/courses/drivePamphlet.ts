@@ -37,6 +37,13 @@ function encodeFileId(fileId: string): string {
   return encodeURIComponent(String(fileId || ''));
 }
 
+function readGoogleResponseData<T>(response: unknown): T {
+  if (typeof response !== 'object' || response === null || !('data' in response)) {
+    throw new Error('Google API response was missing a body.');
+  }
+  return (response as { data: T }).data;
+}
+
 export function createDrivePamphletStore(): PamphletStore {
   return {
     async upload(courseId, pamphlet) {
@@ -60,8 +67,8 @@ export function createDrivePamphletStore(): PamphletStore {
         pamphlet.bytes,
         Buffer.from('\r\n--' + boundary + '--')
       ]);
-      const response = await withDeadline(
-        getDriveJwt().request<{ id?: string }>({
+      const response: unknown = await withDeadline(
+        getDriveJwt().request({
           url: 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',
           method: 'POST',
           headers: {
@@ -71,7 +78,9 @@ export function createDrivePamphletStore(): PamphletStore {
         }),
         'Pamphlet upload timed out.'
       );
-      const fileId = String(response.data?.id || '').trim();
+      const fileId = String(
+        readGoogleResponseData<{ id?: string }>(response).id || ''
+      ).trim();
       if (!fileId) {
         throw new Error('Pamphlet upload did not return a file id.');
       }
@@ -86,14 +95,14 @@ export function createDrivePamphletStore(): PamphletStore {
       try {
         const [meta, media] = await withDeadline(
           Promise.all([
-            client.request<{ mimeType?: string }>({
+            client.request({
               url:
                 'https://www.googleapis.com/drive/v3/files/' +
                 encoded +
                 '?fields=mimeType',
               method: 'GET'
             }),
-            client.request<ArrayBuffer>({
+            client.request({
               url:
                 'https://www.googleapis.com/drive/v3/files/' +
                 encoded +
@@ -105,8 +114,13 @@ export function createDrivePamphletStore(): PamphletStore {
           'Pamphlet download timed out.'
         );
         return {
-          mimeType: String(meta.data?.mimeType || 'image/jpeg'),
-          bytes: Buffer.from(media.data)
+          mimeType: String(
+            readGoogleResponseData<{ mimeType?: string }>(meta).mimeType ||
+              'image/jpeg'
+          ),
+          bytes: Buffer.from(
+            readGoogleResponseData<ArrayBuffer>(media)
+          )
         };
       } catch {
         return null;
