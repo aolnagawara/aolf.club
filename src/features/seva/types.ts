@@ -2,6 +2,8 @@ import type {
   AppConfig as ContractAppConfig,
   AuthenticatedUser as ContractAuthenticatedUser,
   Campaign as ContractCampaign,
+  Course,
+  CourseTemplate,
   Lead as ContractLead
 } from '../../../shared/contracts/appContracts';
 
@@ -24,6 +26,20 @@ export interface ProgramDraft {
   wishlist: string[];
   done: string[];
 }
+
+export interface CourseDraft {
+  id: string;
+  courseType: string;
+  month: string;
+  whatsappTemplate: string;
+  isActive: boolean;
+  hasPamphlet: boolean;
+  pamphletBase64: string;
+  pamphletMimeType: string;
+  pamphletPreviewUrl: string;
+}
+
+export type WorkspaceView = 'callTracker' | 'courseManagement';
 
 export interface CreateRecordDraft {
   name: string;
@@ -128,6 +144,15 @@ export interface SevaWorkspaceState {
   programCodeMap: Record<string, string>;
   appConfig: AppConfig;
   defaultPrograms: Program[];
+  workspaceView: WorkspaceView;
+  courses: Course[];
+  courseTemplates: CourseTemplate[];
+  isLoadingCourses: boolean;
+  isCourseEditorOpen: boolean;
+  isCourseSaving: boolean;
+  courseDraft: CourseDraft;
+  isCoursePickerOpen: boolean;
+  coursePickerLead: Lead | null;
 }
 
 export interface SevaWorkspaceContext extends SevaWorkspaceState {

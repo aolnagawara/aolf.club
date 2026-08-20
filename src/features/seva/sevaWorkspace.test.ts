@@ -304,7 +304,9 @@ describe('Seva workspace lead lifecycle', () => {
   });
 
   it('uses mobile for contact actions while keeping id as the identity', () => {
-    vi.stubGlobal('window', { location: { href: '' } });
+    vi.stubGlobal('window', {
+      location: { href: '', origin: 'https://aolf.club' }
+    });
     const app = sevaWorkspace();
     const lead = app.normalizeLead({
       id: 'stableLead01AbcDefGhI',
@@ -313,11 +315,29 @@ describe('Seva workspace lead lifecycle', () => {
       campaignId: 'cmpLeads01AbcDefGhIJk',
       campaignType: 'Leads'
     });
+    const course = {
+      id: 'crsHpNcr01AbcDefGhiJK',
+      courseType: 'HP',
+      month: '2026-08',
+      title: 'HP · August 2026',
+      whatsappTemplate:
+        'Hi {name}, join {course} {dates} {registrationLink} {courseUrl}',
+      isActive: true,
+      hasPamphlet: false,
+      pamphletImageUrl: '',
+      createdAt: '',
+      updatedAt: '',
+      createdBy: '',
+      updatedBy: ''
+    };
 
     expect(app.getLeadKey(lead)).toContain('stableLead01AbcDefGhI');
     expect(lead._phoneDigits).toBe('919876543210');
-    expect(app.buildWhatsappHref(lead)).toContain('919876543210');
-    expect(app.buildWhatsappHref(lead)).not.toContain('91919876543210');
+    expect(app.buildWhatsappHref(lead, course)).toContain('919876543210');
+    expect(app.buildWhatsappHref(lead, course)).not.toContain('91919876543210');
+    expect(app.buildWhatsappHref(lead, course)).toContain(
+      encodeURIComponent('https://aolf.club/course/crsHpNcr01AbcDefGhiJK')
+    );
     app.dialLead(lead);
     expect(window.location.href).toBe('tel:+919876543210');
   });
@@ -344,8 +364,25 @@ describe('Seva workspace lead lifecycle', () => {
   });
 
   it('preserves explicit international WhatsApp numbers and prefixes local ones', () => {
+    vi.stubGlobal('window', {
+      location: { origin: 'https://aolf.club' }
+    });
     const app = sevaWorkspace();
     app.appConfig.whatsappCountryCode = '91';
+    const course = {
+      id: 'crsHpNcr01AbcDefGhiJK',
+      courseType: 'HP',
+      month: '2026-08',
+      title: 'HP · August 2026',
+      whatsappTemplate: 'Hi {name}',
+      isActive: true,
+      hasPamphlet: false,
+      pamphletImageUrl: '',
+      createdAt: '',
+      updatedAt: '',
+      createdBy: '',
+      updatedBy: ''
+    };
     const internationalLead = app.normalizeLead({
       id: 'international-lead',
       mobile: '+1 415 555 2671',
@@ -361,15 +398,57 @@ describe('Seva workspace lead lifecycle', () => {
       campaignType: 'Leads'
     });
 
-    expect(app.buildWhatsappHref(internationalLead)).toContain(
+    expect(app.buildWhatsappHref(internationalLead, course)).toContain(
       'https://wa.me/14155552671?'
     );
-    expect(app.buildWhatsappHref(internationalLead)).not.toContain(
+    expect(app.buildWhatsappHref(internationalLead, course)).not.toContain(
       'https://wa.me/9114155552671?'
     );
-    expect(app.buildWhatsappHref(localLead)).toContain(
+    expect(app.buildWhatsappHref(localLead, course)).toContain(
       'https://wa.me/919876543210?'
     );
+  });
+
+  it('uses the campaign WhatsApp message when no active course is available', async () => {
+    const opened: string[] = [];
+    vi.stubGlobal('window', {
+      location: { origin: 'https://aolf.club' },
+      open: (url: string) => {
+        opened.push(url);
+        return null;
+      },
+      appRuntime: {
+        listCourses: vi.fn().mockResolvedValue({ success: true, courses: [] })
+      }
+    });
+    const app = sevaWorkspace();
+    app.campaigns = [
+      {
+        id: 'cmpLeads01AbcDefGhIJk',
+        name: 'July Leads Campaign',
+        type: 'Leads',
+        message: 'Hi {name}, greetings from {campaign}.'
+      }
+    ];
+    const lead = app.normalizeLead({
+      id: 'leadCamp01AbcDefGhiJK',
+      mobile: '9876543210',
+      name: 'Aarav',
+      campaignId: 'cmpLeads01AbcDefGhIJk',
+      campaignType: 'Leads'
+    });
+
+    expect(app.buildWhatsappHref(lead)).toContain('https://wa.me/919876543210?');
+    expect(decodeURIComponent(app.buildWhatsappHref(lead))).toContain(
+      'Hi Aarav, greetings from July Leads Campaign.'
+    );
+
+    await app.openWhatsappForLead(lead);
+    expect(opened).toHaveLength(1);
+    expect(decodeURIComponent(opened[0])).toContain(
+      'Hi Aarav, greetings from July Leads Campaign.'
+    );
+    expect(opened[0]).not.toContain('/course/');
   });
 
   it.each([

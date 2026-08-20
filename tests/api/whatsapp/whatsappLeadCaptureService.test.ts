@@ -24,6 +24,8 @@ vi.mock('../../../api/_lib/sheets/layout.js', () => ({
     leadsRange: 'Leads!A:Z',
     membersRange: 'Members!A:Z',
     configRange: 'Config!A:B',
+    coursesRange: 'Courses!A:Z',
+    courseTemplatesRange: 'CourseTemplates!A:B',
     allowedUsersRange: 'AllowedUsers!A:Z'
   })
 }));

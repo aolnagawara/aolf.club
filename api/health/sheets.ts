@@ -77,7 +77,8 @@ export function createSheetsHealthHandler(
     const headerRanges = [
       getHeaderRange(layout.campaignsRange),
       getHeaderRange(layout.leadsRange),
-      getHeaderRange(layout.membersRange)
+      getHeaderRange(layout.membersRange),
+      getHeaderRange(layout.coursesRange)
     ];
     const dataProbes = [
       authorizationDiagnostics
@@ -93,6 +94,10 @@ export function createSheetsHealthHandler(
       {
         key: 'memberRows' as const,
         range: getFirstColumnProbeRange(layout.membersRange)
+      },
+      {
+        key: 'courseRows' as const,
+        range: getFirstColumnProbeRange(layout.coursesRange)
       },
       {
         key: 'configRows' as const,
@@ -121,7 +126,7 @@ export function createSheetsHealthHandler(
           )
         : Promise.resolve([])
     ]);
-    const [campaignHeader, leadHeader, memberHeader] = dataRows;
+    const [campaignHeader, leadHeader, memberHeader, courseHeader] = dataRows;
     const countRows: Record<string, number> = {};
     const truncated: Record<string, boolean> = {};
     dataProbes.forEach((probe, index) => {
@@ -142,19 +147,22 @@ export function createSheetsHealthHandler(
         campaigns: getTabName(layout.campaignsRange),
         leads: getTabName(layout.leadsRange),
         members: getTabName(layout.membersRange),
+        courses: getTabName(layout.coursesRange),
         config: getTabName(layout.configRange),
         allowedUsers: getTabName(layout.allowedUsersRange)
       },
       headers: {
         campaigns: campaignHeader?.[0] || [],
         leads: leadHeader?.[0] || [],
-        members: memberHeader?.[0] || []
+        members: memberHeader?.[0] || [],
+        courses: courseHeader?.[0] || []
       },
       counts: {
         campaignRows:
           authorizationDiagnostics?.campaignRows ?? countRows.campaignRows ?? 0,
         leadRows: countRows.leadRows ?? 0,
         memberRows: countRows.memberRows ?? 0,
+        courseRows: countRows.courseRows ?? 0,
         configRows: countRows.configRows ?? 0,
         allowedUserRows:
           authorizationDiagnostics?.allowedUserRows ??

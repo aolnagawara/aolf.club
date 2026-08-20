@@ -68,19 +68,24 @@ describe('ApiClient error handling', () => {
   });
 
   it('turns the browser deadline into a safe retryable timeout', async () => {
-    vi.useFakeTimers();
-    vi.stubGlobal('window', {
-      setTimeout: globalThis.setTimeout,
-      clearTimeout: globalThis.clearTimeout
-    });
-    vi.stubGlobal('fetch', vi.fn(() => new Promise(() => undefined)));
-    const result = new ApiClient('', 25)
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        (_url: string, init?: RequestInit) =>
+          new Promise((_resolve, reject) => {
+            init?.signal?.addEventListener('abort', () => {
+              reject(
+                new DOMException('The operation was aborted.', 'AbortError')
+              );
+            });
+          })
+      )
+    );
+    const error = await new ApiClient('', 25)
       .get('/api/bootstrap')
       .catch((reason: unknown) => reason);
 
-    await vi.advanceTimersByTimeAsync(25);
-
-    await expect(result).resolves.toMatchObject({
+    expect(error).toMatchObject({
       status: 0,
       code: 'TIMEOUT',
       retryable: true,

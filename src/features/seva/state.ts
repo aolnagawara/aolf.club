@@ -7,6 +7,24 @@ import {
   DEFAULT_STATUS_ICON_MAP,
   getDefaultPrograms
 } from '../../config/campaignDefaults';
+import {
+  currentCourseMonth,
+  templateForCourseType
+} from '../../../shared/contracts/courseDefaults.mjs';
+
+export function createEmptyCourseDraft(courseType = 'HP') {
+  return {
+    id: '',
+    courseType,
+    month: currentCourseMonth(),
+    whatsappTemplate: templateForCourseType(courseType),
+    isActive: true,
+    hasPamphlet: false,
+    pamphletBase64: '',
+    pamphletMimeType: '',
+    pamphletPreviewUrl: ''
+  };
+}
 
 export function createSevaWorkspaceInitialState(): SevaWorkspaceState {
   return {
@@ -76,6 +94,15 @@ export function createSevaWorkspaceInitialState(): SevaWorkspaceState {
     programOrderMap: {},
     programCodeMap: {},
     appConfig: createDefaultAppConfig(),
-    defaultPrograms: getDefaultPrograms()
+    defaultPrograms: getDefaultPrograms(),
+    workspaceView: 'callTracker',
+    courses: [],
+    courseTemplates: [],
+    isLoadingCourses: false,
+    isCourseEditorOpen: false,
+    isCourseSaving: false,
+    courseDraft: createEmptyCourseDraft(),
+    isCoursePickerOpen: false,
+    coursePickerLead: null
   };
 }

@@ -1,10 +1,17 @@
 import type {
   AuthenticatedUser,
   BootstrapResponse,
+  CreateCourseRequest,
+  CreateCourseResponse,
   CreateLeadRequest,
   CreateLeadResponse,
+  DeleteCourseRequest,
+  DeleteCourseResponse,
   DeleteLeadRequest,
   DeleteLeadResponse,
+  ListCoursesResponse,
+  UpdateCourseRequest,
+  UpdateCourseResponse,
   UpdateLeadRequest,
   UpdateLeadResponse
 } from '../../shared/contracts/appContracts';
@@ -20,4 +27,11 @@ export interface LeadRepository {
   createLead(payload: CreateLeadRequest): Promise<CreateLeadResponse>;
   updateLead(payload: UpdateLeadRequest): Promise<UpdateLeadResponse>;
   deleteLead(payload: DeleteLeadRequest): Promise<DeleteLeadResponse>;
+}
+
+export interface CourseRepository {
+  listCourses(): Promise<ListCoursesResponse>;
+  createCourse(payload: CreateCourseRequest): Promise<CreateCourseResponse>;
+  updateCourse(payload: UpdateCourseRequest): Promise<UpdateCourseResponse>;
+  deleteCourse(payload: DeleteCourseRequest): Promise<DeleteCourseResponse>;
 }

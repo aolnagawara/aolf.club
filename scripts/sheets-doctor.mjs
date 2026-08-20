@@ -4,6 +4,7 @@ import {
   REQUIRED_CONFIG_KEYS,
   SHEET_HEADERS
 } from '../shared/contracts/sheetContract.mjs';
+import { defaultCourseTemplateRows } from '../shared/contracts/courseDefaults.mjs';
 import {
   buildGoogleSheetsAppendUrl,
   buildGoogleSheetsValuesUrl
@@ -314,6 +315,48 @@ async function ensureConfigKeys(client, spreadsheetId, tabName) {
   }
 }
 
+async function ensureCourseTemplates(client, spreadsheetId, tabName) {
+  await ensureHeader(
+    client,
+    spreadsheetId,
+    tabName,
+    SHEET_HEADERS.courseTemplates
+  );
+  const url = buildGoogleSheetsValuesUrl(spreadsheetId, tabName + '!A:B');
+  const payload = await fetchJson(client, url, { method: 'GET' });
+  const rows = Array.isArray(payload.values) ? payload.values : [];
+  const existing = new Set();
+  for (let i = 1; i < rows.length; i += 1) {
+    const courseType = String(rows[i]?.[0] || '').trim();
+    if (courseType) {
+      existing.add(courseType);
+    }
+  }
+  const missing = defaultCourseTemplateRows().filter(
+    ([courseType]) => !existing.has(courseType)
+  );
+  if (!missing.length) {
+    console.log('CourseTemplates OK');
+    return;
+  }
+  console.warn(
+    'Missing course templates: ' + missing.map((row) => row[0]).join(', ')
+  );
+  if (!SHOULD_FIX) {
+    return;
+  }
+  const appendUrl = buildGoogleSheetsAppendUrl(
+    spreadsheetId,
+    tabName + '!A:B',
+    'valueInputOption=RAW&insertDataOption=INSERT_ROWS'
+  );
+  await fetchJson(client, appendUrl, {
+    method: 'POST',
+    data: { values: missing }
+  });
+  console.log('Default course templates appended.');
+}
+
 async function run() {
   const env = loadEnv();
   const dataSpreadsheetId = requireValue(
@@ -354,6 +397,8 @@ async function run() {
     getTabName(layout.campaignsRange),
     getTabName(layout.leadsRange),
     getTabName(layout.membersRange),
+    getTabName(layout.coursesRange),
+    getTabName(layout.courseTemplatesRange),
     getTabName(layout.configRange)
   ];
   const requiredAccessTabs = [getTabName(layout.allowedUsersRange)];
@@ -399,6 +444,17 @@ async function run() {
       dataSpreadsheetId,
       getTabName(layout.membersRange),
       SHEET_HEADERS.members
+    ),
+    ensureHeader(
+      client,
+      dataSpreadsheetId,
+      getTabName(layout.coursesRange),
+      SHEET_HEADERS.courses
+    ),
+    ensureCourseTemplates(
+      client,
+      dataSpreadsheetId,
+      getTabName(layout.courseTemplatesRange)
     ),
     ensureHeader(
       client,

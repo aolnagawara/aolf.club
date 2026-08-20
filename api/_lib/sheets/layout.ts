@@ -9,6 +9,11 @@ const SheetLayoutSchema = z.object({
     .default(DEFAULT_SHEET_LAYOUT.campaignsRange),
   leadsRange: z.string().min(1).default(DEFAULT_SHEET_LAYOUT.leadsRange),
   membersRange: z.string().min(1).default(DEFAULT_SHEET_LAYOUT.membersRange),
+  coursesRange: z.string().min(1).default(DEFAULT_SHEET_LAYOUT.coursesRange),
+  courseTemplatesRange: z
+    .string()
+    .min(1)
+    .default(DEFAULT_SHEET_LAYOUT.courseTemplatesRange),
   configRange: z.string().min(1).default(DEFAULT_SHEET_LAYOUT.configRange),
   allowedUsersRange: z
     .string()

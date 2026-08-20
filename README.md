@@ -53,7 +53,7 @@ flowchart TD
     W[WhatsApp Volunteer]
     V[Vercel<br/>AOLF Connect Website + API]
     G[Google OAuth<br/>Volunteer Sign-in]
-    S[Google Sheets<br/>Campaigns / Leads / Members / Config / AllowedUsers]
+    S[Google Sheets<br/>Campaigns / Leads / Members / Courses / CourseTemplates / Config / AllowedUsers]
     M[Meta WhatsApp Cloud API]
 
     U -->|Open website / Seva workspace| V
@@ -116,6 +116,8 @@ The spreadsheet should contain these tabs:
 - `Campaigns`
 - `Leads`
 - `Members`
+- `Courses`
+- `CourseTemplates`
 - `Config`
 - `AllowedUsers`
 
@@ -132,6 +134,28 @@ email,name,mobile
 Add the Google email address of the first volunteer who should be allowed to sign in.
 
 At minimum, enter the volunteer's email address.
+
+### Courses tab
+
+Existing installations need a `Courses` tab and a `CourseTemplates` tab. Run `pnpm run sheets:doctor:fix` or add them by hand.
+
+`Courses` header:
+
+```text
+id,courseType,month,title,whatsappTemplate,pamphletFileId,pamphletMimeType,isActive,createdAt,updatedAt,createdBy,updatedBy
+```
+
+`CourseTemplates` header:
+
+```text
+courseType,template
+```
+
+Course Management only stores type, month (`YYYY-MM`), the WhatsApp template, and a pamphlet file. Dates, time, venue, and registration belong in the template. The Happiness Program default template is seeded on `CourseTemplates` and includes `{courseUrl}` so WhatsApp can preview `/course/<id>`.
+
+Pamphlets are uploaded from Course Management (JPEG, PNG, or WebP, max 1.5 MB). They are stored with the existing Google service account on Drive and served at `/course/<id>/pamphlet`. Enable the **Google Drive API** on the same Cloud project as Sheets. WhatsApp may cache an older pamphlet after you replace the image.
+
+If you already had a Courses tab with the previous columns, doctor will rewrite the header. Re-add those courses in Course Management.
 
 ### Save the Spreadsheet ID
 

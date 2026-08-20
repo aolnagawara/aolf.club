@@ -13,5 +13,5 @@ export type ApiResponse = {
   json: (body: unknown) => ApiResponse;
   setHeader: (name: string, value: string | string[]) => void;
   getHeader: (name: string) => number | string | string[] | undefined;
-  end: (body?: string) => void;
+  end: (body?: string | Buffer | Uint8Array) => void;
 };

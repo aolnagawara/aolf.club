@@ -1,24 +1,53 @@
 import {
   AppConfigSchema,
   BootstrapResponseSchema,
+  CreateCourseRequestSchema,
+  CreateCourseResponseSchema,
   CreateLeadRequestSchema,
   CreateLeadResponseSchema,
+  DeleteCourseRequestSchema,
+  DeleteCourseResponseSchema,
   DeleteLeadRequestSchema,
   DeleteLeadResponseSchema,
   LeadSchema,
+  ListCoursesResponseSchema,
+  UpdateCourseRequestSchema,
+  UpdateCourseResponseSchema,
   UpdateLeadRequestSchema,
   UpdateLeadResponseSchema,
   type AppConfig,
   type BootstrapResponse,
   type Campaign,
+  type Course,
+  type CreateCourseResponse,
   type CreateLeadResponse,
+  type DeleteCourseResponse,
   type DeleteLeadResponse,
   type Lead,
+  type ListCoursesResponse,
+  type UpdateCourseResponse,
   type UpdateLeadRequest,
   type UpdateLeadResponse
 } from '../../../shared/contracts/appContracts.js';
 import { nanoid } from 'nanoid';
+import { defaultCourseTemplates } from '../../../shared/contracts/courseDefaults.mjs';
 import { normalizeEmail } from '../http/normalization.js';
+import {
+  applyCourseDefaults,
+  courseFromRow,
+  courseToRow,
+  resolveCourseIdColumn,
+  templatesFromRows,
+  toCourseResponse,
+  type CourseRecord
+} from '../courses/sheetMapping.js';
+import {
+  createDrivePamphletStore
+} from '../courses/drivePamphlet.js';
+import {
+  decodePamphletBase64,
+  type PamphletStore
+} from '../courses/pamphletStore.js';
 import {
   getSheetLayout as defaultGetSheetLayout,
   type SheetLayout
@@ -97,6 +126,7 @@ export type SheetsStoreDependencies = {
   deleteSheetRow?: DeleteSheetRow;
   getSheetLayout?: () => SheetLayout;
   now?: () => Date;
+  pamphletStore?: PamphletStore;
 };
 
 export type AuthorizedStoreResult<T> =
@@ -397,6 +427,8 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
   const deleteSheetRow = dependencies.deleteSheetRow || defaultDeleteSheetRow;
   const getSheetLayout = dependencies.getSheetLayout || defaultGetSheetLayout;
   const now = dependencies.now || (() => new Date());
+  const pamphletStore =
+    dependencies.pamphletStore || createDrivePamphletStore();
 
   async function withStoreOperation<T>(
     operation: SheetsOperation | undefined,
@@ -717,6 +749,242 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
     });
   }
 
+  async function readCourseRows(
+    operation: SheetsOperation
+  ): Promise<{ headers: string[]; rows: string[][] }> {
+    const layout = getSheetLayout();
+    const rows = await readSheetValues('data', layout.coursesRange, operation);
+    const headers = (rows[0] || []).map((value) => String(value || '').trim());
+    if (!headers.length || resolveCourseIdColumn(headers) < 0) {
+      throw new Error('Course sheet is missing header row.');
+    }
+    return { headers, rows };
+  }
+
+  function parseCourseAt(
+    headers: string[],
+    rows: string[][],
+    rowIndex: number
+  ): CourseRecord | null {
+    return courseFromRow(headers, rows[rowIndex] || []);
+  }
+
+  async function listCourseTemplates(
+    operation: SheetsOperation
+  ): Promise<ListCoursesResponse['templates']> {
+    try {
+      const rows = await readSheetValues(
+        'data',
+        getSheetLayout().courseTemplatesRange,
+        operation
+      );
+      const parsed = templatesFromRows(rows);
+      if (!parsed.length) {
+        return defaultCourseTemplates();
+      }
+      const merged = new Map(
+        defaultCourseTemplates().map((item) => [item.courseType, item.template])
+      );
+      parsed.forEach((item) => {
+        if (item.template.trim()) {
+          merged.set(item.courseType, item.template);
+        }
+      });
+      return [...merged.entries()].map(([courseType, template]) => ({
+        courseType,
+        template
+      }));
+    } catch {
+      return defaultCourseTemplates();
+    }
+  }
+
+  async function listCourses(
+    operation: SheetsOperation
+  ): Promise<ListCoursesResponse> {
+    const [{ headers, rows }, templates] = await Promise.all([
+      readCourseRows(operation),
+      listCourseTemplates(operation)
+    ]);
+    const courses = rows
+      .slice(1)
+      .map((row) => courseFromRow(headers, row))
+      .filter((course): course is CourseRecord => Boolean(course))
+      .map(toCourseResponse);
+    return ListCoursesResponseSchema.parse({
+      success: true,
+      courses,
+      templates
+    });
+  }
+
+  async function getCourseById(
+    operation: SheetsOperation,
+    id: string
+  ): Promise<CourseRecord | null> {
+    const { headers, rows } = await readCourseRows(operation);
+    const idColumn = resolveCourseIdColumn(headers);
+    const rowIndex = rows.findIndex(
+      (row, index) => index > 0 && getCell(row, idColumn) === id
+    );
+    if (rowIndex < 0) {
+      return null;
+    }
+    return parseCourseAt(headers, rows, rowIndex);
+  }
+
+  async function createCourse(
+    user: SessionUser,
+    operation: SheetsOperation,
+    rawPayload: unknown
+  ): Promise<CreateCourseResponse> {
+    const payload = CreateCourseRequestSchema.parse(rawPayload);
+    const { headers } = await readCourseRows(operation);
+    const timestamp = now().toISOString();
+    const id = nanoid();
+    let pamphletFileId = '';
+    let pamphletMimeType = '';
+    if (payload.pamphletBase64.trim()) {
+      const pamphlet = decodePamphletBase64(
+        payload.pamphletBase64,
+        payload.pamphletMimeType
+      );
+      pamphletFileId = await pamphletStore.upload(id, pamphlet);
+      pamphletMimeType = payload.pamphletMimeType;
+    }
+    const course = applyCourseDefaults(
+      payload,
+      timestamp,
+      normalizeEmail(user.email),
+      { id, pamphletFileId, pamphletMimeType }
+    );
+    await appendSheetRow(
+      'data',
+      getSheetLayout().coursesRange,
+      courseToRow(headers, course),
+      operation
+    );
+    return CreateCourseResponseSchema.parse({
+      success: true,
+      course: toCourseResponse(course)
+    });
+  }
+
+  async function updateCourse(
+    user: SessionUser,
+    operation: SheetsOperation,
+    rawPayload: unknown
+  ): Promise<UpdateCourseResponse> {
+    const payload = UpdateCourseRequestSchema.parse(rawPayload);
+    const { headers, rows } = await readCourseRows(operation);
+    const idColumn = resolveCourseIdColumn(headers);
+    const rowIndex = rows.findIndex(
+      (row, index) => index > 0 && getCell(row, idColumn) === payload.id
+    );
+    if (rowIndex < 0) {
+      throw new Error('Course not found.');
+    }
+    const existing = parseCourseAt(headers, rows, rowIndex);
+    if (!existing) {
+      throw new Error('Course not found.');
+    }
+    const timestamp = now().toISOString();
+    let pamphletFileId = existing.pamphletFileId;
+    let pamphletMimeType = existing.pamphletMimeType;
+    if (payload.clearPamphlet && pamphletFileId) {
+      await pamphletStore.remove(pamphletFileId);
+      pamphletFileId = '';
+      pamphletMimeType = '';
+    }
+    if (payload.pamphletBase64.trim()) {
+      const pamphlet = decodePamphletBase64(
+        payload.pamphletBase64,
+        payload.pamphletMimeType
+      );
+      const nextId = await pamphletStore.upload(payload.id, pamphlet);
+      if (pamphletFileId && pamphletFileId !== nextId) {
+        await pamphletStore.remove(pamphletFileId);
+      }
+      pamphletFileId = nextId;
+      pamphletMimeType = payload.pamphletMimeType;
+    }
+    const course = applyCourseDefaults(
+      payload,
+      timestamp,
+      normalizeEmail(user.email),
+      { id: payload.id, existing, pamphletFileId, pamphletMimeType }
+    );
+    const rowNumber = rowIndex + 1;
+    const lastColumn = columnLabel(headers.length);
+    await updateSheetValuesBatch(
+      'data',
+      [
+        {
+          range:
+            getTabName(getSheetLayout().coursesRange) +
+            '!A' +
+            String(rowNumber) +
+            ':' +
+            lastColumn +
+            String(rowNumber),
+          values: [courseToRow(headers, course)]
+        }
+      ],
+      operation
+    );
+    return UpdateCourseResponseSchema.parse({
+      success: true,
+      course: toCourseResponse(course)
+    });
+  }
+
+  async function deleteCourse(
+    operation: SheetsOperation,
+    rawPayload: unknown
+  ): Promise<DeleteCourseResponse> {
+    const payload = DeleteCourseRequestSchema.parse(rawPayload);
+    const { headers, rows } = await readCourseRows(operation);
+    const idColumn = resolveCourseIdColumn(headers);
+    const rowIndex = rows.findIndex(
+      (row, index) => index > 0 && getCell(row, idColumn) === payload.id
+    );
+    if (rowIndex < 0) {
+      throw new Error('Course not found.');
+    }
+    const existing = parseCourseAt(headers, rows, rowIndex);
+    if (existing?.pamphletFileId) {
+      await pamphletStore.remove(existing.pamphletFileId);
+    }
+    await deleteSheetRow(
+      'data',
+      getTabName(getSheetLayout().coursesRange),
+      rowIndex + 1,
+      operation
+    );
+    return DeleteCourseResponseSchema.parse({
+      success: true,
+      course: { id: payload.id }
+    });
+  }
+
+  async function loadPublicCoursePamphlet(
+    id: string,
+    operation: SheetsOperation
+  ) {
+    const course = await getCourseById(operation, id);
+    if (!course?.pamphletFileId) {
+      return null;
+    }
+    const pamphlet = await pamphletStore.download(course.pamphletFileId);
+    if (!pamphlet) {
+      return null;
+    }
+    return {
+      mimeType: course.pamphletMimeType || pamphlet.mimeType,
+      bytes: pamphlet.bytes
+    };
+  }
+
   return {
     async authorizeUser(
       user: SessionUser,
@@ -803,6 +1071,92 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
           value: await deleteLead(user, activeOperation, payload)
         };
       });
+    },
+
+    async listCoursesForAuthorizedUser(
+      user: SessionUser,
+      operation?: SheetsOperation
+    ): Promise<AuthorizedStoreResult<ListCoursesResponse>> {
+      return withStoreOperation(operation, async (activeOperation) => {
+        const snapshot = await loadMetadataSnapshot(activeOperation);
+        if (!isUserAllowed(snapshot, user)) {
+          return { allowed: false };
+        }
+        return {
+          allowed: true,
+          value: await listCourses(activeOperation)
+        };
+      });
+    },
+
+    async createCourseForAuthorizedUser(
+      user: SessionUser,
+      payload: unknown,
+      operation?: SheetsOperation
+    ): Promise<AuthorizedStoreResult<CreateCourseResponse>> {
+      return withStoreOperation(operation, async (activeOperation) => {
+        const snapshot = await loadMetadataSnapshot(activeOperation);
+        if (!isUserAllowed(snapshot, user)) {
+          return { allowed: false };
+        }
+        return {
+          allowed: true,
+          value: await createCourse(user, activeOperation, payload)
+        };
+      });
+    },
+
+    async updateCourseForAuthorizedUser(
+      user: SessionUser,
+      payload: unknown,
+      operation?: SheetsOperation
+    ): Promise<AuthorizedStoreResult<UpdateCourseResponse>> {
+      return withStoreOperation(operation, async (activeOperation) => {
+        const snapshot = await loadMetadataSnapshot(activeOperation);
+        if (!isUserAllowed(snapshot, user)) {
+          return { allowed: false };
+        }
+        return {
+          allowed: true,
+          value: await updateCourse(user, activeOperation, payload)
+        };
+      });
+    },
+
+    async deleteCourseForAuthorizedUser(
+      user: SessionUser,
+      payload: unknown,
+      operation?: SheetsOperation
+    ): Promise<AuthorizedStoreResult<DeleteCourseResponse>> {
+      return withStoreOperation(operation, async (activeOperation) => {
+        const snapshot = await loadMetadataSnapshot(activeOperation);
+        if (!isUserAllowed(snapshot, user)) {
+          return { allowed: false };
+        }
+        return {
+          allowed: true,
+          value: await deleteCourse(activeOperation, payload)
+        };
+      });
+    },
+
+    async getPublicCourseById(
+      id: string,
+      operation?: SheetsOperation
+    ): Promise<Course | null> {
+      return withStoreOperation(operation, async (activeOperation) => {
+        const course = await getCourseById(activeOperation, id);
+        return course ? toCourseResponse(course) : null;
+      });
+    },
+
+    async getPublicCoursePamphlet(
+      id: string,
+      operation?: SheetsOperation
+    ) {
+      return withStoreOperation(operation, async (activeOperation) =>
+        loadPublicCoursePamphlet(id, activeOperation)
+      );
     }
   };
 }

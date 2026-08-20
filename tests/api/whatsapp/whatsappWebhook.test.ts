@@ -86,7 +86,7 @@ function createResponseCapture(): {
       return capture.headers[name.toLowerCase()];
     },
     end(body) {
-      capture.endBody = body || '';
+      capture.endBody = typeof body === 'string' ? body : '';
     }
   };
 

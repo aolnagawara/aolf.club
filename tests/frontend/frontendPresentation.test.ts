@@ -43,12 +43,21 @@ describe('AOLF Connect frontend presentation', () => {
     expect(viteConfig).toContain(
       "volunteer: resolve(__dirname, 'src/volunteer.html')"
     );
+    expect(viteConfig).toContain('servePublicCoursePage');
     expect(viteConfig).not.toContain(
       "login: resolve(__dirname, 'src/login.html')"
     );
     expect(vercelConfig.rewrites).toContainEqual({
       source: '/volunteer',
       destination: '/volunteer.html'
+    });
+    expect(vercelConfig.rewrites).toContainEqual({
+      source: '/course/:id/pamphlet',
+      destination: '/api/course/:id/pamphlet'
+    });
+    expect(vercelConfig.rewrites).toContainEqual({
+      source: '/course/:id',
+      destination: '/api/course/:id'
     });
     expect(existsSync(legacyLoginUrl)).toBe(false);
   });
@@ -80,15 +89,21 @@ describe('AOLF Connect frontend presentation', () => {
     const volunteerPage = readText(volunteerPageUrl);
     const mainModule = readText(mainModuleUrl);
 
-    expect(volunteerPage).toContain(':href="buildWhatsappHref(lead)"');
-    expect(volunteerPage).toContain('target="_blank"');
-    expect(volunteerPage).toContain('rel="noopener noreferrer"');
+    expect(volunteerPage).toContain('@click="openWhatsappForLead(lead)"');
     expect(volunteerPage).toContain('aria-label="Open WhatsApp"');
     expect(volunteerPage).toContain('data-icon="whatsapp"');
     expect(volunteerPage).not.toContain('data-lucide="message-circle"');
     expect(mainModule).not.toContain('MessageCircle');
-    expect(volunteerPage).toContain('x-show="buildWhatsappHref(lead)"');
+    expect(volunteerPage).toContain('x-show="canOpenWhatsapp(lead)"');
     expect(volunteerPage).toContain(':disabled="!cleanPhone(lead.mobile)"');
+    expect(volunteerPage).toContain('Call Tracker');
+    expect(volunteerPage).toContain('Course Management');
+    expect(volunteerPage).toContain('type="month"');
+    expect(volunteerPage).toContain('type="file"');
+    expect(volunteerPage).toContain('WhatsApp template');
+    expect(volunteerPage).not.toContain('Pamphlet image URL');
+    expect(volunteerPage).not.toContain('x-model="courseDraft.title"');
+    expect(volunteerPage).not.toContain('x-model="courseDraft.courseCode"');
   });
 
   it('does not show an inactive notification control', () => {

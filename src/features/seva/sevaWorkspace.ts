@@ -6,6 +6,7 @@ import { createDateAndFilterMethods } from './dateAndFilter';
 import { createUiMethods } from './uiMethods';
 import { createCommunicationMethods } from './communications';
 import { createRecordActionMethods } from './recordActions';
+import { createCourseWorkspaceMethods } from '../courses/courseWorkspace';
 import type { SevaWorkspaceContext } from './types';
 
 export function sevaWorkspace(): SevaWorkspaceContext {
@@ -17,6 +18,7 @@ export function sevaWorkspace(): SevaWorkspaceContext {
     ...createDateAndFilterMethods(),
     ...createUiMethods(),
     ...createRecordActionMethods(),
-    ...createCommunicationMethods()
+    ...createCommunicationMethods(),
+    ...createCourseWorkspaceMethods()
   };
 }

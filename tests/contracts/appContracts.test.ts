@@ -92,3 +92,26 @@ describe('CreateLeadRequestSchema', () => {
     ).toThrow('Enter a valid 10-digit Indian mobile number.');
   });
 });
+
+describe('CourseWriteFieldsSchema', () => {
+  it('requires course type and month', async () => {
+    const { CourseWriteFieldsSchema } = await import(
+      '../../shared/contracts/appContracts'
+    );
+    expect(
+      CourseWriteFieldsSchema.parse({
+        courseType: 'HP',
+        month: '2026-08'
+      }).isActive
+    ).toBe(true);
+    expect(() => CourseWriteFieldsSchema.parse({ courseType: 'HP' })).toThrow();
+    expect(() =>
+      CourseWriteFieldsSchema.parse({
+        courseType: 'HP',
+        month: '2026-08',
+        pamphletBase64: 'abc',
+        pamphletMimeType: 'image/svg+xml'
+      })
+    ).toThrow();
+  });
+});

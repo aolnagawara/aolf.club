@@ -1,9 +1,20 @@
 import type { SevaWorkspaceContext, Lead, LeadSnapshot } from './types';
-import type { UpdateLeadRequest } from '../../../shared/contracts/appContracts';
+import type {
+  Course,
+  UpdateLeadRequest
+} from '../../../shared/contracts/appContracts';
 import {
   DEFAULT_CAMPAIGN_MESSAGE,
   DEFAULT_WHATSAPP_COUNTRY_CODE
 } from '../../config/campaignDefaults';
+import {
+  DEFAULT_COURSE_WHATSAPP_TEMPLATE,
+  formatCourseMonthLabel
+} from '../../../shared/contracts/courseDefaults.mjs';
+import {
+  ensureCourseUrlInMessage,
+  fillCourseWhatsappTemplate
+} from '../../../shared/contracts/courseMatching';
 
 export function createCommunicationMethods() {
   return {
@@ -38,7 +49,7 @@ export function createCommunicationMethods() {
         .replaceAll('{name}', lead.name || 'Friend')
         .replaceAll('{campaign}', campaignName);
     },
-    buildWhatsappHref(this: SevaWorkspaceContext, lead: Lead): string {
+    getWhatsappDestination(this: SevaWorkspaceContext, lead: Lead): string {
       const mobile = String(lead.mobile || '').trim();
       const phone = this.cleanPhone(mobile);
       if (!phone) {
@@ -50,13 +61,46 @@ export function createCommunicationMethods() {
             this.appConfig.whatsappCountryCode || DEFAULT_WHATSAPP_COUNTRY_CODE
           )
         ) || DEFAULT_WHATSAPP_COUNTRY_CODE;
-      const destination =
-        mobile.startsWith('+') ||
+      return mobile.startsWith('+') ||
         (phone.length > 10 && phone.startsWith(countryCode))
-          ? phone
-          : countryCode + phone;
-      const message = encodeURIComponent(this.buildCampaignMessage(lead));
-      return 'https://wa.me/' + destination + '?text=' + message;
+        ? phone
+        : countryCode + phone;
+    },
+    canOpenWhatsapp(this: SevaWorkspaceContext, lead: Lead): boolean {
+      return Boolean(this.getWhatsappDestination(lead));
+    },
+    buildWhatsappHref(
+      this: SevaWorkspaceContext,
+      lead: Lead,
+      course?: Course | null
+    ): string {
+      const destination = this.getWhatsappDestination(lead);
+      if (!destination) {
+        return '';
+      }
+      let message = this.buildCampaignMessage(lead);
+      if (course) {
+        const courseUrl =
+          String(window.location.origin || '').replace(/\/$/, '') +
+          '/course/' +
+          course.id;
+        message = ensureCourseUrlInMessage(
+          fillCourseWhatsappTemplate(
+            course.whatsappTemplate || DEFAULT_COURSE_WHATSAPP_TEMPLATE,
+            {
+              name: lead.name || 'Friend',
+              course: course.title || '',
+              dates: formatCourseMonthLabel(course.month || ''),
+              registrationLink: '',
+              courseUrl
+            }
+          ),
+          courseUrl
+        );
+      }
+      return (
+        'https://wa.me/' + destination + '?text=' + encodeURIComponent(message)
+      );
     },
     async saveLead(
       this: SevaWorkspaceContext,

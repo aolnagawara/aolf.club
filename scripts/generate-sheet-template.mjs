@@ -2,6 +2,11 @@ import { mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import * as XLSX from 'xlsx';
 import { SHEET_HEADERS } from '../shared/contracts/sheetContract.mjs';
+import {
+  defaultCourseTemplateRows,
+  DEFAULT_HP_WHATSAPP_TEMPLATE,
+  formatCourseTitle
+} from '../shared/contracts/courseDefaults.mjs';
 
 const outputPath = resolve(
   process.cwd(),
@@ -92,6 +97,29 @@ const allowedUsersRows = [
   ['admin@example.com', 'Sample Admin', '918888888888']
 ];
 
+const coursesRows = [
+  [...SHEET_HEADERS.courses],
+  [
+    'crsHpNcr01AbcDefGhiJK',
+    'HP',
+    '2026-08',
+    formatCourseTitle('HP', '2026-08'),
+    DEFAULT_HP_WHATSAPP_TEMPLATE,
+    '',
+    '',
+    'true',
+    '2026-08-01T12:00:00.000Z',
+    '2026-08-01T12:00:00.000Z',
+    'volunteer@example.com',
+    'volunteer@example.com'
+  ]
+];
+
+const courseTemplatesRows = [
+  [...SHEET_HEADERS.courseTemplates],
+  ...defaultCourseTemplateRows()
+];
+
 XLSX.utils.book_append_sheet(
   workbook,
   XLSX.utils.aoa_to_sheet(leadsRows),
@@ -111,6 +139,16 @@ XLSX.utils.book_append_sheet(
   workbook,
   XLSX.utils.aoa_to_sheet(configRows),
   'Config'
+);
+XLSX.utils.book_append_sheet(
+  workbook,
+  XLSX.utils.aoa_to_sheet(coursesRows),
+  'Courses'
+);
+XLSX.utils.book_append_sheet(
+  workbook,
+  XLSX.utils.aoa_to_sheet(courseTemplatesRows),
+  'CourseTemplates'
 );
 XLSX.utils.book_append_sheet(
   workbook,

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { normalizeIndianMobile } from './indianMobile.js';
+import { inspectPamphletUpload } from './pamphlet.js';
 
 const NanoIdSchema = z
   .string()
@@ -160,6 +161,77 @@ export const DeleteLeadResponseSchema = z.object({
   lead: z.object({ id: z.string().min(1) })
 });
 
+export const CourseWriteFieldsSchema = z
+  .object({
+    courseType: z.string().trim().min(1, 'Choose a course type.'),
+    month: z
+      .string()
+      .trim()
+      .regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'Choose a course month.'),
+    whatsappTemplate: z.string().default(''),
+    isActive: z.boolean().default(true),
+    pamphletBase64: z.string().default(''),
+    pamphletMimeType: z.string().default(''),
+    clearPamphlet: z.boolean().optional()
+  })
+  .superRefine((data, ctx) => {
+    const raw = String(data.pamphletBase64 || '').trim();
+    if (!raw) {
+      return;
+    }
+    const inspected = inspectPamphletUpload(raw, data.pamphletMimeType);
+    if (!inspected.ok) {
+      ctx.addIssue({
+        code: 'custom',
+        message: inspected.message,
+        path: ['pamphletBase64']
+      });
+    }
+  });
+
+export const CourseSchema = z.object({
+  id: NanoIdSchema,
+  courseType: z.string().trim().min(1),
+  month: z.string().trim().min(1),
+  title: z.string().default(''),
+  whatsappTemplate: z.string().default(''),
+  isActive: z.boolean().default(true),
+  hasPamphlet: z.boolean().default(false),
+  pamphletImageUrl: z.string().default(''),
+  createdAt: z.string().default(''),
+  updatedAt: z.string().default(''),
+  createdBy: z.string().default(''),
+  updatedBy: z.string().default('')
+});
+
+export const CourseTemplateSchema = z.object({
+  courseType: z.string().trim().min(1),
+  template: z.string()
+});
+
+export const CreateCourseRequestSchema = CourseWriteFieldsSchema;
+export const UpdateCourseRequestSchema = CourseWriteFieldsSchema.extend({
+  id: NanoIdSchema
+});
+export const DeleteCourseRequestSchema = z.object({
+  id: NanoIdSchema
+});
+
+export const ListCoursesResponseSchema = z.object({
+  success: z.literal(true),
+  courses: z.array(CourseSchema),
+  templates: z.array(CourseTemplateSchema).default([])
+});
+export const CreateCourseResponseSchema = z.object({
+  success: z.literal(true),
+  course: CourseSchema
+});
+export const UpdateCourseResponseSchema = CreateCourseResponseSchema;
+export const DeleteCourseResponseSchema = z.object({
+  success: z.literal(true),
+  course: z.object({ id: NanoIdSchema })
+});
+
 export type AuthenticatedUser = z.infer<typeof AuthenticatedUserSchema>;
 export type Campaign = z.infer<typeof CampaignSchema>;
 export type Lead = z.infer<typeof LeadSchema>;
@@ -171,5 +243,14 @@ export type CreateLeadRequest = z.infer<typeof CreateLeadRequestSchema>;
 export type CreateLeadResponse = z.infer<typeof CreateLeadResponseSchema>;
 export type DeleteLeadRequest = z.infer<typeof DeleteLeadRequestSchema>;
 export type DeleteLeadResponse = z.infer<typeof DeleteLeadResponseSchema>;
+export type Course = z.infer<typeof CourseSchema>;
+export type CourseTemplate = z.infer<typeof CourseTemplateSchema>;
+export type CreateCourseRequest = z.infer<typeof CreateCourseRequestSchema>;
+export type UpdateCourseRequest = z.infer<typeof UpdateCourseRequestSchema>;
+export type DeleteCourseRequest = z.infer<typeof DeleteCourseRequestSchema>;
+export type ListCoursesResponse = z.infer<typeof ListCoursesResponseSchema>;
+export type CreateCourseResponse = z.infer<typeof CreateCourseResponseSchema>;
+export type UpdateCourseResponse = z.infer<typeof UpdateCourseResponseSchema>;
+export type DeleteCourseResponse = z.infer<typeof DeleteCourseResponseSchema>;
 export type ApiErrorCode = z.infer<typeof ApiErrorCodeSchema>;
 export type ApiErrorResponse = z.infer<typeof ApiErrorSchema>;
