@@ -76,6 +76,7 @@ export function createSevaWorkspaceInitialState(): SevaWorkspaceState {
       wishlist: [],
       done: []
     },
+    programListRevision: 0,
     filteredCriteriaKey: '',
     programFilter: '',
     pageSize: 25,

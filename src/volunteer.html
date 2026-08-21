@@ -436,12 +436,15 @@
               ></h2>
               <span
                 class="text-xs text-slate-400"
-                x-text="visibleLeads().length + ' shown · ' + filteredLeads().length + ' matching · ' + leads.length + ' total'"
+                x-text="visibleLeads(programListRevision).length + ' shown · ' + filteredLeads(programListRevision).length + ' matching · ' + leads.length + ' total'"
               ></span>
             </div>
 
             <!-- Reusable Lead Card Loop -->
-            <template x-for="lead in visibleLeads()" :key="getLeadKey(lead)">
+            <template
+              x-for="lead in visibleLeads(programListRevision)"
+              :key="getLeadKey(lead) + '|' + lead.programSummary"
+            >
               <div
                 class="bg-white rounded-xl shadow-sm border p-3.5 space-y-2.5 transition-colors touch-manipulation"
                 :class="isLeadSelected(lead) ? 'border-indigo-500 bg-indigo-50/60 ring-2 ring-indigo-200' : 'border-slate-200'"
@@ -554,7 +557,7 @@
                       @click="openProgramEditor(lead)"
                       class="mt-0.5 text-[11px] leading-snug font-medium text-slate-500 truncate max-w-[220px] cursor-pointer"
                       title="Tap to edit programs"
-                      x-text="(lead.wishlistPrograms, lead.donePrograms, getProgramSummary(lead))"
+                      x-text="lead.programSummary"
                     ></div>
                   </div>
 

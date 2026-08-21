@@ -144,6 +144,12 @@ export function createProgramMethods() {
       }
       return '✏️ Program';
     },
+    refreshLeadProgramSummary(this: SevaWorkspaceContext, lead: Lead): void {
+      lead.programSummary = this.getProgramSummary(lead);
+    },
+    bumpProgramListRevision(this: SevaWorkspaceContext): void {
+      this.programListRevision += 1;
+    },
     shouldShowProgramEditor(this: SevaWorkspaceContext): boolean {
       return (
         Array.isArray(this.appConfig.programs) &&
@@ -188,9 +194,10 @@ export function createProgramMethods() {
       if (this.shouldShowDonePrograms()) {
         lead.donePrograms = this.normalizePrograms(this.programDraft.done);
       }
+      this.refreshLeadProgramSummary(lead);
       this.markLeadDirty(lead);
-      this.leads = this.leads.slice();
       this.closeProgramEditor();
+      this.bumpProgramListRevision();
     },
     isProgramSelected(
       this: SevaWorkspaceContext,

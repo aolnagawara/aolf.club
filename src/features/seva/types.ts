@@ -66,6 +66,7 @@ export type Lead = Omit<
   campaignType: CampaignType;
   wishlistPrograms: string[];
   donePrograms: string[];
+  programSummary: string;
   isEditingName: boolean;
   isDirty: boolean;
   _originalData: LeadSnapshot | null;
@@ -126,6 +127,7 @@ export interface SevaWorkspaceState {
   isCreateRecordSaving: boolean;
   globalPointerDownHandler: ((event: PointerEvent) => void) | null;
   programDraft: ProgramDraft;
+  programListRevision: number;
   filteredCriteriaKey: string;
   programFilter: string;
   pageSize: number;

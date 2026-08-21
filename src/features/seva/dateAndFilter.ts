@@ -296,10 +296,10 @@ export function createDateAndFilterMethods() {
       const hasSearch = String(this.searchQuery || '').trim().length > 0;
       return hasSearch ? label + ' + Search' : label;
     },
-    filteredLeads(this: SevaWorkspaceContext): Lead[] {
+    filteredLeads(this: SevaWorkspaceContext, _revision?: number): Lead[] {
       return this.computeFilteredLeads();
     },
-    visibleLeads(this: SevaWorkspaceContext): Lead[] {
+    visibleLeads(this: SevaWorkspaceContext, _revision?: number): Lead[] {
       return this.computeFilteredLeads().slice(0, this.visibleLeadLimit);
     },
     hasMoreLeads(this: SevaWorkspaceContext): boolean {

@@ -98,6 +98,9 @@ describe('AOLF Connect frontend presentation', () => {
     expect(page).toContain('Continue with Google');
     expect(page).toContain('@click="startAuthFlow()"');
     expect(page).toContain('x-show="isProgramEditorOpen"');
+    expect(page).toContain('x-text="lead.programSummary"');
+    expect(page).toContain('x-for="lead in visibleLeads(programListRevision)"');
+    expect(page).toContain("getLeadKey(lead) + '|' + lead.programSummary");
     expect(page).toContain('@click.self="applyProgramEditor()"');
     expect(page).toContain('@click="saveProgramEditor()"');
     expect(page).toContain('@click="closeProgramEditor()"');

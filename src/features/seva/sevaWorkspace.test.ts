@@ -802,10 +802,12 @@ describe('Seva workspace program editor', () => {
 
     expect(lead.wishlistPrograms).toEqual(['HP']);
     expect(lead.donePrograms).toEqual(['DSN']);
-    expect(app.getProgramSummary(lead)).toContain('HP');
-    expect(app.getProgramSummary(lead)).toContain('DSN');
+    expect(lead.programSummary).toContain('HP');
+    expect(lead.programSummary).toContain('DSN');
+    expect(app.getProgramSummary(lead)).toBe(lead.programSummary);
     expect(lead.isDirty).toBe(true);
     expect(app.isProgramEditorOpen).toBe(false);
+    expect(app.programListRevision).toBe(1);
   });
 
   it('discards program editor selections on close', () => {

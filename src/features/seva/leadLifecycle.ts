@@ -301,6 +301,7 @@ export function createLeadLifecycleMethods() {
       lead.wishlistPrograms = this.normalizePrograms(snapshot.wishlistPrograms);
       lead.donePrograms = this.normalizePrograms(snapshot.donePrograms);
       this.normalizeLeadDerivedFields(lead);
+      this.bumpProgramListRevision();
       lead.isEditingName = false;
       lead.isDirty = hasPendingSave;
       if (hasPendingSave) {
@@ -325,6 +326,7 @@ export function createLeadLifecycleMethods() {
         assignedVolunteerEmail: String(lead.assignedVolunteerEmail || ''),
         wishlistPrograms: this.normalizePrograms(lead.wishlistPrograms),
         donePrograms: this.normalizePrograms(lead.donePrograms),
+        programSummary: '✏️ Program',
         isEditingName: false,
         isDirty: false,
         _originalData: null,
@@ -357,6 +359,7 @@ export function createLeadLifecycleMethods() {
       lead._followUpTs = lead._followUpDate
         ? this.getDateOnlyTimestampFromDate(lead._followUpDate)
         : null;
+      this.refreshLeadProgramSummary(lead);
     }
   };
 }
