@@ -1,7 +1,10 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'node:path';
 import { mockCourses } from './src/repositories/mock/mockCourses';
-import { pickPublicCourseByKey } from './shared/contracts/courseDefaults.mjs';
+import {
+  pickPublicCourseByKey,
+  pickPublicCoursesByKey
+} from './shared/contracts/courseDefaults.mjs';
 import {
   renderPublicCourseHtml,
   toPublicCourseView
@@ -9,7 +12,7 @@ import {
 
 const COURSE_PAMPHLET_PATH =
   /^\/(?:course|c)\/([^/?#]+)\/pamphlet\/?$/;
-const COURSE_PATH = /^\/(?:course|c)\/([^/?#]+)\/?$/;
+const COURSE_PATH = /^\/c\/([^/?#]+)\/?$/;
 
 type MiddlewareRes = {
   statusCode: number;
@@ -56,9 +59,14 @@ function servePublicCoursePage(
   const key = decodeURIComponent(match[1] || '');
   const hostname = Array.isArray(host) ? host[0] : host || 'localhost:5173';
   const origin = 'http://' + hostname;
-  const course = pickPublicCourseByKey(mockCourses, key);
+  const page = pickPublicCoursesByKey(mockCourses, key);
+  const family = page.family.map((course) => toPublicCourseView(course));
+  const selected = page.selected
+    ? toPublicCourseView(page.selected)
+    : family[0] || null;
   const rendered = renderPublicCourseHtml({
-    course: course ? toPublicCourseView(course) : null,
+    course: selected,
+    family,
     origin,
     logoUrl: origin + '/assets/aolf-connect-logo.png'
   });

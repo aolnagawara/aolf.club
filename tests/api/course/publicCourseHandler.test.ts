@@ -4,6 +4,7 @@ import type { ApiResponse } from '../../../api/_lib/http/responses.js';
 const { mockStore } = vi.hoisted(() => ({
   mockStore: {
     getPublicCourseById: vi.fn(),
+    getPublicCoursePage: vi.fn(),
     getPublicCoursePamphlet: vi.fn()
   }
 }));
@@ -87,29 +88,33 @@ describe('public course handler', () => {
     expect(state.endBody).toBe('Pamphlet not found.');
   });
 
-  it('looks up a public course by type-month slug', async () => {
-    mockStore.getPublicCourseById.mockResolvedValue({
+  it('looks up a public course by type slug', async () => {
+    const course = {
       id: COURSE_ID,
       courseType: 'HP',
-      month: '2026-08',
-      title: 'HP · August 2026',
+      programCode: '',
+      title: 'HP',
       whatsappTemplate: '*Hello*',
       hasPamphlet: false,
       pamphletImageUrl: '',
-      publicPath: '/c/hp-aug'
+      publicPath: '/c/hp'
+    };
+    mockStore.getPublicCoursePage.mockResolvedValue({
+      selected: course,
+      family: [course]
     });
     const { response, state } = createResponse();
     await publicCourseHandler(
       {
         method: 'GET',
         headers: { host: 'aolf.club' },
-        query: { id: 'hp-aug' }
+        query: { id: 'hp' }
       },
       response
     );
-    expect(mockStore.getPublicCourseById).toHaveBeenCalledWith('hp-aug');
+    expect(mockStore.getPublicCoursePage).toHaveBeenCalledWith('hp');
     expect(state.statusCode).toBe(200);
-    expect(String(state.endBody)).toContain('content="https://aolf.club/c/hp-aug"');
+    expect(String(state.endBody)).toContain('content="https://aolf.club/c/hp"');
     expect(String(state.endBody)).toContain('<strong>Hello</strong>');
   });
 });

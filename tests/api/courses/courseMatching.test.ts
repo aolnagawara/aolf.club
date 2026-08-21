@@ -45,15 +45,15 @@ describe('unique active course matching', () => {
       course: 'HP',
       dates: 'August 2026',
       registrationLink: '',
-      courseUrl: 'https://aolf.club/c/hp-aug'
+      courseUrl: 'https://aolf.club/c/hp'
     });
     expect(
-      ensureCourseUrlInMessage(filled, 'https://aolf.club/c/hp-aug')
-    ).toContain('https://aolf.club/c/hp-aug');
+      ensureCourseUrlInMessage(filled, 'https://aolf.club/c/hp')
+    ).toContain('https://aolf.club/c/hp');
   });
 
   it('places the course URL immediately before the first other URL', () => {
-    const courseUrl = 'https://aolf.club/c/hp-aug';
+    const courseUrl = 'https://aolf.club/c/hp';
     const filled = fillCourseWhatsappTemplate(
       'Hi {name}\nRegister: https://aolt.in/874234\n\n{courseUrl}',
       {

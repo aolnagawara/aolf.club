@@ -23,14 +23,17 @@ import {
   type UpdateLeadRequest
 } from '../../../shared/contracts/appContracts.js';
 import { nanoid } from 'nanoid';
+import { ZodError } from 'zod';
 import {
   defaultCourseTemplates,
-  pickPublicCourseByKey
+  pickPublicCourseByKey,
+  pickPublicCoursesByKey
 } from '../../../shared/contracts/courseDefaults.mjs';
 import { mockBootstrapData } from '../../../src/repositories/mock/mockData.js';
 import { mockCourses } from '../../../src/repositories/mock/mockCourses.js';
 import {
   applyCourseDefaults,
+  hasDuplicateCourseSlot,
   toCourseResponse,
   type CourseRecord
 } from '../courses/sheetMapping.js';
@@ -228,6 +231,15 @@ export async function createCourseForUser(
   payload: unknown
 ) {
   const parsed = CreateCourseRequestSchema.parse(payload);
+  if (hasDuplicateCourseSlot(getStore().courses, parsed)) {
+    throw new ZodError([
+      {
+        code: 'custom',
+        message: 'A course for this type and program already exists.',
+        path: ['courseType']
+      }
+    ]);
+  }
   const timestamp = new Date().toISOString();
   const id = nanoid();
   let pamphletFileId = '';
@@ -261,6 +273,15 @@ export async function updateCourseForUser(
   const index = store.courses.findIndex((course) => course.id === parsed.id);
   if (index < 0) {
     throw new Error('Course not found.');
+  }
+  if (hasDuplicateCourseSlot(store.courses, parsed)) {
+    throw new ZodError([
+      {
+        code: 'custom',
+        message: 'A course for this type and program already exists.',
+        path: ['courseType']
+      }
+    ]);
   }
   const existing = store.courses[index];
   let pamphletFileId = existing.pamphletFileId;
@@ -299,9 +320,7 @@ export async function deleteCourseForUser(payload: DeleteCourseRequest) {
     throw new Error('Course not found.');
   }
   const existing = store.courses[index];
-  if (existing.pamphletFileId) {
-    await pamphletStore.remove(existing.pamphletFileId);
-  }
+  await pamphletStore.removeCourse(existing.id, existing.pamphletFileId);
   store.courses.splice(index, 1);
   return DeleteCourseResponseSchema.parse({
     success: true,
@@ -312,6 +331,14 @@ export async function deleteCourseForUser(payload: DeleteCourseRequest) {
 export async function getPublicCourseById(id: string) {
   const course = pickPublicCourseByKey(getStore().courses, id);
   return course ? toCourseResponse(course) : null;
+}
+
+export async function getPublicCoursePage(id: string) {
+  const page = pickPublicCoursesByKey(getStore().courses, id);
+  return {
+    selected: page.selected ? toCourseResponse(page.selected) : null,
+    family: page.family.map((course) => toCourseResponse(course))
+  };
 }
 
 export async function getPublicCoursePamphlet(id: string) {

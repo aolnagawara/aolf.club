@@ -30,7 +30,7 @@ export interface ProgramDraft {
 export interface CourseDraft {
   id: string;
   courseType: string;
-  month: string;
+  programCode: string;
   whatsappTemplate: string;
   isActive: boolean;
   hasPamphlet: boolean;

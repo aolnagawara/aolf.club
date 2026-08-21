@@ -40,7 +40,7 @@ describe('shared sheet primitives', () => {
     expect(SHEET_HEADERS.courses).toEqual([
       'id',
       'courseType',
-      'month',
+      'programCode',
       'title',
       'whatsappTemplate',
       'pamphletFileId',

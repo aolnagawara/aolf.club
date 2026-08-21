@@ -62,6 +62,64 @@ async function readErrorMessage(response: Response): Promise<string> {
   }
 }
 
+async function listBlobUrls(
+  fetchImpl: typeof fetch,
+  authHeaders: () => Record<string, string>,
+  prefix: string
+): Promise<string[]> {
+  try {
+    const response = await withDeadline(
+      fetchImpl(
+        BLOB_API_URL + '?prefix=' + encodeURIComponent(prefix) + '&limit=100',
+        {
+          method: 'GET',
+          headers: authHeaders()
+        }
+      ),
+      'Pamphlet list timed out.'
+    );
+    if (!response.ok) {
+      return [];
+    }
+    const payload = (await response.json()) as {
+      blobs?: Array<{ url?: string } | string>;
+    };
+    return (payload.blobs || [])
+      .map((item) =>
+        typeof item === 'string' ? item : String(item?.url || '').trim()
+      )
+      .filter((url) => isHttpsUrl(url));
+  } catch {
+    return [];
+  }
+}
+
+async function deleteBlobUrls(
+  fetchImpl: typeof fetch,
+  authHeaders: () => Record<string, string>,
+  urls: string[]
+): Promise<void> {
+  const unique = [...new Set(urls.filter((url) => isHttpsUrl(url)))];
+  if (!unique.length) {
+    return;
+  }
+  try {
+    await withDeadline(
+      fetchImpl(BLOB_API_URL + '/delete', {
+        method: 'POST',
+        headers: {
+          ...authHeaders(),
+          'content-type': 'application/json'
+        },
+        body: JSON.stringify({ urls: unique })
+      }),
+      'Pamphlet delete timed out.'
+    );
+  } catch {
+    // Best-effort cleanup; the Courses row is the source of truth.
+  }
+}
+
 export function createBlobPamphletStore(
   options: BlobPamphletStoreOptions = {}
 ): PamphletStore {
@@ -132,21 +190,20 @@ export function createBlobPamphletStore(
       if (!isHttpsUrl(url)) {
         return;
       }
-      try {
-        await withDeadline(
-          fetchImpl(BLOB_API_URL + '/delete', {
-            method: 'POST',
-            headers: {
-              ...authHeaders(),
-              'content-type': 'application/json'
-            },
-            body: JSON.stringify({ urls: [url] })
-          }),
-          'Pamphlet delete timed out.'
-        );
-      } catch {
-        // Best-effort cleanup; the Courses row is the source of truth.
+      await deleteBlobUrls(fetchImpl, authHeaders, [url]);
+    },
+    async removeCourse(courseId, fileId) {
+      const urls = new Set<string>();
+      const current = String(fileId || '').trim();
+      if (isHttpsUrl(current)) {
+        urls.add(current);
       }
+      const prefix = 'courses/' + String(courseId || '').trim() + '/';
+      if (prefix !== 'courses//') {
+        const listed = await listBlobUrls(fetchImpl, authHeaders, prefix);
+        listed.forEach((url) => urls.add(url));
+      }
+      await deleteBlobUrls(fetchImpl, authHeaders, [...urls]);
     }
   };
 }

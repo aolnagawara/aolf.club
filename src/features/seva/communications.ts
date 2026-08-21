@@ -9,7 +9,6 @@ import {
 } from '../../config/campaignDefaults';
 import {
   DEFAULT_COURSE_WHATSAPP_TEMPLATE,
-  formatCourseMonthLabel,
   publicCoursePath
 } from '../../../shared/contracts/courseDefaults.mjs';
 import {
@@ -84,15 +83,14 @@ export function createCommunicationMethods() {
         const courseUrl =
           String(window.location.origin || '').replace(/\/$/, '') +
           (course.publicPath ||
-            publicCoursePath(course.courseType, course.month) ||
-            '/course/' + course.id);
+            publicCoursePath(course.courseType, course.programCode));
         message = ensureCourseUrlInMessage(
           fillCourseWhatsappTemplate(
             course.whatsappTemplate || DEFAULT_COURSE_WHATSAPP_TEMPLATE,
             {
               name: lead.name || 'Friend',
               course: course.title || '',
-              dates: formatCourseMonthLabel(course.month || ''),
+              dates: '',
               registrationLink: '',
               courseUrl
             }

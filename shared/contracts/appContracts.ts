@@ -164,10 +164,7 @@ export const DeleteLeadResponseSchema = z.object({
 export const CourseWriteFieldsSchema = z
   .object({
     courseType: z.string().trim().min(1, 'Choose a course type.'),
-    month: z
-      .string()
-      .trim()
-      .regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'Choose a course month.'),
+    programCode: z.string().trim().default(''),
     whatsappTemplate: z.string().default(''),
     isActive: z.boolean().default(true),
     pamphletBase64: z.string().default(''),
@@ -175,6 +172,23 @@ export const CourseWriteFieldsSchema = z
     clearPamphlet: z.boolean().optional()
   })
   .superRefine((data, ctx) => {
+    const type = String(data.courseType || '').trim().toUpperCase();
+    const program = String(data.programCode || '').trim().toLowerCase();
+    if (type === 'IP') {
+      if (program !== 'j' && program !== 's') {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Choose 5–8 or 8–18 for IP.',
+          path: ['programCode']
+        });
+      }
+    } else if (program) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Program is only used for IP.',
+        path: ['programCode']
+      });
+    }
     const raw = String(data.pamphletBase64 || '').trim();
     if (!raw) {
       return;
@@ -192,7 +206,7 @@ export const CourseWriteFieldsSchema = z
 export const CourseSchema = z.object({
   id: NanoIdSchema,
   courseType: z.string().trim().min(1),
-  month: z.string().trim().min(1),
+  programCode: z.string().trim().default(''),
   title: z.string().default(''),
   whatsappTemplate: z.string().default(''),
   isActive: z.boolean().default(true),

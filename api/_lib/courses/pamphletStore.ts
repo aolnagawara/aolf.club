@@ -10,6 +10,7 @@ export type PamphletStore = {
   ): Promise<string>;
   download(fileId: string): Promise<PamphletBytes | null>;
   remove(fileId: string): Promise<void>;
+  removeCourse(courseId: string, fileId?: string): Promise<void>;
 };
 
 const globalPamphlets = globalThis as unknown as {
@@ -45,6 +46,12 @@ export function createMemoryPamphletStore(): PamphletStore {
     },
     async remove(fileId) {
       getMemoryMap().delete(fileId);
+    },
+    async removeCourse(courseId, fileId) {
+      getMemoryMap().delete('pamphlet-' + courseId);
+      if (fileId) {
+        getMemoryMap().delete(fileId);
+      }
     }
   };
 }

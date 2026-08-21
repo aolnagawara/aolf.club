@@ -30,8 +30,8 @@ function courseRow(overrides: Record<string, string> = {}) {
   const values: Record<string, string> = {
     id: COURSE_ID,
     courseType: 'HP',
-    month: '2026-08',
-    title: 'HP · August 2026',
+    programCode: '',
+    title: 'HP',
     whatsappTemplate: 'Hi {name}',
     pamphletFileId: '',
     pamphletMimeType: '',
@@ -136,7 +136,6 @@ describe('Sheets course store', () => {
 
     const created = await store.createCourseForAuthorizedUser(USER, {
       courseType: 'HP',
-      month: '2026-08',
       isActive: true
     });
     expect(created.allowed).toBe(true);
@@ -144,7 +143,7 @@ describe('Sheets course store', () => {
       return;
     }
     expect(created.value.course.courseType).toBe('HP');
-    expect(created.value.course.title).toBe('HP · August 2026');
+    expect(created.value.course.title).toBe('HP');
     expect(created.value.course.id).toHaveLength(21);
     expect(appendSheetRow).toHaveBeenCalledOnce();
 
@@ -154,18 +153,16 @@ describe('Sheets course store', () => {
     const updated = await store.updateCourseForAuthorizedUser(USER, {
       id: created.value.course.id,
       courseType: 'HP',
-      month: '2026-09',
       whatsappTemplate: created.value.course.whatsappTemplate,
       isActive: false
     });
-    expect(updated.allowed && updated.value.course.month).toBe('2026-09');
-    expect(updated.allowed && updated.value.course.title).toBe('HP · September 2026');
+    expect(updated.allowed && updated.value.course.title).toBe('HP');
     expect(updated.allowed && updated.value.course.isActive).toBe(false);
 
     const publicInactive = await store.getPublicCourseById(
       created.value.course.id
     );
-    expect(publicInactive?.title).toBe('HP · September 2026');
+    expect(publicInactive?.title).toBe('HP');
 
     const deleted = await store.deleteCourseForAuthorizedUser(USER, {
       id: created.value.course.id
@@ -183,7 +180,6 @@ describe('Sheets course store', () => {
       'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
     const created = await store.createCourseForAuthorizedUser(USER, {
       courseType: 'HP',
-      month: '2026-08',
       pamphletBase64,
       pamphletMimeType: 'image/png'
     });
@@ -192,7 +188,7 @@ describe('Sheets course store', () => {
       return;
     }
     expect(created.value.course.hasPamphlet).toBe(true);
-    expect(created.value.course.publicPath).toBe('/c/hp-aug');
+    expect(created.value.course.publicPath).toBe('/c/hp');
     expect(created.value.course.pamphletImageUrl).toBe(
       '/course/' + created.value.course.id + '/pamphlet'
     );
@@ -212,14 +208,14 @@ describe('Sheets course store', () => {
         mimeType: 'image/png',
         bytes: Buffer.from('png')
       })),
-      remove: vi.fn(async () => undefined)
+      remove: vi.fn(async () => undefined),
+      removeCourse: vi.fn(async () => undefined)
     };
     const { store } = createFixture([], pamphletStore);
     const pamphletBase64 =
       'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
     const created = await store.createCourseForAuthorizedUser(USER, {
       courseType: 'HP',
-      month: '2026-08',
       pamphletBase64,
       pamphletMimeType: 'image/png'
     });
@@ -235,11 +231,35 @@ describe('Sheets course store', () => {
     await expect(
       store.createCourseForAuthorizedUser(USER, {
         courseType: 'HP',
-        month: '2026-08',
         pamphletBase64: 'abc',
         pamphletMimeType: 'image/svg+xml'
       })
     ).rejects.toThrow();
     expect(appendSheetRow).not.toHaveBeenCalled();
+  });
+
+  it('deletes pamphlet blobs when the course row is deleted', async () => {
+    const pamphletStore: PamphletStore = {
+      upload: vi.fn(async () => 'https://blob.example/courses/x/pamphlet.png'),
+      download: vi.fn(async () => null),
+      remove: vi.fn(async () => undefined),
+      removeCourse: vi.fn(async () => undefined)
+    };
+    const { store } = createFixture(
+      [
+        courseRow({
+          pamphletFileId: 'https://blob.example/courses/x/pamphlet.png'
+        })
+      ],
+      pamphletStore
+    );
+    const deleted = await store.deleteCourseForAuthorizedUser(USER, {
+      id: COURSE_ID
+    });
+    expect(deleted.allowed).toBe(true);
+    expect(pamphletStore.removeCourse).toHaveBeenCalledWith(
+      COURSE_ID,
+      'https://blob.example/courses/x/pamphlet.png'
+    );
   });
 });

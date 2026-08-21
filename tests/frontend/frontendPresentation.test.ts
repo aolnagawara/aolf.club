@@ -67,7 +67,7 @@ describe('AOLF Connect frontend presentation', () => {
       source: '/c/:id',
       destination: '/api/course/:id'
     });
-    expect(vercelConfig.rewrites).toContainEqual({
+    expect(vercelConfig.rewrites).not.toContainEqual({
       source: '/course/:id',
       destination: '/api/course/:id'
     });
@@ -110,7 +110,8 @@ describe('AOLF Connect frontend presentation', () => {
     expect(volunteerPage).toContain(':disabled="!cleanPhone(lead.mobile)"');
     expect(volunteerPage).toContain('Call Tracker');
     expect(volunteerPage).toContain('Course Management');
-    expect(volunteerPage).toContain('type="month"');
+    expect(volunteerPage).not.toContain('type="month"');
+    expect(volunteerPage).toContain('showsProgramTabs()');
     expect(volunteerPage).toContain('type="file"');
     expect(volunteerPage).toContain('WhatsApp template');
     expect(volunteerPage).not.toContain('Pamphlet image URL');

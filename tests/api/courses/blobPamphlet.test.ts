@@ -56,7 +56,7 @@ describe('Vercel Blob pamphlet store', () => {
     expect(Buffer.from(pamphlet?.bytes || []).toString()).toBe('png-bytes');
   });
 
-  it('ignores leftover Drive file ids on download and delete', async () => {
+  it('ignores non-https pamphlet ids on download and delete', async () => {
     const fetchImpl = vi.fn();
     const store = createBlobPamphletStore({
       fetchImpl: fetchImpl as unknown as typeof fetch,
@@ -79,6 +79,34 @@ describe('Vercel Blob pamphlet store', () => {
       expect.objectContaining({
         method: 'POST',
         body: JSON.stringify({ urls: [BLOB_URL] })
+      })
+    );
+  });
+
+  it('deletes all blobs for a course id', async () => {
+    const extra =
+      'https://store123.public.blob.vercel-storage.com/courses/crsHpNcr01AbcDefGhiJK/pamphlet-old.png';
+    const fetchImpl = vi.fn(async (url: string, init?: RequestInit) => {
+      if (String(url).includes('prefix=')) {
+        return jsonResponse({ blobs: [{ url: extra }] });
+      }
+      void init;
+      return jsonResponse({});
+    });
+    const store = createBlobPamphletStore({
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+      getToken: () => TOKEN
+    });
+    await store.removeCourse('crsHpNcr01AbcDefGhiJK', BLOB_URL);
+    expect(fetchImpl).toHaveBeenCalledWith(
+      expect.stringContaining('prefix=courses%2FcrsHpNcr01AbcDefGhiJK%2F'),
+      expect.objectContaining({ method: 'GET' })
+    );
+    expect(fetchImpl).toHaveBeenCalledWith(
+      expect.stringContaining('/delete'),
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ urls: [BLOB_URL, extra] })
       })
     );
   });

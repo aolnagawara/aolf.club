@@ -30,15 +30,18 @@ import {
   type UpdateLeadResponse
 } from '../../../shared/contracts/appContracts.js';
 import { nanoid } from 'nanoid';
+import { ZodError } from 'zod';
 import {
   defaultCourseTemplates,
-  pickPublicCourseByKey
+  pickPublicCourseByKey,
+  pickPublicCoursesByKey
 } from '../../../shared/contracts/courseDefaults.mjs';
 import { normalizeEmail } from '../http/normalization.js';
 import {
   applyCourseDefaults,
   courseFromRow,
   courseToRow,
+  hasDuplicateCourseSlot,
   resolveCourseIdColumn,
   templatesFromRows,
   toCourseResponse,
@@ -819,20 +822,48 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
     });
   }
 
-  async function getCourseByPublicKey(
+  async function getCoursePageByPublicKey(
     operation: SheetsOperation,
     key: string
-  ): Promise<CourseRecord | null> {
-    const wanted = String(key || '').trim();
-    if (!wanted) {
-      return null;
-    }
+  ): Promise<{ selected: CourseRecord | null; family: CourseRecord[] }> {
     const { headers, rows } = await readCourseRows(operation);
     const courses = rows
       .slice(1)
       .map((row, index) => parseCourseAt(headers, rows, index + 1))
       .filter((course): course is CourseRecord => Boolean(course));
-    return pickPublicCourseByKey(courses, wanted);
+    return pickPublicCoursesByKey(courses, key);
+  }
+
+  async function getCourseByPublicKey(
+    operation: SheetsOperation,
+    key: string
+  ): Promise<CourseRecord | null> {
+    const { headers, rows } = await readCourseRows(operation);
+    const courses = rows
+      .slice(1)
+      .map((row, index) => parseCourseAt(headers, rows, index + 1))
+      .filter((course): course is CourseRecord => Boolean(course));
+    return pickPublicCourseByKey(courses, key);
+  }
+
+  function assertUniqueCourseSlot(
+    rows: string[][],
+    headers: string[],
+    candidate: { id?: string; courseType: string; programCode?: string }
+  ): void {
+    const courses = rows
+      .slice(1)
+      .map((row) => courseFromRow(headers, row))
+      .filter((course): course is CourseRecord => Boolean(course));
+    if (hasDuplicateCourseSlot(courses, candidate)) {
+      throw new ZodError([
+        {
+          code: 'custom',
+          message: 'A course for this type and program already exists.',
+          path: ['courseType']
+        }
+      ]);
+    }
   }
 
   async function createCourse(
@@ -841,7 +872,8 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
     rawPayload: unknown
   ): Promise<CreateCourseResponse> {
     const payload = CreateCourseRequestSchema.parse(rawPayload);
-    const { headers } = await readCourseRows(operation);
+    const { headers, rows } = await readCourseRows(operation);
+    assertUniqueCourseSlot(rows, headers, payload);
     const timestamp = now().toISOString();
     const id = nanoid();
     let pamphletFileId = '';
@@ -890,6 +922,7 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
     if (!existing) {
       throw new Error('Course not found.');
     }
+    assertUniqueCourseSlot(rows, headers, payload);
     const timestamp = now().toISOString();
     let pamphletFileId = existing.pamphletFileId;
     let pamphletMimeType = existing.pamphletMimeType;
@@ -954,8 +987,8 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
       throw new Error('Course not found.');
     }
     const existing = parseCourseAt(headers, rows, rowIndex);
-    if (existing?.pamphletFileId) {
-      await pamphletStore.remove(existing.pamphletFileId);
+    if (existing) {
+      await pamphletStore.removeCourse(existing.id, existing.pamphletFileId);
     }
     await deleteSheetRow(
       'data',
@@ -1149,6 +1182,19 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
       return withStoreOperation(operation, async (activeOperation) => {
         const course = await getCourseByPublicKey(activeOperation, id);
         return course ? toCourseResponse(course) : null;
+      });
+    },
+
+    async getPublicCoursePage(
+      id: string,
+      operation?: SheetsOperation
+    ): Promise<{ selected: Course | null; family: Course[] }> {
+      return withStoreOperation(operation, async (activeOperation) => {
+        const page = await getCoursePageByPublicKey(activeOperation, id);
+        return {
+          selected: page.selected ? toCourseResponse(page.selected) : null,
+          family: page.family.map(toCourseResponse)
+        };
       });
     },
 

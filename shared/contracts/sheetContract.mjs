@@ -37,7 +37,7 @@ export const SHEET_HEADERS = Object.freeze({
   courses: Object.freeze([
     'id',
     'courseType',
-    'month',
+    'programCode',
     'title',
     'whatsappTemplate',
     'pamphletFileId',

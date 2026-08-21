@@ -31,10 +31,6 @@
     {
       "source": "/api/course/:id/pamphlet",
       "destination": "/api/course/:id?asset=pamphlet"
-    },
-    {
-      "source": "/course/:id",
-      "destination": "/api/course/:id"
     }
   ]
 }

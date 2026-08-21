@@ -9,9 +9,9 @@ import { publicCourseSlug } from '../../../shared/contracts/courseDefaults.mjs';
 
 const COURSE = {
   id: 'crsHpNcr01AbcDefGhiJK',
-  title: 'HP · August 2026',
+  title: 'HP',
   courseType: 'HP',
-  month: '2026-08',
+  programCode: '',
   whatsappTemplate:
     '_*HAPPINESS PROGRAM*_\n*Benefits You\'ll Experience:*\nRegister at https://aolt.in/874234',
   hasPamphlet: true
@@ -33,7 +33,7 @@ describe('public course HTML', () => {
     expect(rendered.html).toContain(
       'content="https://aolf.club/course/crsHpNcr01AbcDefGhiJK/pamphlet"'
     );
-    expect(rendered.html).toContain('content="https://aolf.club/c/hp-aug"');
+    expect(rendered.html).toContain('content="https://aolf.club/c/hp"');
     expect(rendered.html).not.toContain('<h1>');
     expect(rendered.html).not.toContain('<dt>Type</dt>');
     expect(rendered.html).not.toContain('<dt>Month</dt>');
@@ -121,11 +121,52 @@ describe('public course HTML', () => {
     expect(rendered.html).not.toContain('/pamphlet');
     expect(rendered.html).not.toContain('og:image');
   });
+
+  it('renders IP age-group tabs for a shared family page', () => {
+    const junior = toPublicCourseView({
+      id: 'crsIpJnr01AbcDefGhiJK',
+      title: 'IP · 5–8',
+      courseType: 'IP',
+      programCode: 'j',
+      whatsappTemplate: 'Junior https://aolt.in/j',
+      hasPamphlet: true,
+      pamphletImageUrl:
+        'https://store123.public.blob.vercel-storage.com/courses/j/pamphlet.png'
+    });
+    const senior = toPublicCourseView({
+      id: 'crsIpSnr01AbcDefGhiJK',
+      title: 'IP · 8–18',
+      courseType: 'IP',
+      programCode: 's',
+      whatsappTemplate: 'Senior https://aolt.in/s',
+      hasPamphlet: true,
+      pamphletImageUrl:
+        'https://store123.public.blob.vercel-storage.com/courses/s/pamphlet.png'
+    });
+    const rendered = renderPublicCourseHtml({
+      course: junior,
+      family: [junior, senior],
+      origin: 'https://aolf.club',
+      logoUrl: 'https://aolf.club/assets/aolf-connect-logo.png',
+      pageUrl: 'https://aolf.club/c/ip-j'
+    });
+    expect(rendered.html).toContain('content="https://aolf.club/c/ip-j"');
+    expect(rendered.html).toContain(
+      'content="https://store123.public.blob.vercel-storage.com/courses/j/pamphlet.png"'
+    );
+    expect(rendered.html).toContain('for="tab-p0"');
+    expect(rendered.html).toContain('for="tab-p1"');
+    expect(rendered.html).toContain('5–8');
+    expect(rendered.html).toContain('8–18');
+    expect(rendered.html).toContain('href="https://aolt.in/j"');
+    expect(rendered.html).toContain('href="https://aolt.in/s"');
+  });
 });
 
 describe('public course slug', () => {
-  it('builds a type-month slug', () => {
-    expect(publicCourseSlug('HP', '2026-08')).toBe('hp-aug');
-    expect(publicCourseSlug('YES+', '2026-09')).toBe('yes-sep');
+  it('builds a type or type-program slug', () => {
+    expect(publicCourseSlug('HP', '')).toBe('hp');
+    expect(publicCourseSlug('IP', 'j')).toBe('ip-j');
+    expect(publicCourseSlug('YES+', '')).toBe('yes');
   });
 });

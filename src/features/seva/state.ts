@@ -8,7 +8,6 @@ import {
   getDefaultPrograms
 } from '../../config/campaignDefaults';
 import {
-  currentCourseMonth,
   templateForCourseType
 } from '../../../shared/contracts/courseDefaults.mjs';
 
@@ -16,7 +15,7 @@ export function createEmptyCourseDraft(courseType = 'HP') {
   return {
     id: '',
     courseType,
-    month: currentCourseMonth(),
+    programCode: '',
     whatsappTemplate: templateForCourseType(courseType),
     isActive: true,
     hasPamphlet: false,

@@ -47,108 +47,174 @@ export const DEFAULT_COURSE_TEMPLATE_TYPES = Object.freeze([
   'YES+'
 ]);
 
+export const IP_COURSE_PROGRAMS = Object.freeze([
+  Object.freeze({ code: 'j', label: '5–8' }),
+  Object.freeze({ code: 's', label: '8–18' })
+]);
+
 export function normalizeCourseType(value) {
   return String(value || '').trim();
 }
 
-export function templateForCourseType(courseType) {
-  return normalizeCourseType(courseType).toUpperCase() === 'HP'
-    ? DEFAULT_HP_WHATSAPP_TEMPLATE
-    : DEFAULT_COURSE_WHATSAPP_TEMPLATE;
+export function isIpCourseType(courseType) {
+  return normalizeCourseType(courseType).toUpperCase() === 'IP';
 }
 
-export function defaultCourseTemplateRows() {
-  return DEFAULT_COURSE_TEMPLATE_TYPES.map((courseType) => [
-    courseType,
-    templateForCourseType(courseType)
-  ]);
+export function programsForCourseType(courseType) {
+  return isIpCourseType(courseType) ? [...IP_COURSE_PROGRAMS] : [];
 }
 
-export function currentCourseMonth(now = new Date()) {
+export function normalizeProgramCode(courseType, programCode) {
+  const programs = programsForCourseType(courseType);
+  if (!programs.length) {
+    return '';
+  }
+  const code = String(programCode || '').trim().toLowerCase();
+  return programs.some((item) => item.code === code) ? code : '';
+}
+
+export function programLabelFor(courseType, programCode) {
+  const code = normalizeProgramCode(courseType, programCode);
+  const match = programsForCourseType(courseType).find(
+    (item) => item.code === code
+  );
+  return match ? match.label : '';
+}
+
+export function courseSlotKey(courseType, programCode) {
   return (
-    String(now.getFullYear()) +
-    '-' +
-    String(now.getMonth() + 1).padStart(2, '0')
+    normalizeCourseType(courseType).toUpperCase() +
+    ':' +
+    normalizeProgramCode(courseType, programCode)
   );
 }
 
-export function formatCourseMonthLabel(month) {
-  const match = /^(\d{4})-(0[1-9]|1[0-2])$/.exec(String(month || '').trim());
-  if (!match) {
-    return String(month || '').trim();
+export function templateLookupKeys(courseType, programCode) {
+  const type = normalizeCourseType(courseType);
+  const code = normalizeProgramCode(courseType, programCode);
+  if (code) {
+    return [type + '-' + code, type];
   }
-  const date = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, 1));
-  return date.toLocaleString('en-GB', {
-    month: 'long',
-    year: 'numeric',
-    timeZone: 'UTC'
-  });
+  return [type];
 }
 
-export function formatCourseTitle(courseType, month) {
-  const type = normalizeCourseType(courseType) || 'Course';
-  const label = formatCourseMonthLabel(month);
-  return label ? type + ' · ' + label : type;
+export function templateForCourseType(courseType, programCode) {
+  const type = normalizeCourseType(courseType).toUpperCase();
+  const code = normalizeProgramCode(courseType, programCode);
+  if (type === 'HP' && !code) {
+    return DEFAULT_HP_WHATSAPP_TEMPLATE;
+  }
+  return DEFAULT_COURSE_WHATSAPP_TEMPLATE;
+}
+
+export function defaultCourseTemplateRows() {
+  const rows = [];
+  DEFAULT_COURSE_TEMPLATE_TYPES.forEach((courseType) => {
+    const programs = programsForCourseType(courseType);
+    if (programs.length) {
+      programs.forEach((program) => {
+        rows.push([
+          courseType + '-' + program.code,
+          templateForCourseType(courseType, program.code)
+        ]);
+      });
+      return;
+    }
+    rows.push([courseType, templateForCourseType(courseType)]);
+  });
+  return rows;
 }
 
 export function publicCoursePamphletPath(id) {
   return '/course/' + encodeURIComponent(String(id || '')) + '/pamphlet';
 }
 
-export function publicCourseSlug(courseType, month) {
-  const type = normalizeCourseType(courseType)
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, '');
-  const match = /^(\d{4})-(0[1-9]|1[0-2])$/.exec(String(month || '').trim());
-  if (!type || !match) {
-    return '';
-  }
-  const date = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, 1));
-  const abbr = date
-    .toLocaleString('en-US', { month: 'short', timeZone: 'UTC' })
-    .toLowerCase()
-    .replace('.', '');
-  return type + '-' + abbr;
+export function formatCourseTitle(courseType, programCode) {
+  const type = normalizeCourseType(courseType) || 'Course';
+  const label = programLabelFor(courseType, programCode);
+  return label ? type + ' · ' + label : type;
 }
 
-export function publicCoursePath(courseType, month) {
-  const slug = publicCourseSlug(courseType, month);
+export function publicCourseFamilySlug(courseType) {
+  return normalizeCourseType(courseType)
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');
+}
+
+export function publicCourseSlug(courseType, programCode) {
+  const type = publicCourseFamilySlug(courseType);
+  if (!type) {
+    return '';
+  }
+  const code = normalizeProgramCode(courseType, programCode);
+  return code ? type + '-' + code : type;
+}
+
+export function publicCoursePath(courseType, programCode) {
+  const slug = publicCourseSlug(courseType, programCode);
   return slug ? '/c/' + encodeURIComponent(slug) : '';
 }
 
-export function isCourseNanoId(value) {
-  return /^[A-Za-z0-9_-]{21}$/.test(String(value || '').trim());
+export function publicCourseFamilyPath(courseType) {
+  const slug = publicCourseFamilySlug(courseType);
+  return slug ? '/c/' + encodeURIComponent(slug) : '';
+}
+
+function sortPublicCourses(left, right) {
+  if (Boolean(left.isActive) !== Boolean(right.isActive)) {
+    return left.isActive ? -1 : 1;
+  }
+  const programCmp = String(
+    normalizeProgramCode(left.courseType, left.programCode)
+  ).localeCompare(
+    String(normalizeProgramCode(right.courseType, right.programCode))
+  );
+  if (programCmp) {
+    return programCmp;
+  }
+  return String(right.updatedAt || '').localeCompare(
+    String(left.updatedAt || '')
+  );
+}
+
+export function pickPublicCoursesByKey(courses, key) {
+  const wanted = String(key || '').trim();
+  const list = (Array.isArray(courses) ? courses : []).filter(Boolean);
+  if (!wanted) {
+    return { selected: null, family: [] };
+  }
+  const slug = wanted.toLowerCase();
+  const exact = list
+    .filter(
+      (course) =>
+        publicCourseSlug(course.courseType, course.programCode) === slug
+    )
+    .sort(sortPublicCourses);
+  if (exact.length) {
+    const selected = exact[0];
+    const family = list
+      .filter(
+        (course) =>
+          publicCourseFamilySlug(course.courseType) ===
+          publicCourseFamilySlug(selected.courseType)
+      )
+      .sort(sortPublicCourses);
+    return { selected, family };
+  }
+  const family = list
+    .filter((course) => publicCourseFamilySlug(course.courseType) === slug)
+    .sort(sortPublicCourses);
+  return { selected: family[0] || null, family };
 }
 
 export function pickPublicCourseByKey(courses, key) {
   const wanted = String(key || '').trim();
-  if (!wanted) {
-    return null;
+  const list = (Array.isArray(courses) ? courses : []).filter(Boolean);
+  const byId = list.find((course) => course.id === wanted);
+  if (byId) {
+    return byId;
   }
-  const list = Array.isArray(courses) ? courses : [];
-  if (isCourseNanoId(wanted)) {
-    return list.find((course) => course && course.id === wanted) || null;
-  }
-  const slug = wanted.toLowerCase();
-  const matches = list.filter(
-    (course) =>
-      publicCourseSlug(course?.courseType, course?.month) === slug
-  );
-  matches.sort((left, right) => {
-    if (Boolean(left.isActive) !== Boolean(right.isActive)) {
-      return left.isActive ? -1 : 1;
-    }
-    const monthCmp = String(right.month || '').localeCompare(
-      String(left.month || '')
-    );
-    if (monthCmp) {
-      return monthCmp;
-    }
-    return String(right.updatedAt || '').localeCompare(
-      String(left.updatedAt || '')
-    );
-  });
-  return matches[0] || null;
+  return pickPublicCoursesByKey(courses, key).selected;
 }
 
 export function defaultCourseTemplates() {

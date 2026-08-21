@@ -35,12 +35,12 @@ function toCourse(
   return {
     id: options.id,
     courseType: parsed.courseType,
-    month: parsed.month,
-    title: formatCourseTitle(parsed.courseType, parsed.month),
+    programCode: parsed.programCode || '',
+    title: formatCourseTitle(parsed.courseType, parsed.programCode),
     whatsappTemplate:
       parsed.whatsappTemplate.trim() ||
       options.existing?.whatsappTemplate ||
-      templateForCourseType(parsed.courseType),
+      templateForCourseType(parsed.courseType, parsed.programCode),
     isActive: parsed.isActive,
     hasPamphlet,
     pamphletImageUrl: hasUpload
@@ -50,7 +50,7 @@ function toCourse(
         parsed.pamphletBase64
       : options.existing?.pamphletImageUrl ||
         (hasPamphlet ? publicCoursePamphletPath(options.id) : ''),
-    publicPath: publicCoursePath(parsed.courseType, parsed.month),
+    publicPath: publicCoursePath(parsed.courseType, parsed.programCode),
     createdAt: options.existing?.createdAt || new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     createdBy: options.existing?.createdBy || 'volunteer@example.com',

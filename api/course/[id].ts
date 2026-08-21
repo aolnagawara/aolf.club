@@ -2,7 +2,8 @@ import type { ApiRequest, ApiResponse } from '../_lib/http/responses.js';
 import { getApiDataStore } from '../_lib/storage/dataStore.js';
 import {
   renderPublicCourseHtml,
-  toPublicCourseView
+  toPublicCourseView,
+  publicPageUrlForKey
 } from '../_lib/courses/publicHtml.js';
 
 function headerValue(
@@ -107,11 +108,17 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
   }
 
   try {
-    const course = await getApiDataStore().getPublicCourseById(key);
+    const page = await getApiDataStore().getPublicCoursePage(key);
+    const family = page.family.map(toPublicCourseView);
+    const selected = page.selected
+      ? toPublicCourseView(page.selected)
+      : family[0] || null;
     const rendered = renderPublicCourseHtml({
-      course: course ? toPublicCourseView(course) : null,
+      course: selected,
+      family,
       origin,
-      logoUrl
+      logoUrl,
+      pageUrl: selected ? publicPageUrlForKey(origin, key, selected) : undefined
     });
     return res.status(rendered.status).end(rendered.html);
   } catch {

@@ -318,14 +318,14 @@ describe('Seva workspace lead lifecycle', () => {
     const course = {
       id: 'crsHpNcr01AbcDefGhiJK',
       courseType: 'HP',
-      month: '2026-08',
-      title: 'HP · August 2026',
+      programCode: '',
+      title: 'HP',
       whatsappTemplate:
         'Hi {name}, join {course} {dates} {registrationLink} {courseUrl}',
       isActive: true,
       hasPamphlet: false,
       pamphletImageUrl: '',
-      publicPath: '/c/hp-aug',
+      publicPath: '/c/hp',
       createdAt: '',
       updatedAt: '',
       createdBy: '',
@@ -337,7 +337,7 @@ describe('Seva workspace lead lifecycle', () => {
     expect(app.buildWhatsappHref(lead, course)).toContain('919876543210');
     expect(app.buildWhatsappHref(lead, course)).not.toContain('91919876543210');
     expect(app.buildWhatsappHref(lead, course)).toContain(
-      encodeURIComponent('https://aolf.club/c/hp-aug')
+      encodeURIComponent('https://aolf.club/c/hp')
     );
     const hpTemplateHref = app.buildWhatsappHref(lead, {
       ...course,
@@ -347,7 +347,7 @@ describe('Seva workspace lead lifecycle', () => {
     const hpMessage = decodeURIComponent(
       hpTemplateHref.split('text=')[1] || ''
     );
-    expect(hpMessage.indexOf('https://aolf.club/c/hp-aug')).toBeLessThan(
+    expect(hpMessage.indexOf('https://aolf.club/c/hp')).toBeLessThan(
       hpMessage.indexOf('https://aolt.in/874234')
     );
     app.dialLead(lead);
@@ -384,13 +384,13 @@ describe('Seva workspace lead lifecycle', () => {
     const course = {
       id: 'crsHpNcr01AbcDefGhiJK',
       courseType: 'HP',
-      month: '2026-08',
-      title: 'HP · August 2026',
+      programCode: '',
+      title: 'HP',
       whatsappTemplate: 'Hi {name}',
       isActive: true,
       hasPamphlet: false,
       pamphletImageUrl: '',
-      publicPath: '/c/hp-aug',
+      publicPath: '/c/hp',
       createdAt: '',
       updatedAt: '',
       createdBy: '',

@@ -102,8 +102,8 @@ const coursesRows = [
   [
     'crsHpNcr01AbcDefGhiJK',
     'HP',
-    '2026-08',
-    formatCourseTitle('HP', '2026-08'),
+    '',
+    formatCourseTitle('HP', ''),
     DEFAULT_HP_WHATSAPP_TEMPLATE,
     '',
     '',

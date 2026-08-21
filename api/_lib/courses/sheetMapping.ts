@@ -6,7 +6,9 @@ import {
 } from '../../../shared/contracts/appContracts.js';
 import { isHttpsUrl } from './blobPamphlet.js';
 import {
+  courseSlotKey,
   formatCourseTitle,
+  normalizeProgramCode,
   publicCoursePamphletPath,
   publicCoursePath,
   templateForCourseType
@@ -49,16 +51,20 @@ function parseBooleanCell(raw: string | undefined, fallback = true): boolean {
 }
 
 export function toCourseResponse(record: CourseRecord): Course {
+  const programCode = normalizeProgramCode(
+    record.courseType,
+    record.programCode
+  );
   return CourseSchema.parse({
     id: record.id,
     courseType: record.courseType,
-    month: record.month,
+    programCode,
     title: record.title,
     whatsappTemplate: record.whatsappTemplate,
     isActive: record.isActive,
     hasPamphlet: Boolean(record.pamphletFileId),
     pamphletImageUrl: pamphletPublicUrl(record.id, record.pamphletFileId),
-    publicPath: publicCoursePath(record.courseType, record.month),
+    publicPath: publicCoursePath(record.courseType, programCode),
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
     createdBy: record.createdBy,
@@ -78,7 +84,7 @@ export function applyCourseDefaults(
   }
 ): CourseRecord {
   const courseType = String(input.courseType || '').trim();
-  const month = String(input.month || '').trim();
+  const programCode = normalizeProgramCode(courseType, input.programCode);
   const pamphletFileId =
     options.pamphletFileId ?? options.existing?.pamphletFileId ?? '';
   const pamphletMimeType =
@@ -86,16 +92,16 @@ export function applyCourseDefaults(
   const record: CourseRecord = {
     id: options.id,
     courseType,
-    month,
-    title: formatCourseTitle(courseType, month),
+    programCode,
+    title: formatCourseTitle(courseType, programCode),
     whatsappTemplate:
       String(input.whatsappTemplate || '').trim() ||
       options.existing?.whatsappTemplate ||
-      templateForCourseType(courseType),
+      templateForCourseType(courseType, programCode),
     isActive: input.isActive,
     hasPamphlet: Boolean(pamphletFileId),
     pamphletImageUrl: pamphletPublicUrl(options.id, pamphletFileId),
-    publicPath: publicCoursePath(courseType, month),
+    publicPath: publicCoursePath(courseType, programCode),
     createdAt: options.existing?.createdAt || timestamp,
     updatedAt: timestamp,
     createdBy: options.existing?.createdBy || actorEmail,
@@ -120,16 +126,16 @@ export function courseFromRow(
       record[header] = String(row[index] || '').trim();
     }
   });
-  const courseType = record.courseType || record.courseCode || '';
-  const month = record.month || '';
-  if (!record.id || !courseType || !month) {
+  const courseType = record.courseType || '';
+  const programCode = normalizeProgramCode(courseType, record.programCode);
+  if (!record.id || !courseType) {
     return null;
   }
   try {
     return applyCourseDefaults(
       {
         courseType,
-        month,
+        programCode,
         whatsappTemplate: record.whatsappTemplate || '',
         isActive: parseBooleanCell(record.isActive, true),
         pamphletBase64: '',
@@ -144,13 +150,13 @@ export function courseFromRow(
         existing: {
           id: record.id,
           courseType,
-          month,
-          title: record.title || formatCourseTitle(courseType, month),
+          programCode,
+          title: record.title || formatCourseTitle(courseType, programCode),
           whatsappTemplate: record.whatsappTemplate || '',
           isActive: parseBooleanCell(record.isActive, true),
           hasPamphlet: Boolean(record.pamphletFileId),
           pamphletImageUrl: '',
-          publicPath: publicCoursePath(courseType, month),
+          publicPath: publicCoursePath(courseType, programCode),
           createdAt: record.createdAt || '',
           updatedAt: record.updatedAt || '',
           createdBy: record.createdBy || '',
@@ -169,7 +175,7 @@ export function courseToRow(headers: string[], course: CourseRecord): string[] {
   const cells: Record<string, string> = {
     id: course.id,
     courseType: course.courseType || '',
-    month: course.month || '',
+    programCode: normalizeProgramCode(course.courseType, course.programCode),
     title: course.title || '',
     whatsappTemplate: course.whatsappTemplate || '',
     pamphletFileId: course.pamphletFileId || '',
@@ -189,6 +195,18 @@ export function resolveCourseIdColumn(headers: string[]): number {
 
 export function expectedCourseHeaders(): readonly string[] {
   return COURSE_HEADERS;
+}
+
+export function hasDuplicateCourseSlot(
+  courses: readonly { id?: string; courseType?: string; programCode?: string }[],
+  candidate: { id?: string; courseType: string; programCode?: string }
+): boolean {
+  const wanted = courseSlotKey(candidate.courseType, candidate.programCode);
+  return courses.some(
+    (course) =>
+      course.id !== candidate.id &&
+      courseSlotKey(course.courseType || '', course.programCode) === wanted
+  );
 }
 
 export function templatesFromRows(rows: string[][]): Array<{

@@ -94,21 +94,25 @@ describe('CreateLeadRequestSchema', () => {
 });
 
 describe('CourseWriteFieldsSchema', () => {
-  it('requires course type and month', async () => {
+  it('requires course type and rejects invalid pamphlets', async () => {
     const { CourseWriteFieldsSchema } = await import(
       '../../shared/contracts/appContracts'
     );
     expect(
       CourseWriteFieldsSchema.parse({
-        courseType: 'HP',
-        month: '2026-08'
+        courseType: 'HP'
       }).isActive
     ).toBe(true);
-    expect(() => CourseWriteFieldsSchema.parse({ courseType: 'HP' })).toThrow();
+    expect(
+      CourseWriteFieldsSchema.parse({
+        courseType: 'IP',
+        programCode: 'j'
+      }).programCode
+    ).toBe('j');
+    expect(() => CourseWriteFieldsSchema.parse({ courseType: 'IP' })).toThrow();
     expect(() =>
       CourseWriteFieldsSchema.parse({
         courseType: 'HP',
-        month: '2026-08',
         pamphletBase64: 'abc',
         pamphletMimeType: 'image/svg+xml'
       })

@@ -677,8 +677,8 @@
                     ></h3>
                     <p class="text-[11px] text-slate-500 truncate">
                       <span x-text="course.courseType || 'No type'"></span>
-                      <span x-show="course.month"> · </span>
-                      <span x-text="formatCourseMonthLabel(course.month)"></span>
+                      <span x-show="course.programCode"> · </span>
+                      <span x-text="course.title"></span>
                     </p>
                   </div>
                   <span
@@ -1008,15 +1008,26 @@
                   </template>
                 </select>
               </label>
-              <label class="block text-xs font-medium text-slate-700">
-                Course month
-                <input
-                  type="month"
-                  x-model="courseDraft.month"
-                  required
-                  class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                />
-              </label>
+              <div
+                class="space-y-1"
+                x-show="showsProgramTabs()"
+              >
+                <span class="block text-xs font-medium text-slate-700">Program</span>
+                <div class="grid grid-cols-2 gap-1 rounded-lg bg-slate-100 p-1">
+                  <template x-for="program in ipPrograms()" :key="program.code">
+                    <button
+                      type="button"
+                      class="rounded-md px-2 py-1.5 text-xs font-semibold"
+                      :class="courseDraft.programCode === program.code ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'"
+                      x-text="program.label + ' years'"
+                      @click="courseDraft.programCode = program.code; onProgramCodeChange()"
+                    ></button>
+                  </template>
+                </div>
+                <span class="block text-[11px] font-normal text-slate-500">
+                  Add one IP course per age group. Each has its own message and pamphlet.
+                </span>
+              </div>
               <label class="block text-xs font-medium text-slate-700">
                 WhatsApp template
                 <textarea
@@ -1088,7 +1099,7 @@
               >
                 Select a course
               </div>
-              <template x-for="course in activeCourses()" :key="course.id">
+              <template x-for="course in pickerCourses(coursePickerLead)" :key="course.id">
                 <button
                   type="button"
                   @click="selectCourseForWhatsapp(course)"
@@ -1097,7 +1108,7 @@
                   <span class="font-medium" x-text="courseDisplayTitle(course)"></span>
                   <span
                     class="block text-[11px] text-slate-500"
-                    x-text="(course.courseType || '') + (course.month ? ' · ' + formatCourseMonthLabel(course.month) : '')"
+                    x-text="courseDisplayTitle(course)"
                   ></span>
                 </button>
               </template>

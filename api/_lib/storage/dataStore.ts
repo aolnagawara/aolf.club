@@ -31,6 +31,7 @@ import {
   deleteLeadForUser as deleteMockLeadForUser,
   getBootstrapForUser as getMockBootstrapForUser,
   getPublicCourseById as getMockPublicCourseById,
+  getPublicCoursePage as getMockPublicCoursePage,
   getPublicCoursePamphlet as getMockPublicCoursePamphlet,
   isUserAllowed as isMockUserAllowed,
   listCoursesForUser as listMockCoursesForUser,
@@ -90,6 +91,10 @@ export type ApiDataStore = {
     id: string,
     operation?: SheetsOperation
   ) => Promise<Course | null>;
+  getPublicCoursePage: (
+    id: string,
+    operation?: SheetsOperation
+  ) => Promise<{ selected: Course | null; family: Course[] }>;
   getPublicCoursePamphlet: (
     id: string,
     operation?: SheetsOperation
@@ -211,6 +216,10 @@ const mockStore: ApiDataStore = {
 
   async getPublicCourseById(id) {
     return getMockPublicCourseById(id);
+  },
+
+  async getPublicCoursePage(id) {
+    return getMockPublicCoursePage(id);
   },
 
   async getPublicCoursePamphlet(id) {
