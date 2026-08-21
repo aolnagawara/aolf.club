@@ -11,6 +11,7 @@ import {
   DeleteLeadResponseSchema,
   LeadSchema,
   ListCoursesResponseSchema,
+  PublicHomepageOffersResponseSchema,
   UpdateCourseRequestSchema,
   UpdateCourseResponseSchema,
   UpdateLeadRequestSchema,
@@ -25,6 +26,7 @@ import {
   type DeleteLeadResponse,
   type Lead,
   type ListCoursesResponse,
+  type PublicHomepageOffersResponse,
   type UpdateCourseResponse,
   type UpdateLeadRequest,
   type UpdateLeadResponse
@@ -33,6 +35,7 @@ import { nanoid } from 'nanoid';
 import { ZodError } from 'zod';
 import {
   defaultCourseTemplates,
+  homepageProgramOffers,
   pickPublicCourseByKey,
   pickPublicCoursesByKey
 } from '../../../shared/contracts/courseDefaults.mjs';
@@ -431,8 +434,7 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
   const deleteSheetRow = dependencies.deleteSheetRow || defaultDeleteSheetRow;
   const getSheetLayout = dependencies.getSheetLayout || defaultGetSheetLayout;
   const now = dependencies.now || (() => new Date());
-  const pamphletStore =
-    dependencies.pamphletStore || createBlobPamphletStore();
+  const pamphletStore = dependencies.pamphletStore || createBlobPamphletStore();
 
   async function withStoreOperation<T>(
     operation: SheetsOperation | undefined,
@@ -822,6 +824,20 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
     });
   }
 
+  async function loadPublicHomepageOffers(
+    operation: SheetsOperation
+  ): Promise<PublicHomepageOffersResponse> {
+    const { headers, rows } = await readCourseRows(operation);
+    const courses = rows
+      .slice(1)
+      .map((row) => courseFromRow(headers, row))
+      .filter((course): course is CourseRecord => Boolean(course));
+    return PublicHomepageOffersResponseSchema.parse({
+      success: true,
+      offers: homepageProgramOffers(courses)
+    });
+  }
+
   async function getCoursePageByPublicKey(
     operation: SheetsOperation,
     key: string
@@ -1198,12 +1214,15 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
       });
     },
 
-    async getPublicCoursePamphlet(
-      id: string,
-      operation?: SheetsOperation
-    ) {
+    async getPublicCoursePamphlet(id: string, operation?: SheetsOperation) {
       return withStoreOperation(operation, async (activeOperation) =>
         loadPublicCoursePamphlet(id, activeOperation)
+      );
+    },
+
+    async listPublicHomepageOffers(operation?: SheetsOperation) {
+      return withStoreOperation(operation, (activeOperation) =>
+        loadPublicHomepageOffers(activeOperation)
       );
     }
   };

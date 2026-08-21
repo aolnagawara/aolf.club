@@ -12,6 +12,7 @@ import {
   type DeleteCourseResponse,
   type DeleteLeadResponse,
   type ListCoursesResponse,
+  type PublicHomepageOffersResponse,
   type UpdateCourseResponse,
   type UpdateLeadResponse
 } from '../../../shared/contracts/appContracts.js';
@@ -35,6 +36,7 @@ import {
   getPublicCoursePamphlet as getMockPublicCoursePamphlet,
   isUserAllowed as isMockUserAllowed,
   listCoursesForUser as listMockCoursesForUser,
+  listPublicHomepageOffers as listMockPublicHomepageOffers,
   updateCourseForUser as updateMockCourseForUser,
   updateLeadForUser as updateMockLeadForUser
 } from './mockStore.js';
@@ -99,6 +101,9 @@ export type ApiDataStore = {
     id: string,
     operation?: SheetsOperation
   ) => Promise<PamphletBytes | null>;
+  listPublicHomepageOffers: (
+    operation?: SheetsOperation
+  ) => Promise<PublicHomepageOffersResponse>;
 };
 
 let sheetsStore: ApiDataStore | null = null;
@@ -224,6 +229,10 @@ const mockStore: ApiDataStore = {
 
   async getPublicCoursePamphlet(id) {
     return getMockPublicCoursePamphlet(id);
+  },
+
+  async listPublicHomepageOffers() {
+    return listMockPublicHomepageOffers();
   }
 };
 

@@ -19,10 +19,7 @@ export function programLabelFor(
   courseType: string,
   programCode?: string
 ): string;
-export function courseSlotKey(
-  courseType: string,
-  programCode?: string
-): string;
+export function courseSlotKey(courseType: string, programCode?: string): string;
 export function templateLookupKeys(
   courseType: string,
   programCode?: string
@@ -55,10 +52,7 @@ export function pickPublicCoursesByKey<
     isActive?: boolean;
     updatedAt?: string;
   }
->(
-  courses: T[],
-  key: string
-): { selected: T | null; family: T[] };
+>(courses: T[], key: string): { selected: T | null; family: T[] };
 export function pickPublicCourseByKey<
   T extends {
     id?: string;
@@ -71,4 +65,20 @@ export function pickPublicCourseByKey<
 export function defaultCourseTemplates(): Array<{
   courseType: string;
   template: string;
+}>;
+export const HOMEPAGE_PROGRAM_OFFERS: readonly {
+  readonly code: string;
+  readonly label: string;
+}[];
+export function homepageProgramOffers(
+  courses: Array<{
+    courseType?: string;
+    isActive?: boolean;
+    programCode?: string;
+  }>
+): Array<{
+  code: string;
+  label: string;
+  active: boolean;
+  registerPath: string;
 }>;

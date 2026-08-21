@@ -69,7 +69,9 @@ export function normalizeProgramCode(courseType, programCode) {
   if (!programs.length) {
     return '';
   }
-  const code = String(programCode || '').trim().toLowerCase();
+  const code = String(programCode || '')
+    .trim()
+    .toLowerCase();
   return programs.some((item) => item.code === code) ? code : '';
 }
 
@@ -222,4 +224,37 @@ export function defaultCourseTemplates() {
     courseType,
     template
   }));
+}
+
+export const HOMEPAGE_PROGRAM_OFFERS = Object.freeze([
+  Object.freeze({
+    code: 'HP',
+    label: 'Happiness Program'
+  }),
+  Object.freeze({
+    code: 'IP',
+    label: 'Intuition Program'
+  }),
+  Object.freeze({
+    code: 'Sahaj',
+    label: 'Sahaj Samadhi Meditation'
+  })
+]);
+
+export function homepageProgramOffers(courses) {
+  const list = Array.isArray(courses) ? courses : [];
+  return HOMEPAGE_PROGRAM_OFFERS.map((offer) => {
+    const family = publicCourseFamilySlug(offer.code);
+    const active = list.some(
+      (course) =>
+        Boolean(course && course.isActive) &&
+        publicCourseFamilySlug(course.courseType) === family
+    );
+    return {
+      code: offer.code,
+      label: offer.label,
+      active,
+      registerPath: publicCourseFamilyPath(offer.code)
+    };
+  });
 }

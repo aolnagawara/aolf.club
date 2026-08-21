@@ -9,6 +9,7 @@ import {
   DeleteLeadRequestSchema,
   DeleteLeadResponseSchema,
   ListCoursesResponseSchema,
+  PublicHomepageOffersResponseSchema,
   UpdateCourseRequestSchema,
   UpdateCourseResponseSchema,
   UpdateLeadRequestSchema,
@@ -26,6 +27,7 @@ import { nanoid } from 'nanoid';
 import { ZodError } from 'zod';
 import {
   defaultCourseTemplates,
+  homepageProgramOffers,
   pickPublicCourseByKey,
   pickPublicCoursesByKey
 } from '../../../shared/contracts/courseDefaults.mjs';
@@ -68,7 +70,8 @@ function getStore(): StoreState {
     };
   }
   if (!globalStore.__aolfStore.courses) {
-    globalStore.__aolfStore.courses = structuredClone(mockCourses).map(toRecord);
+    globalStore.__aolfStore.courses =
+      structuredClone(mockCourses).map(toRecord);
   }
   return globalStore.__aolfStore;
 }
@@ -354,4 +357,11 @@ export async function getPublicCoursePamphlet(id: string) {
     mimeType: course.pamphletMimeType || pamphlet.mimeType,
     bytes: pamphlet.bytes
   };
+}
+
+export async function listPublicHomepageOffers() {
+  return PublicHomepageOffersResponseSchema.parse({
+    success: true,
+    offers: homepageProgramOffers(getStore().courses)
+  });
 }

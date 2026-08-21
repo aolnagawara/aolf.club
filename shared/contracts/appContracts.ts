@@ -172,8 +172,12 @@ export const CourseWriteFieldsSchema = z
     clearPamphlet: z.boolean().optional()
   })
   .superRefine((data, ctx) => {
-    const type = String(data.courseType || '').trim().toUpperCase();
-    const program = String(data.programCode || '').trim().toLowerCase();
+    const type = String(data.courseType || '')
+      .trim()
+      .toUpperCase();
+    const program = String(data.programCode || '')
+      .trim()
+      .toLowerCase();
     if (type === 'IP') {
       if (program !== 'j' && program !== 's') {
         ctx.addIssue({
@@ -237,6 +241,18 @@ export const ListCoursesResponseSchema = z.object({
   courses: z.array(CourseSchema),
   templates: z.array(CourseTemplateSchema).default([])
 });
+
+export const HomepageProgramOfferSchema = z.object({
+  code: z.string().trim().min(1),
+  label: z.string().trim().min(1),
+  active: z.boolean(),
+  registerPath: z.string().trim().min(1)
+});
+
+export const PublicHomepageOffersResponseSchema = z.object({
+  success: z.literal(true),
+  offers: z.array(HomepageProgramOfferSchema)
+});
 export const CreateCourseResponseSchema = z.object({
   success: z.literal(true),
   course: CourseSchema
@@ -264,6 +280,10 @@ export type CreateCourseRequest = z.infer<typeof CreateCourseRequestSchema>;
 export type UpdateCourseRequest = z.infer<typeof UpdateCourseRequestSchema>;
 export type DeleteCourseRequest = z.infer<typeof DeleteCourseRequestSchema>;
 export type ListCoursesResponse = z.infer<typeof ListCoursesResponseSchema>;
+export type HomepageProgramOffer = z.infer<typeof HomepageProgramOfferSchema>;
+export type PublicHomepageOffersResponse = z.infer<
+  typeof PublicHomepageOffersResponseSchema
+>;
 export type CreateCourseResponse = z.infer<typeof CreateCourseResponseSchema>;
 export type UpdateCourseResponse = z.infer<typeof UpdateCourseResponseSchema>;
 export type DeleteCourseResponse = z.infer<typeof DeleteCourseResponseSchema>;

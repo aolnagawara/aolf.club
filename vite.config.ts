@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import { resolve } from 'node:path';
 import { mockCourses } from './src/repositories/mock/mockCourses';
 import {
+  homepageProgramOffers,
   pickPublicCourseByKey,
   pickPublicCoursesByKey
 } from './shared/contracts/courseDefaults.mjs';
@@ -10,8 +11,7 @@ import {
   toPublicCourseView
 } from './api/_lib/courses/publicHtml';
 
-const COURSE_PAMPHLET_PATH =
-  /^\/(?:course|c)\/([^/?#]+)\/pamphlet\/?$/;
+const COURSE_PAMPHLET_PATH = /^\/(?:course|c)\/([^/?#]+)\/pamphlet\/?$/;
 const COURSE_PATH = /^\/c\/([^/?#]+)\/?$/;
 
 type MiddlewareRes = {
@@ -19,6 +19,33 @@ type MiddlewareRes = {
   setHeader: (name: string, value: string) => void;
   end: (body?: string | Buffer) => void;
 };
+
+function servePublicCourseCatalog(
+  url: string | undefined,
+  res: MiddlewareRes
+): boolean {
+  const raw = String(url || '');
+  const queryIndex = raw.indexOf('?');
+  const pathname = queryIndex >= 0 ? raw.slice(0, queryIndex) : raw;
+  const query = queryIndex >= 0 ? raw.slice(queryIndex + 1) : '';
+  if (pathname !== '/api/courses' && pathname !== '/api/courses/') {
+    return false;
+  }
+  const params = new URLSearchParams(query);
+  if (params.get('catalog') !== '1') {
+    return false;
+  }
+  res.statusCode = 200;
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.setHeader('Cache-Control', 'public, max-age=60');
+  res.end(
+    JSON.stringify({
+      success: true,
+      offers: homepageProgramOffers(mockCourses)
+    })
+  );
+  return true;
+}
 
 function servePublicCoursePamphlet(
   url: string | undefined,
@@ -105,6 +132,9 @@ function volunteerRewritePlugin() {
       };
     }) {
       server.middlewares.use((req, res, next) => {
+        if (servePublicCourseCatalog(req.url, res)) {
+          return;
+        }
         if (servePublicCoursePamphlet(req.url, res)) {
           return;
         }
@@ -127,6 +157,9 @@ function volunteerRewritePlugin() {
       };
     }) {
       server.middlewares.use((req, res, next) => {
+        if (servePublicCourseCatalog(req.url, res)) {
+          return;
+        }
         if (servePublicCoursePamphlet(req.url, res)) {
           return;
         }

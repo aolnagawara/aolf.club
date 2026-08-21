@@ -451,7 +451,9 @@ describe('Seva workspace lead lifecycle', () => {
       campaignType: 'Leads'
     });
 
-    expect(app.buildWhatsappHref(lead)).toContain('https://wa.me/919876543210?');
+    expect(app.buildWhatsappHref(lead)).toContain(
+      'https://wa.me/919876543210?'
+    );
     expect(decodeURIComponent(app.buildWhatsappHref(lead))).toContain(
       'Hi Aarav, greetings from July Leads Campaign.'
     );
@@ -778,5 +780,47 @@ describe('Seva workspace selection and bulk actions', () => {
     expect(createLead).not.toHaveBeenCalled();
     expect(app.authError).toBe('Enter a valid 10-digit Indian mobile number.');
     expect(app.isCreateRecordModalOpen).toBe(true);
+  });
+});
+
+describe('Seva workspace program editor', () => {
+  it('applies selected programs to the card summary without a reload', () => {
+    const app = sevaWorkspace();
+    app.appConfig.programs = [
+      { code: 'HP', label: 'Happiness Program' },
+      { code: 'DSN', label: 'Divya Samaj Nirman' }
+    ];
+    app.appConfig.showDonePrograms = true;
+    app.refreshProgramCaches();
+    const lead = createLead(app);
+    app.leads = [lead];
+
+    app.openProgramEditor(lead);
+    app.toggleProgramSelection('wishlist', 'HP');
+    app.toggleProgramSelection('done', 'DSN');
+    app.saveProgramEditor();
+
+    expect(lead.wishlistPrograms).toEqual(['HP']);
+    expect(lead.donePrograms).toEqual(['DSN']);
+    expect(app.getProgramSummary(lead)).toContain('HP');
+    expect(app.getProgramSummary(lead)).toContain('DSN');
+    expect(lead.isDirty).toBe(true);
+    expect(app.isProgramEditorOpen).toBe(false);
+  });
+
+  it('discards program editor selections on close', () => {
+    const app = sevaWorkspace();
+    app.appConfig.programs = [{ code: 'HP', label: 'Happiness Program' }];
+    app.refreshProgramCaches();
+    const lead = createLead(app);
+    app.leads = [lead];
+
+    app.openProgramEditor(lead);
+    app.toggleProgramSelection('wishlist', 'HP');
+    app.closeProgramEditor();
+
+    expect(lead.wishlistPrograms).toEqual([]);
+    expect(app.getProgramSummary(lead)).toBe('✏️ Program');
+    expect(lead.isDirty).toBe(false);
   });
 });

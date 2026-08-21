@@ -3,10 +3,7 @@ import { readSessionUser } from '../_lib/auth/session.js';
 import { getApiDataStore } from '../_lib/storage/dataStore.js';
 import { sendApiError } from '../_lib/http/errors.js';
 
-function firstQueryValue(
-  req: ApiRequest,
-  name: string
-): string {
+function firstQueryValue(req: ApiRequest, name: string): string {
   const value = req.query[name];
   if (Array.isArray(value)) {
     return String(value[0] || '');
@@ -16,6 +13,8 @@ function firstQueryValue(
 
 export default async function handler(req: ApiRequest, res: ApiResponse) {
   const id = firstQueryValue(req, 'id');
+  const catalog = firstQueryValue(req, 'catalog');
+  const isCatalog = req.method === 'GET' && catalog === '1';
   const isMutate = req.method === 'PUT' || req.method === 'DELETE';
   const isCreate = req.method === 'POST';
   const context = {
@@ -26,7 +25,9 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
         : 'update_course'
       : isCreate
         ? 'create_course'
-        : 'list_courses',
+        : isCatalog
+          ? 'list_public_homepage_offers'
+          : 'list_courses',
     startedAt: Date.now(),
     messages: {
       validation: 'Invalid course details.',
@@ -68,6 +69,12 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
   }
 
   try {
+    if (isCatalog) {
+      const offers = await getApiDataStore().listPublicHomepageOffers();
+      res.setHeader('Cache-Control', 'public, max-age=60');
+      return res.status(200).json(offers);
+    }
+
     const user = await readSessionUser(req);
     if (!user) {
       return sendApiError(res, new Error('Authentication required.'), context, {

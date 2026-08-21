@@ -8,7 +8,8 @@ const { mockReadSessionUser, mockStore } = vi.hoisted(() => ({
     listCoursesForAuthorizedUser: vi.fn(),
     createCourseForAuthorizedUser: vi.fn(),
     updateCourseForAuthorizedUser: vi.fn(),
-    deleteCourseForAuthorizedUser: vi.fn()
+    deleteCourseForAuthorizedUser: vi.fn(),
+    listPublicHomepageOffers: vi.fn()
   }
 }));
 
@@ -63,6 +64,33 @@ describe('course API handlers', () => {
       response
     );
     expect(state.statusCode).toBe(401);
+  });
+
+  it('returns the public homepage catalog without a session', async () => {
+    mockReadSessionUser.mockResolvedValue(null);
+    mockStore.listPublicHomepageOffers.mockResolvedValue({
+      success: true,
+      offers: [
+        {
+          code: 'HP',
+          label: 'Happiness Program',
+          active: true,
+          registerPath: '/c/hp'
+        }
+      ]
+    });
+    const { response, state } = createResponse();
+    await createCourseHandler(
+      { method: 'GET', headers: {}, query: { catalog: '1' } },
+      response
+    );
+    expect(state.statusCode).toBe(200);
+    expect(state.body).toMatchObject({
+      success: true,
+      offers: [{ code: 'HP', active: true, registerPath: '/c/hp' }]
+    });
+    expect(mockReadSessionUser).not.toHaveBeenCalled();
+    expect(mockStore.listCoursesForAuthorizedUser).not.toHaveBeenCalled();
   });
 
   it('rejects forbidden list requests', async () => {

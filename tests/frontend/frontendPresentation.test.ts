@@ -25,12 +25,25 @@ describe('AOLF Connect frontend presentation', () => {
     expect(page).toContain('id="schedule"');
     expect(page).not.toContain('sevaWorkspace()');
     expect(page).not.toContain('src="./main.ts"');
+    expect(page).toContain('src="./publicPage.ts"');
+    expect(page).toContain('x-data="homepagePrograms"');
+    expect(page).toContain('class="program-cta"');
+    expect(page).toContain('text-decoration:underline');
+    expect(page).toContain('Know More');
+    expect(page).toContain('Happiness Program (Adults)');
+    expect(page).toContain('Intuition Program (Kids & Teens)');
+    expect(page).toContain('Sahaj Samadhi Meditation (Adults)');
+    expect(page).not.toContain('class="program-type"');
+    expect(page).not.toContain('Art of Living Intuition Program');
+    expect(page).not.toContain('id="upcoming"');
+    expect(page).not.toContain('Upcoming program');
     expect(page).not.toContain('@tailwindcss/browser');
     expect(page).not.toContain('alpinejs@');
     expect(page).not.toContain('x-init="init()"');
     expect(readText(publicModuleUrl)).toContain(
       "import Alpine from 'alpinejs'"
     );
+    expect(readText(publicModuleUrl)).toContain('/api/courses?catalog=1');
   });
 
   it('publishes only the public page and protected Seva workspace', () => {
@@ -84,6 +97,10 @@ describe('AOLF Connect frontend presentation', () => {
     expect(page).toContain('x-cloak');
     expect(page).toContain('Continue with Google');
     expect(page).toContain('@click="startAuthFlow()"');
+    expect(page).toContain('x-show="isProgramEditorOpen"');
+    expect(page).toContain('@click.self="applyProgramEditor()"');
+    expect(page).toContain('@click="saveProgramEditor()"');
+    expect(page).toContain('@click="closeProgramEditor()"');
     expect(page).not.toContain('Featured Programs');
     expect(page).not.toContain('Upcoming Events');
   });

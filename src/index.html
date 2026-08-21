@@ -12,6 +12,7 @@
   <title>AOLF Connect</title>
   <link rel="icon" type="image/png" href="/assets/aolf-connect-logo.png" />
   <link rel="apple-touch-icon" href="/assets/aolf-connect-logo.png" />
+  <script type="module" src="./publicPage.ts"></script>
 
   <style>
     :root{
@@ -43,8 +44,6 @@
     .action-icon .svg-icon{width:24px;height:24px}
     .journey-icon .svg-icon{width:29px;height:29px}
     .nav-icon .svg-icon{width:24px;height:24px}
-    .meta .svg-icon{width:15px;height:15px;display:inline-block;vertical-align:-3px;margin-right:4px}
-    .whatsapp .svg-icon{width:18px;height:18px}
 
     /* Mobile-first page. On wide screens it is intentionally shown as a centered mobile canvas. */
     .app-shell{
@@ -182,46 +181,6 @@
     .action-sub{font-size:.76rem;opacity:.76;margin-top:4px}
 
     .content{padding:0 18px}
-    .featured-wrap{position:relative;margin-top:-12px;z-index:8}
-    .upcoming-shell{
-      position:relative;border:1px solid rgba(255,255,255,.9);background:rgba(255,253,248,.96);
-      border-radius:25px;padding:14px;box-shadow:var(--shadow);overflow:hidden;
-    }
-    .upcoming-track{
-      display:grid;grid-auto-flow:column;grid-auto-columns:100%;overflow:auto;scroll-snap-type:x mandatory;
-      scroll-behavior:smooth;scrollbar-width:none;
-    }
-    .upcoming-track::-webkit-scrollbar{display:none}
-    .upcoming-slide{
-      scroll-snap-align:start;display:grid;grid-template-columns:42% 1fr;gap:16px;min-width:0;
-    }
-    .featured-photo{min-height:220px;border-radius:19px;overflow:hidden;background:#ece6db}
-    .featured-photo img{width:100%;height:100%;object-fit:cover;object-position:50% 42%}
-    .featured-body{padding:8px 8px 8px 0;align-self:center;min-width:0}
-    .pill{
-      display:inline-flex;border-radius:999px;background:#ffe7a8;color:#4c3904;
-      padding:6px 10px;font-size:.66rem;font-weight:900;letter-spacing:.03em;text-transform:uppercase
-    }
-    .upcoming-slide h2{font-size:1.7rem;line-height:1.02;letter-spacing:-.04em;margin:12px 0 10px}
-    .upcoming-slide p{font-size:.86rem;line-height:1.48;color:#45484f;margin:0 0 12px}
-    .upcoming-meta{display:grid;gap:5px;margin:0 0 13px;font-size:.73rem;font-weight:730;color:#34373c}
-    .upcoming-meta span{display:flex;align-items:center;gap:6px}
-    .upcoming-meta .svg-icon{width:15px;height:15px;flex:0 0 15px}
-    .upcoming-controls{display:none;align-items:center;justify-content:center;gap:10px;margin-top:10px}
-    .upcoming-shell.has-multiple .upcoming-controls{display:flex}
-    .upcoming-arrow{
-      width:36px;height:36px;border:1px solid var(--line);border-radius:50%;background:white;cursor:pointer;
-      display:grid;place-items:center;font-size:1.2rem;box-shadow:0 4px 12px rgba(0,0,0,.08)
-    }
-    .upcoming-dots{display:flex;align-items:center;justify-content:center;gap:6px}
-    .upcoming-dot{width:7px;height:7px;border:0;padding:0;border-radius:999px;background:#c9c3ba;cursor:pointer}
-    .upcoming-dot.active{width:20px;background:#25282d}
-    .meta{display:flex;gap:13px;flex-wrap:wrap;font-size:.78rem;font-weight:730;margin-bottom:13px}
-    .whatsapp{
-      display:inline-flex;align-items:center;gap:7px;background:var(--green);color:white;
-      padding:11px 15px;border-radius:999px;font-size:.82rem;font-weight:850
-    }
-
     .section-title{
       margin:34px 0 18px;text-align:center;font-size:1.45rem;letter-spacing:-.035em;font-weight:900
     }
@@ -275,9 +234,11 @@
     .program-card:nth-child(3) img{object-position:50% 48%}
     .program-body{padding:11px 11px 13px}
     .program-body strong{display:block;font-size:.84rem;line-height:1.2;min-height:2.05em}
-    .program-type{font-size:.69rem;margin-top:6px;color:#922374}
-    .program-card:nth-child(2) .program-type{color:#15843a}
-    .program-card:nth-child(3) .program-type{color:#e26800}
+    .program-cta{
+      display:inline-block;margin-top:8px;padding:0;
+      background:none;border-radius:0;color:inherit;
+      font-size:.72rem;font-weight:800;text-decoration:underline;text-underline-offset:3px
+    }
     .slide-btn{
       position:absolute;top:42%;z-index:2;width:45px;height:45px;border-radius:50%;border:1px solid rgba(0,0,0,.06);
       background:white;box-shadow:0 5px 18px rgba(0,0,0,.12);display:grid;place-items:center;font-size:1.55rem;cursor:pointer
@@ -367,16 +328,6 @@
       .action-sub{font-size:.69rem}
 
       .content{padding:0 12px}
-      .featured-wrap{margin-top:-4px}
-      .upcoming-shell{padding:10px;border-radius:22px}
-      .upcoming-slide{grid-template-columns:39% 1fr;gap:11px}
-      .featured-photo{min-height:185px;border-radius:15px}
-      .featured-body{padding:4px 4px 4px 0}
-      .pill{font-size:.58rem;padding:5px 8px}
-      .upcoming-slide h2{font-size:1.18rem;margin:9px 0 8px}
-      .upcoming-slide p{font-size:.72rem;margin-bottom:8px}
-      .meta{font-size:.63rem;gap:8px;margin-bottom:10px}
-      .whatsapp{font-size:.68rem;padding:9px 11px}
 
       .section-title{font-size:1.28rem;margin:32px 0 34px}
       .journeys{gap:7px}
@@ -392,7 +343,6 @@
       .slide-btn{width:40px;height:40px;font-size:1.3rem}
       .program-body{padding:9px 9px 11px}
       .program-body strong{font-size:.74rem}
-      .program-type{font-size:.62rem}
       .schedule-section{margin-left:-12px;margin-right:-12px;padding:27px 14px 28px}
       .schedule-head{align-items:flex-start;flex-direction:column}
       .schedule-item{grid-template-columns:70px 1fr;gap:12px}
@@ -472,37 +422,6 @@
       </section>
 
       <div class="content">
-        <section class="featured-wrap" id="upcoming" aria-label="Coming up programs">
-          <div class="upcoming-shell" id="upcomingShell">
-            <!-- Course Manager: render one .upcoming-slide per announced program.
-                 With one slide this stays a static feature card; with 2+ slides, controls appear automatically. -->
-            <div class="upcoming-track" id="upcomingTrack">
-              <article class="upcoming-slide">
-                <div class="featured-photo">
-                  <img src="assets/course.webp" alt="Upcoming Art of Living program" loading="lazy" />
-                </div>
-                <div class="featured-body">
-                  <span class="pill">Coming Up</span>
-                  <h2>Upcoming program</h2>
-                  <p>Program details will appear here as soon as the next program is announced.</p>
-                  <div class="upcoming-meta">
-                    <span><svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2v3m12-3v3M3.5 9h17M5 4h14a2 2 0 0 1 2 2v14H3V6a2 2 0 0 1 2-2Z"/></svg>Date coming soon</span>
-                    <span><svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 5.5-8 12-8 12S4 15.5 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>Local Center</span>
-                  </div>
-                  <a class="whatsapp" href="https://wa.me/918884560660" target="_blank" rel="noopener noreferrer">
-                    <svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 11.5a8.5 8.5 0 0 1-12.8 7.3L3 20l1.3-4.5A8.5 8.5 0 1 1 20.5 11.5Z"/><path d="M8.4 7.8c.4-.5.8-.4 1.1-.1l1.2 1.9c.2.3.1.6-.1.9l-.7.8c.7 1.5 1.9 2.7 3.5 3.4l.7-.8c.3-.3.6-.4.9-.2l1.9 1.1c.4.2.5.7.2 1.1-.7 1.1-1.9 1.6-3.1 1.3-4.2-1-7.3-4.1-8.2-8.1-.3-1.1.2-2.5 1.3-3.3"/></svg> Enquire on WhatsApp
-                  </a>
-                </div>
-              </article>
-            </div>
-            <div class="upcoming-controls" id="upcomingControls" aria-label="Upcoming program navigation">
-              <button class="upcoming-arrow" id="prevUpcoming" type="button" aria-label="Previous upcoming program">‹</button>
-              <div class="upcoming-dots" id="upcomingDots" aria-label="Choose upcoming program"></div>
-              <button class="upcoming-arrow" id="nextUpcoming" type="button" aria-label="Next upcoming program">›</button>
-            </div>
-          </div>
-        </section>
-
         <section aria-labelledby="looking-title">
           <h2 class="section-title" id="looking-title">What are you looking for?</h2>
           <div class="journeys">
@@ -529,7 +448,7 @@
           </div>
         </section>
 
-        <section id="programs" aria-labelledby="programs-title">
+        <section id="programs" aria-labelledby="programs-title" x-data="homepagePrograms">
           <div class="program-head">
             <h2 id="programs-title">Programs We Offer</h2>
             <a href="https://www.artofliving.org/in-en/programs" target="_blank" rel="noopener noreferrer">View all programs&nbsp; →</a>
@@ -539,29 +458,50 @@
           <div class="program-area">
             <button class="slide-btn prev" id="prevProgram" aria-label="Previous programs">‹</button>
             <div class="program-slider" id="programSlider">
-              <a class="program-card" href="https://wa.me/918884560660" target="_blank" rel="noopener noreferrer">
+              <article class="program-card">
                 <img src="assets/course-hp.webp" alt="Happiness Program" loading="lazy" />
                 <div class="program-body">
-                  <strong>Happiness Program</strong>
-                  <div class="program-type">Adults</div>
+                  <strong>Happiness Program (Adults)</strong>
+                  <a
+                    class="program-cta"
+                    href="https://wa.me/918884560660?text=Hi%2C%20I%20would%20like%20to%20know%20more%20about%20the%20Happiness%20Program."
+                    :href="cta('HP').href"
+                    :target="cta('HP').external ? '_blank' : null"
+                    :rel="cta('HP').external ? 'noopener noreferrer' : null"
+                    x-text="cta('HP').label"
+                  >Know More</a>
                 </div>
-              </a>
+              </article>
 
-              <a class="program-card" href="https://wa.me/918884560660" target="_blank" rel="noopener noreferrer">
+              <article class="program-card">
                 <img src="assets/course-ip.webp" alt="Intuition Program" loading="lazy" />
                 <div class="program-body">
-                  <strong>Art of Living Intuition Program (IP)</strong>
-                  <div class="program-type">Kids & Teens</div>
+                  <strong>Intuition Program (Kids & Teens)</strong>
+                  <a
+                    class="program-cta"
+                    href="https://wa.me/918884560660?text=Hi%2C%20I%20would%20like%20to%20know%20more%20about%20the%20Intuition%20Program."
+                    :href="cta('IP').href"
+                    :target="cta('IP').external ? '_blank' : null"
+                    :rel="cta('IP').external ? 'noopener noreferrer' : null"
+                    x-text="cta('IP').label"
+                  >Know More</a>
                 </div>
-              </a>
+              </article>
 
-              <a class="program-card" href="https://wa.me/918884560660" target="_blank" rel="noopener noreferrer">
+              <article class="program-card">
                 <img src="assets/course-sahaj.webp" alt="Sahaj Samadhi Meditation" loading="lazy" />
                 <div class="program-body">
-                  <strong>Sahaj Samadhi Meditation</strong>
-                  <div class="program-type">Adults</div>
+                  <strong>Sahaj Samadhi Meditation (Adults)</strong>
+                  <a
+                    class="program-cta"
+                    href="https://wa.me/918884560660?text=Hi%2C%20I%20would%20like%20to%20know%20more%20about%20the%20Sahaj%20Samadhi%20Meditation."
+                    :href="cta('Sahaj').href"
+                    :target="cta('Sahaj').external ? '_blank' : null"
+                    :rel="cta('Sahaj').external ? 'noopener noreferrer' : null"
+                    x-text="cta('Sahaj').label"
+                  >Know More</a>
                 </div>
-              </a>
+              </article>
             </div>
             <button class="slide-btn next" id="nextProgram" aria-label="Next programs">›</button>
           </div>
@@ -659,33 +599,6 @@
     const step = () => Math.max(170, slider.clientWidth * .48);
     document.getElementById('prevProgram').addEventListener('click', () => slider.scrollBy({left:-step(),behavior:'smooth'}));
     document.getElementById('nextProgram').addEventListener('click', () => slider.scrollBy({left:step(),behavior:'smooth'}));
-
-    const upcomingShell = document.getElementById('upcomingShell');
-    const upcomingTrack = document.getElementById('upcomingTrack');
-    const upcomingSlides = Array.from(upcomingTrack.querySelectorAll('.upcoming-slide'));
-    const upcomingDots = document.getElementById('upcomingDots');
-    const prevUpcoming = document.getElementById('prevUpcoming');
-    const nextUpcoming = document.getElementById('nextUpcoming');
-
-    if(upcomingSlides.length > 1){
-      upcomingShell.classList.add('has-multiple');
-      upcomingSlides.forEach((slide, index) => {
-        const dot = document.createElement('button');
-        dot.type = 'button';
-        dot.className = 'upcoming-dot' + (index === 0 ? ' active' : '');
-        dot.setAttribute('aria-label', `Show upcoming program ${index + 1}`);
-        dot.addEventListener('click', () => slide.scrollIntoView({behavior:'smooth',block:'nearest',inline:'start'}));
-        upcomingDots.appendChild(dot);
-      });
-
-      const updateUpcomingDots = () => {
-        const index = Math.max(0, Math.min(upcomingSlides.length - 1, Math.round(upcomingTrack.scrollLeft / upcomingTrack.clientWidth)));
-        upcomingDots.querySelectorAll('.upcoming-dot').forEach((dot, i) => dot.classList.toggle('active', i === index));
-      };
-      upcomingTrack.addEventListener('scroll', updateUpcomingDots, {passive:true});
-      prevUpcoming.addEventListener('click', () => upcomingTrack.scrollBy({left:-upcomingTrack.clientWidth,behavior:'smooth'}));
-      nextUpcoming.addEventListener('click', () => upcomingTrack.scrollBy({left:upcomingTrack.clientWidth,behavior:'smooth'}));
-    }
 
     const sheet = document.getElementById('menuSheet');
     const menuButton = document.getElementById('menuButton');

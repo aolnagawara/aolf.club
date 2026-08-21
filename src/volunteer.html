@@ -554,7 +554,7 @@
                       @click="openProgramEditor(lead)"
                       class="mt-0.5 text-[11px] leading-snug font-medium text-slate-500 truncate max-w-[220px] cursor-pointer"
                       title="Tap to edit programs"
-                      x-text="getProgramSummary(lead)"
+                      x-text="(lead.wishlistPrograms, lead.donePrograms, getProgramSummary(lead))"
                     ></div>
                   </div>
 
@@ -1156,7 +1156,7 @@
             x-show="isProgramEditorOpen"
             x-transition.opacity
             class="fixed inset-0 z-40 bg-slate-900/40 flex items-end sm:items-center justify-center p-3"
-            @click.self="closeProgramEditor()"
+            @click.self="applyProgramEditor()"
             @keydown.escape.window="closeProgramEditor()"
             role="dialog"
             aria-modal="true"

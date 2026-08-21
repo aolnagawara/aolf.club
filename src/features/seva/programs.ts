@@ -176,6 +176,22 @@ export function createProgramMethods() {
       this.activeProgramLead = null;
       this.programDraft = { wishlist: [], done: [] };
     },
+    applyProgramEditor(this: SevaWorkspaceContext): void {
+      if (!this.activeProgramLead) {
+        this.closeProgramEditor();
+        return;
+      }
+      const lead = this.activeProgramLead;
+      lead.wishlistPrograms = this.normalizePrograms(
+        this.programDraft.wishlist
+      );
+      if (this.shouldShowDonePrograms()) {
+        lead.donePrograms = this.normalizePrograms(this.programDraft.done);
+      }
+      this.markLeadDirty(lead);
+      this.leads = this.leads.slice();
+      this.closeProgramEditor();
+    },
     isProgramSelected(
       this: SevaWorkspaceContext,
       type: 'done' | 'wishlist',
@@ -203,20 +219,7 @@ export function createProgramMethods() {
       this.programDraft[key] = this.normalizePrograms([...list, normalized]);
     },
     saveProgramEditor(this: SevaWorkspaceContext): void {
-      if (!this.activeProgramLead) {
-        this.closeProgramEditor();
-        return;
-      }
-      this.activeProgramLead.wishlistPrograms = this.normalizePrograms(
-        this.programDraft.wishlist
-      );
-      if (this.shouldShowDonePrograms()) {
-        this.activeProgramLead.donePrograms = this.normalizePrograms(
-          this.programDraft.done
-        );
-      }
-      this.markLeadDirty(this.activeProgramLead);
-      this.closeProgramEditor();
+      this.applyProgramEditor();
     }
   };
 }
