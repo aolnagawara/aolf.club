@@ -99,7 +99,7 @@ describe('AOLF Connect frontend presentation', () => {
     expect(page).toContain('@click="startAuthFlow()"');
     expect(page).toContain('x-show="isProgramEditorOpen"');
     expect(page).toContain('x-text="lead.programSummary"');
-    expect(page).toContain('x-for="lead in visibleLeads(programListRevision)"');
+    expect(page).toContain('x-for="lead in visibleLeads()"');
     expect(page).toContain("getLeadKey(lead) + '|' + lead.programSummary");
     expect(page).toContain('@click.self="applyProgramEditor()"');
     expect(page).toContain('@click="saveProgramEditor()"');
@@ -133,6 +133,7 @@ describe('AOLF Connect frontend presentation', () => {
     expect(volunteerPage).not.toContain('type="month"');
     expect(volunteerPage).toContain('showsProgramTabs()');
     expect(volunteerPage).toContain('type="file"');
+    expect(volunteerPage).toContain('@click="clearCoursePamphlet()"');
     expect(volunteerPage).toContain('WhatsApp template');
     expect(volunteerPage).not.toContain('Pamphlet image URL');
     expect(volunteerPage).not.toContain('x-model="courseDraft.title"');

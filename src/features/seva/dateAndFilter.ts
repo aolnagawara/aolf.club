@@ -1,5 +1,38 @@
 import type { SevaWorkspaceContext, Lead } from './types';
 
+type FilterCache = {
+  sourceLeads: Lead[];
+  criteriaKey: string;
+  dataKey: string;
+  filtered: Lead[];
+  dueCount: number;
+  upcomingCount: number;
+};
+
+const filterCacheByContext = new WeakMap<object, FilterCache>();
+
+function programKey(value: string | string[]): string {
+  return Array.isArray(value) ? value.join(',') : String(value || '');
+}
+
+function buildLeadFilterDataKey(leads: Lead[]): string {
+  return (leads || [])
+    .map((lead) =>
+      [
+        lead.id,
+        lead.quality,
+        lead.status,
+        lead._nameLower,
+        lead._phoneRawLower,
+        lead._phoneDigits,
+        String(lead._followUpTs ?? ''),
+        programKey(lead.wishlistPrograms),
+        programKey(lead.donePrograms)
+      ].join('\u001f')
+    )
+    .join('\u001e');
+}
+
 export function createDateAndFilterMethods() {
   return {
     parseDate(
@@ -189,10 +222,9 @@ export function createDateAndFilterMethods() {
         now.getDate()
       ).getTime();
     },
-    // Recomputed on every call - filtering <=50 leads is cheap enough that
-    // memoizing it isn't worth the extra bookkeeping. `filteredCriteriaKey` is
-    // kept only to detect a *filter/search/campaign* change so pagination resets,
-    // independent of plain data edits.
+    // Filtering is tiny at this app's scale, but Alpine can ask for the same
+    // list several times in one render. Cache the last result while keeping
+    // pagination reset tied only to criteria changes, not plain data edits.
     computeFilteredLeads(this: SevaWorkspaceContext): Lead[] {
       const searchTerm = String(this.searchQuery || '')
         .trim()
@@ -214,6 +246,20 @@ export function createDateAndFilterMethods() {
         this.visibleLeadLimit = this.pageSize;
       }
       this.filteredCriteriaKey = criteriaKey;
+
+      const sourceLeads = this.leads || [];
+      const dataKey = buildLeadFilterDataKey(sourceLeads);
+      const cached = filterCacheByContext.get(this);
+      if (
+        cached &&
+        cached.sourceLeads === sourceLeads &&
+        cached.criteriaKey === criteriaKey &&
+        cached.dataKey === dataKey
+      ) {
+        this.dueFollowUpCount = cached.dueCount;
+        this.upcomingFollowUpCount = cached.upcomingCount;
+        return cached.filtered;
+      }
 
       let dueCount = 0;
       let upcomingCount = 0;
@@ -278,6 +324,14 @@ export function createDateAndFilterMethods() {
 
       this.dueFollowUpCount = dueCount;
       this.upcomingFollowUpCount = upcomingCount;
+      filterCacheByContext.set(this, {
+        sourceLeads,
+        criteriaKey,
+        dataKey,
+        filtered,
+        dueCount,
+        upcomingCount
+      });
       return filtered;
     },
     countDueFollowUps(this: SevaWorkspaceContext): number {
@@ -296,10 +350,10 @@ export function createDateAndFilterMethods() {
       const hasSearch = String(this.searchQuery || '').trim().length > 0;
       return hasSearch ? label + ' + Search' : label;
     },
-    filteredLeads(this: SevaWorkspaceContext, _revision?: number): Lead[] {
+    filteredLeads(this: SevaWorkspaceContext): Lead[] {
       return this.computeFilteredLeads();
     },
-    visibleLeads(this: SevaWorkspaceContext, _revision?: number): Lead[] {
+    visibleLeads(this: SevaWorkspaceContext): Lead[] {
       return this.computeFilteredLeads().slice(0, this.visibleLeadLimit);
     },
     hasMoreLeads(this: SevaWorkspaceContext): boolean {

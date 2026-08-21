@@ -783,6 +783,88 @@ describe('Seva workspace selection and bulk actions', () => {
   });
 });
 
+describe('Seva workspace course management', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  it('sends a clear pamphlet request when an existing pamphlet is removed', async () => {
+    const existingCourse = {
+      id: 'crsHpNcr01AbcDefGhiJK',
+      courseType: 'HP',
+      programCode: '',
+      title: 'Weekend Happiness Program',
+      whatsappTemplate: 'Hi {name}',
+      isActive: true,
+      hasPamphlet: true,
+      pamphletImageUrl: '/course/crsHpNcr01AbcDefGhiJK/pamphlet',
+      publicPath: '/c/hp',
+      createdAt: '',
+      updatedAt: '',
+      createdBy: '',
+      updatedBy: ''
+    };
+    const updateCourse = vi.fn(async (payload) => ({
+      success: true as const,
+      course: {
+        ...existingCourse,
+        hasPamphlet: false,
+        pamphletImageUrl: '',
+        updatedAt: 'saved',
+        ...payload
+      }
+    }));
+    vi.stubGlobal('window', { appRuntime: { updateCourse } });
+
+    const app = sevaWorkspace();
+    app.courses = [existingCourse];
+    app.openCourseEditor(existingCourse);
+    app.clearCoursePamphlet();
+
+    expect(app.courseDraft.hasPamphlet).toBe(false);
+    expect(app.courseDraft.clearPamphlet).toBe(true);
+    expect(app.courseDraft.pamphletPreviewUrl).toBe('');
+
+    await app.saveCourse();
+
+    expect(updateCourse).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: existingCourse.id,
+        clearPamphlet: true,
+        pamphletBase64: '',
+        pamphletMimeType: ''
+      })
+    );
+    expect(app.courses[0].hasPamphlet).toBe(false);
+  });
+
+  it('uses a non-duplicate subtitle in the WhatsApp course picker', () => {
+    const app = sevaWorkspace();
+    app.appConfig.programs = [{ code: 'HP', label: 'Happiness Program' }];
+    const course = {
+      id: 'crsHpNcr01AbcDefGhiJK',
+      courseType: 'HP',
+      programCode: '',
+      title: 'Weekend Happiness Program',
+      whatsappTemplate: 'Hi {name}',
+      isActive: true,
+      hasPamphlet: false,
+      pamphletImageUrl: '',
+      publicPath: '/c/hp',
+      createdAt: '',
+      updatedAt: '',
+      createdBy: '',
+      updatedBy: ''
+    };
+
+    expect(app.courseDisplayTitle(course)).toBe('Happiness Program');
+    expect(app.coursePickerSubtitle(course)).toBe('Weekend Happiness Program');
+    expect(app.coursePickerSubtitle({ ...course, title: 'Happiness Program' }))
+      .toBe('/c/hp');
+  });
+});
+
 describe('Seva workspace program editor', () => {
   it('applies selected programs to the card summary without a reload', () => {
     const app = sevaWorkspace();

@@ -19,6 +19,7 @@ export function createEmptyCourseDraft(courseType = 'HP') {
     whatsappTemplate: templateForCourseType(courseType),
     isActive: true,
     hasPamphlet: false,
+    clearPamphlet: false,
     pamphletBase64: '',
     pamphletMimeType: '',
     pamphletPreviewUrl: ''

@@ -45,6 +45,7 @@ function courseToDraft(course: Course): CourseDraft {
     whatsappTemplate: course.whatsappTemplate || '',
     isActive: course.isActive,
     hasPamphlet: Boolean(course.hasPamphlet),
+    clearPamphlet: false,
     pamphletBase64: '',
     pamphletMimeType: '',
     pamphletPreviewUrl: course.hasPamphlet
@@ -88,6 +89,17 @@ export function createCourseWorkspaceMethods() {
         course.courseType;
       const program = programLabelFor(course.courseType, course.programCode);
       return program ? label + ' · ' + program : label;
+    },
+    coursePickerSubtitle(this: SevaWorkspaceContext, course: Course): string {
+      const displayTitle = this.courseDisplayTitle(course);
+      const title = String(course.title || '').trim();
+      if (title && title !== displayTitle) {
+        return title;
+      }
+      return (
+        course.publicPath ||
+        publicCoursePath(course.courseType, course.programCode)
+      );
     },
     templateForType(
       this: SevaWorkspaceContext,
@@ -143,8 +155,16 @@ export function createCourseWorkspaceMethods() {
           comma >= 0 ? dataUrl.slice(comma + 1) : '';
         this.courseDraft.pamphletMimeType = file.type;
         this.courseDraft.hasPamphlet = true;
+        this.courseDraft.clearPamphlet = false;
       };
       reader.readAsDataURL(file);
+    },
+    clearCoursePamphlet(this: SevaWorkspaceContext): void {
+      this.courseDraft.hasPamphlet = false;
+      this.courseDraft.clearPamphlet = true;
+      this.courseDraft.pamphletBase64 = '';
+      this.courseDraft.pamphletMimeType = '';
+      this.courseDraft.pamphletPreviewUrl = '';
     },
     async switchWorkspaceView(
       this: SevaWorkspaceContext,
@@ -221,7 +241,8 @@ export function createCourseWorkspaceMethods() {
           whatsappTemplate: this.courseDraft.whatsappTemplate,
           isActive: this.courseDraft.isActive,
           pamphletBase64: this.courseDraft.pamphletBase64,
-          pamphletMimeType: this.courseDraft.pamphletMimeType
+          pamphletMimeType: this.courseDraft.pamphletMimeType,
+          clearPamphlet: this.courseDraft.clearPamphlet
         };
         if (this.courseDraft.id) {
           const response = await window.appRuntime.updateCourse({

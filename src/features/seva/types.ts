@@ -34,6 +34,7 @@ export interface CourseDraft {
   whatsappTemplate: string;
   isActive: boolean;
   hasPamphlet: boolean;
+  clearPamphlet: boolean;
   pamphletBase64: string;
   pamphletMimeType: string;
   pamphletPreviewUrl: string;
