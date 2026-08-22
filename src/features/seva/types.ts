@@ -128,7 +128,6 @@ export interface SevaWorkspaceState {
   isCreateRecordSaving: boolean;
   globalPointerDownHandler: ((event: PointerEvent) => void) | null;
   programDraft: ProgramDraft;
-  programListRevision: number;
   filteredCriteriaKey: string;
   programFilter: string;
   pageSize: number;

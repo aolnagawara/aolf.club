@@ -147,9 +147,6 @@ export function createProgramMethods() {
     refreshLeadProgramSummary(this: SevaWorkspaceContext, lead: Lead): void {
       lead.programSummary = this.getProgramSummary(lead);
     },
-    bumpProgramListRevision(this: SevaWorkspaceContext): void {
-      this.programListRevision += 1;
-    },
     shouldShowProgramEditor(this: SevaWorkspaceContext): boolean {
       return (
         Array.isArray(this.appConfig.programs) &&
@@ -197,7 +194,6 @@ export function createProgramMethods() {
       this.refreshLeadProgramSummary(lead);
       this.markLeadDirty(lead);
       this.closeProgramEditor();
-      this.bumpProgramListRevision();
     },
     isProgramSelected(
       this: SevaWorkspaceContext,

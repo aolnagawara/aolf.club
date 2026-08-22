@@ -289,6 +289,17 @@
     .nav-icon{font-size:1.37rem;line-height:1}
     .nav-item.active{color:#11151b;font-weight:850}
 
+    @media (min-width:768px){
+      .hero-copy{width:60%;padding:52px 0 0 36px}
+      .hero h1{max-width:430px;font-size:4rem}
+      .hero p{max-width:335px;margin-top:20px}
+      .hero-benefits{left:36px;bottom:160px;width:auto;max-width:390px}
+      .hero-actions{
+        left:36px;right:36px;bottom:42px;width:auto;
+        grid-template-columns:repeat(2,minmax(0,1fr));
+      }
+    }
+
     @media (max-width:620px){
       .topbar{min-height:70px;padding-left:14px;padding-right:14px}
       .brand img{width:44px;height:44px}

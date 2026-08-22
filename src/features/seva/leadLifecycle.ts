@@ -301,7 +301,6 @@ export function createLeadLifecycleMethods() {
       lead.wishlistPrograms = this.normalizePrograms(snapshot.wishlistPrograms);
       lead.donePrograms = this.normalizePrograms(snapshot.donePrograms);
       this.normalizeLeadDerivedFields(lead);
-      this.bumpProgramListRevision();
       lead.isEditingName = false;
       lead.isDirty = hasPendingSave;
       if (hasPendingSave) {

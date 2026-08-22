@@ -889,7 +889,6 @@ describe('Seva workspace program editor', () => {
     expect(app.getProgramSummary(lead)).toBe(lead.programSummary);
     expect(lead.isDirty).toBe(true);
     expect(app.isProgramEditorOpen).toBe(false);
-    expect(app.programListRevision).toBe(1);
   });
 
   it('discards program editor selections on close', () => {
