@@ -3,8 +3,7 @@ import type { ApiResponse } from '../../../api/_lib/http/responses.js';
 
 const { mockStore } = vi.hoisted(() => ({
   mockStore: {
-    getPublicCourseById: vi.fn(),
-    getPublicCoursePage: vi.fn(),
+    getPublicCourses: vi.fn(),
     getPublicCoursePamphlet: vi.fn()
   }
 }));
@@ -13,7 +12,7 @@ vi.mock('../../../api/_lib/storage/dataStore.js', () => ({
   getApiDataStore: () => mockStore
 }));
 
-import publicCourseHandler from '../../../api/course/[id].js';
+import publicCourseHandler from '../../../api/public-courses.js';
 
 const COURSE_ID = 'crsHpNcr01AbcDefGhiJK';
 
@@ -88,33 +87,39 @@ describe('public course handler', () => {
     expect(state.endBody).toBe('Pamphlet not found.');
   });
 
-  it('looks up a public course by type slug', async () => {
+  it('renders a selected program on the unified courses page', async () => {
     const course = {
       id: COURSE_ID,
       courseType: 'HP',
       programCode: '',
       title: 'HP',
       whatsappTemplate: '*Hello*',
+      isActive: true,
       hasPamphlet: false,
-      pamphletImageUrl: '',
-      publicPath: '/c/hp'
+      pamphletImageUrl: ''
     };
-    mockStore.getPublicCoursePage.mockResolvedValue({
+    mockStore.getPublicCourses.mockResolvedValue({
       selected: course,
-      family: [course]
+      courses: [course],
+      selectionMatched: true
     });
     const { response, state } = createResponse();
     await publicCourseHandler(
       {
         method: 'GET',
         headers: { host: 'aolf.club' },
-        query: { id: 'hp' }
+        query: { program: 'hp' }
       },
       response
     );
-    expect(mockStore.getPublicCoursePage).toHaveBeenCalledWith('hp');
+    expect(mockStore.getPublicCourses).toHaveBeenCalledWith('hp');
     expect(state.statusCode).toBe(200);
-    expect(String(state.endBody)).toContain('content="https://aolf.club/c/hp"');
+    expect(String(state.endBody)).toContain(
+      'content="https://aolf.club/courses?program=hp"'
+    );
+    expect(String(state.endBody)).toContain(
+      'content="https://aolf.club/assets/course.webp"'
+    );
     expect(String(state.endBody)).toContain('<strong>Hello</strong>');
   });
 });

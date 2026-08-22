@@ -10,12 +10,12 @@ describe('homepage program CTAs', () => {
     expect(
       homepageCta({
         active: true,
-        registerPath: '/c/hp',
+        registerPath: '/courses?program=hp',
         label: 'Happiness Program',
         code: 'HP'
       })
     ).toEqual({
-      href: '/c/hp',
+      href: '/courses?program=hp',
       label: 'Register Now',
       external: false
     });
@@ -24,7 +24,7 @@ describe('homepage program CTAs', () => {
   it('sends a WhatsApp Know More message when the offer is not active', () => {
     const cta = homepageCta({
       active: false,
-      registerPath: '/c/ip',
+      registerPath: '/courses?program=ip',
       label: 'Intuition Program',
       code: 'IP'
     });

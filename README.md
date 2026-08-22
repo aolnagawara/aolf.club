@@ -152,7 +152,7 @@ id,courseType,programCode,title,whatsappTemplate,pamphletFileId,pamphletMimeType
 courseType,template
 ```
 
-Course Management stores type, an optional IP program (5–8 or 8–18), the WhatsApp template, and a pamphlet file. Dates, time, venue, and registration belong in the template. Public URLs are `/c/hp`, `/c/ip-j`, and `/c/ip-s`. `/c/ip` is the shared IP page with tabs. WhatsApp uses `/c/ip-j` and `/c/ip-s` so each age group can preview its own pamphlet. The Happiness Program default template puts `{courseUrl}` just before the registration URL. Deleting a course also deletes its Vercel Blob pamphlet files.
+Course Management stores type, an optional IP program (5–8 or 8–18), the WhatsApp template, and a pamphlet file. Dates, time, venue, and registration belong in the template. `/courses` displays every active program as a tab. Program-specific links such as `/courses?program=ip-j` open the same page with the matching tab selected and provide that program's pamphlet metadata for WhatsApp previews. The Happiness Program default template puts `{courseUrl}` just before the registration URL. Deleting a course also deletes its Vercel Blob pamphlet files.
 
 Pamphlets are uploaded from Course Management (JPEG, PNG, or WebP, max 1.5 MB). They are stored in a **public Vercel Blob** store and WhatsApp reads `og:image` from that Blob URL. `/course/<id>/pamphlet` still works as a same-origin fallback. WhatsApp may cache an older pamphlet after you replace the image.
 

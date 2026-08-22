@@ -3,7 +3,7 @@ import {
   createCourseForUser,
   deleteCourseForUser,
   getBootstrapForUser,
-  getPublicCourseById
+  getPublicCourses
 } from '../../../api/_lib/storage/mockStore.js';
 
 describe('mock store campaign selection', () => {
@@ -24,12 +24,13 @@ describe('mock store courses', () => {
       { courseType: 'Sahaj', isActive: true }
     );
     expect(created.course.title).toBe('Sahaj');
-    await expect(getPublicCourseById(created.course.id)).resolves.toMatchObject(
-      {
-        title: 'Sahaj'
-      }
-    );
+    await expect(getPublicCourses('sahaj')).resolves.toMatchObject({
+      selected: { title: 'Sahaj' },
+      selectionMatched: true
+    });
     await deleteCourseForUser({ id: created.course.id });
-    await expect(getPublicCourseById(created.course.id)).resolves.toBeNull();
+    await expect(getPublicCourses('sahaj')).resolves.toMatchObject({
+      selectionMatched: false
+    });
   });
 });

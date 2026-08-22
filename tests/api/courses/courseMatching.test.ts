@@ -16,7 +16,7 @@ const hpInactive = {
   courseType: 'HP'
 };
 const dsn = {
-  id: 'crsDsnNcr01AbcDefGhiJK',
+  id: 'crsDsnNc01AbcDefGhiJK',
   isActive: true,
   courseType: 'DSN'
 };
@@ -52,15 +52,15 @@ describe('unique active course matching', () => {
       course: 'HP',
       dates: 'August 2026',
       registrationLink: '',
-      courseUrl: 'https://aolf.club/c/hp'
+      courseUrl: 'https://aolf.club/courses?program=hp'
     });
     expect(
-      ensureCourseUrlInMessage(filled, 'https://aolf.club/c/hp')
-    ).toContain('https://aolf.club/c/hp');
+      ensureCourseUrlInMessage(filled, 'https://aolf.club/courses?program=hp')
+    ).toContain('https://aolf.club/courses?program=hp');
   });
 
   it('places the course URL immediately before the first other URL', () => {
-    const courseUrl = 'https://aolf.club/c/hp';
+    const courseUrl = 'https://aolf.club/courses?program=hp';
     const filled = fillCourseWhatsappTemplate(
       'Hi {name}\nRegister: https://aolt.in/874234\n\n{courseUrl}',
       {
@@ -78,8 +78,6 @@ describe('unique active course matching', () => {
     expect(message.indexOf(courseUrl)).toBeLessThan(
       message.indexOf('https://aolt.in/874234')
     );
-    expect(
-      message.match(new RegExp(courseUrl.replace(/\//g, '\\/'), 'g'))
-    ).toHaveLength(1);
+    expect(message.split(courseUrl)).toHaveLength(2);
   });
 });

@@ -41,8 +41,7 @@ import { ZodError } from 'zod';
 import {
   defaultCourseTemplates,
   homepageProgramOffers,
-  pickPublicCourseByKey,
-  pickPublicCoursesByKey
+  selectActivePublicCourses
 } from '../../../shared/contracts/courseDefaults.mjs';
 import { normalizeEmail } from '../http/normalization.js';
 import {
@@ -953,28 +952,32 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
     });
   }
 
-  async function getCoursePageByPublicKey(
+  async function loadActivePublicCourses(
     operation: SheetsOperation,
-    key: string
-  ): Promise<{ selected: CourseRecord | null; family: CourseRecord[] }> {
+    programKey: string
+  ): Promise<{
+    selected: CourseRecord | null;
+    courses: CourseRecord[];
+    selectionMatched: boolean;
+  }> {
     const { headers, rows } = await readCourseRows(operation);
     const courses = rows
       .slice(1)
       .map((row, index) => parseCourseAt(headers, rows, index + 1))
       .filter((course): course is CourseRecord => Boolean(course));
-    return pickPublicCoursesByKey(courses, key);
+    return selectActivePublicCourses(courses, programKey);
   }
 
-  async function getCourseByPublicKey(
+  async function getCourseById(
     operation: SheetsOperation,
-    key: string
+    id: string
   ): Promise<CourseRecord | null> {
     const { headers, rows } = await readCourseRows(operation);
     const courses = rows
       .slice(1)
       .map((row, index) => parseCourseAt(headers, rows, index + 1))
       .filter((course): course is CourseRecord => Boolean(course));
-    return pickPublicCourseByKey(courses, key);
+    return courses.find((course) => course.id === id) || null;
   }
 
   function assertUniqueCourseSlot(
@@ -1137,7 +1140,7 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
     id: string,
     operation: SheetsOperation
   ) {
-    const course = await getCourseByPublicKey(operation, id);
+    const course = await getCourseById(operation, id);
     if (!course?.pamphletFileId) {
       return null;
     }
@@ -1323,25 +1326,20 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
       });
     },
 
-    async getPublicCourseById(
-      id: string,
+    async getPublicCourses(
+      programKey = '',
       operation?: SheetsOperation
-    ): Promise<Course | null> {
+    ): Promise<{
+      selected: Course | null;
+      courses: Course[];
+      selectionMatched: boolean;
+    }> {
       return withStoreOperation(operation, async (activeOperation) => {
-        const course = await getCourseByPublicKey(activeOperation, id);
-        return course ? toCourseResponse(course) : null;
-      });
-    },
-
-    async getPublicCoursePage(
-      id: string,
-      operation?: SheetsOperation
-    ): Promise<{ selected: Course | null; family: Course[] }> {
-      return withStoreOperation(operation, async (activeOperation) => {
-        const page = await getCoursePageByPublicKey(activeOperation, id);
+        const page = await loadActivePublicCourses(activeOperation, programKey);
         return {
           selected: page.selected ? toCourseResponse(page.selected) : null,
-          family: page.family.map(toCourseResponse)
+          courses: page.courses.map(toCourseResponse),
+          selectionMatched: page.selectionMatched
         };
       });
     },

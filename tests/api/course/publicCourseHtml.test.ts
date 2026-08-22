@@ -5,7 +5,11 @@ import {
   toPublicCourseView
 } from '../../../api/_lib/courses/publicHtml.js';
 import { formatWhatsappHtml } from '../../../api/_lib/courses/whatsappHtml.js';
-import { publicCourseSlug } from '../../../shared/contracts/courseDefaults.mjs';
+import {
+  publicCourseProgramKey,
+  publicCoursesPath,
+  selectActivePublicCourses
+} from '../../../shared/contracts/courseDefaults.mjs';
 
 const COURSE = {
   id: 'crsHpNcr01AbcDefGhiJK',
@@ -20,9 +24,10 @@ const COURSE = {
 describe('public course HTML', () => {
   it('includes OG tags in the first HTML response without client JS', () => {
     const rendered = renderPublicCourseHtml({
-      course: toPublicCourseView(COURSE),
+      selected: toPublicCourseView(COURSE),
       origin: 'https://aolf.club',
-      logoUrl: 'https://aolf.club/assets/aolf-connect-logo.png'
+      fallbackImageUrl: 'https://aolf.club/assets/course.webp',
+      programKey: 'hp'
     });
 
     expect(rendered.status).toBe(200);
@@ -33,7 +38,9 @@ describe('public course HTML', () => {
     expect(rendered.html).toContain(
       'content="https://aolf.club/course/crsHpNcr01AbcDefGhiJK/pamphlet"'
     );
-    expect(rendered.html).toContain('content="https://aolf.club/c/hp"');
+    expect(rendered.html).toContain(
+      'content="https://aolf.club/courses?program=hp"'
+    );
     expect(rendered.html).not.toContain('<h1>');
     expect(rendered.html).not.toContain('<dt>Type</dt>');
     expect(rendered.html).not.toContain('<dt>Month</dt>');
@@ -47,9 +54,10 @@ describe('public course HTML', () => {
       '<em><strong>Hello</strong></em> and <strong>bold</strong> and <em>italic</em>'
     );
     const rendered = renderPublicCourseHtml({
-      course: toPublicCourseView(COURSE),
+      selected: toPublicCourseView(COURSE),
       origin: 'https://aolf.club',
-      logoUrl: 'https://aolf.club/assets/aolf-connect-logo.png'
+      fallbackImageUrl: 'https://aolf.club/assets/course.webp',
+      programKey: 'hp'
     });
     expect(rendered.html).toContain(
       '<em><strong>HAPPINESS PROGRAM</strong></em>'
@@ -76,12 +84,13 @@ describe('public course HTML', () => {
     const blobUrl =
       'https://store123.public.blob.vercel-storage.com/courses/crsHpNcr01AbcDefGhiJK/pamphlet.png';
     const rendered = renderPublicCourseHtml({
-      course: toPublicCourseView({
+      selected: toPublicCourseView({
         ...COURSE,
         pamphletImageUrl: blobUrl
       }),
       origin: 'https://aolf.club',
-      logoUrl: 'https://aolf.club/assets/aolf-connect-logo.png'
+      fallbackImageUrl: 'https://aolf.club/assets/course.webp',
+      programKey: 'hp'
     });
 
     expect(rendered.html).toContain('content="' + blobUrl + '"');
@@ -92,13 +101,14 @@ describe('public course HTML', () => {
 
   it('escapes stored markup and omits audit fields', () => {
     const rendered = renderPublicCourseHtml({
-      course: toPublicCourseView({
+      selected: toPublicCourseView({
         ...COURSE,
         title: '<script>alert(1)</script>',
         whatsappTemplate: 'Hello <b>there</b>'
       }),
       origin: 'https://aolf.club',
-      logoUrl: 'https://aolf.club/assets/aolf-connect-logo.png'
+      fallbackImageUrl: 'https://aolf.club/assets/course.webp',
+      programKey: 'hp'
     });
 
     expect(rendered.html).toContain('Hello &lt;b&gt;there&lt;/b&gt;');
@@ -111,9 +121,9 @@ describe('public course HTML', () => {
 
   it('returns a non-leaking 404 for a missing course', () => {
     const rendered = renderPublicCourseHtml({
-      course: null,
+      selected: null,
       origin: 'https://aolf.club',
-      logoUrl: 'https://aolf.club/assets/aolf-connect-logo.png'
+      fallbackImageUrl: 'https://aolf.club/assets/course.webp'
     });
 
     expect(rendered.status).toBe(404);
@@ -122,7 +132,7 @@ describe('public course HTML', () => {
     expect(rendered.html).not.toContain('og:image');
   });
 
-  it('renders IP age-group tabs for a shared family page', () => {
+  it('renders active programs as links on one tabbed page', () => {
     const junior = toPublicCourseView({
       id: 'crsIpJnr01AbcDefGhiJK',
       title: 'IP · 5–8',
@@ -144,29 +154,68 @@ describe('public course HTML', () => {
         'https://store123.public.blob.vercel-storage.com/courses/s/pamphlet.png'
     });
     const rendered = renderPublicCourseHtml({
-      course: junior,
-      family: [junior, senior],
+      selected: junior,
+      courses: [junior, senior],
       origin: 'https://aolf.club',
-      logoUrl: 'https://aolf.club/assets/aolf-connect-logo.png',
-      pageUrl: 'https://aolf.club/c/ip-j'
+      fallbackImageUrl: 'https://aolf.club/assets/course.webp',
+      programKey: 'ip-j'
     });
-    expect(rendered.html).toContain('content="https://aolf.club/c/ip-j"');
+    expect(rendered.html).toContain(
+      'content="https://aolf.club/courses?program=ip-j"'
+    );
     expect(rendered.html).toContain(
       'content="https://store123.public.blob.vercel-storage.com/courses/j/pamphlet.png"'
     );
-    expect(rendered.html).toContain('for="tab-p0"');
-    expect(rendered.html).toContain('for="tab-p1"');
+    expect(rendered.html).toContain('role="tablist"');
+    expect(rendered.html).toContain('aria-selected="true"');
+    expect(rendered.html).toContain('href="/courses?program=ip-j"');
+    expect(rendered.html).toContain('href="/courses?program=ip-s"');
     expect(rendered.html).toContain('5–8');
     expect(rendered.html).toContain('8–18');
     expect(rendered.html).toContain('href="https://aolt.in/j"');
     expect(rendered.html).toContain('href="https://aolt.in/s"');
   });
+
+  it('uses generic metadata for the page without a selected program', () => {
+    const rendered = renderPublicCourseHtml({
+      selected: toPublicCourseView(COURSE),
+      courses: [toPublicCourseView(COURSE)],
+      origin: 'https://aolf.club',
+      fallbackImageUrl: 'https://aolf.club/assets/course.webp'
+    });
+
+    expect(rendered.html).toContain('content="AOLF Courses"');
+    expect(rendered.html).toContain(
+      'content="https://aolf.club/assets/course.webp"'
+    );
+    expect(rendered.html).toContain('content="https://aolf.club/courses"');
+  });
 });
 
-describe('public course slug', () => {
-  it('builds a type or type-program slug', () => {
-    expect(publicCourseSlug('HP', '')).toBe('hp');
-    expect(publicCourseSlug('IP', 'j')).toBe('ip-j');
-    expect(publicCourseSlug('YES+', '')).toBe('yes');
+describe('public course selection', () => {
+  it('builds unified paths for a program selection', () => {
+    expect(publicCourseProgramKey('HP', '')).toBe('hp');
+    expect(publicCourseProgramKey('IP', 'j')).toBe('ip-j');
+    expect(publicCourseProgramKey('YES+', '')).toBe('yes');
+    expect(publicCoursesPath('ip-j')).toBe('/courses?program=ip-j');
+    expect(publicCoursesPath()).toBe('/courses');
+  });
+
+  it('keeps active courses in source order and excludes inactive courses', () => {
+    const activeHp = { courseType: 'HP', isActive: true };
+    const inactiveDsn = { courseType: 'DSN', isActive: false };
+    const activeIp = {
+      courseType: 'IP',
+      programCode: 's',
+      isActive: true
+    };
+    const result = selectActivePublicCourses(
+      [activeHp, inactiveDsn, activeIp],
+      'ip-s'
+    );
+
+    expect(result.courses).toEqual([activeHp, activeIp]);
+    expect(result.selected).toBe(activeIp);
+    expect(result.selectionMatched).toBe(true);
   });
 });

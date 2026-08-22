@@ -56,7 +56,7 @@ describe('AOLF Connect frontend presentation', () => {
     expect(viteConfig).toContain(
       "volunteer: resolve(__dirname, 'src/volunteer.html')"
     );
-    expect(viteConfig).toContain('servePublicCoursePage');
+    expect(viteConfig).toContain('servePublicCoursesPage');
     expect(viteConfig).not.toContain(
       "login: resolve(__dirname, 'src/login.html')"
     );
@@ -69,20 +69,12 @@ describe('AOLF Connect frontend presentation', () => {
       destination: '/api/courses?id=:id'
     });
     expect(vercelConfig.rewrites).toContainEqual({
+      source: '/courses',
+      destination: '/api/public-courses'
+    });
+    expect(vercelConfig.rewrites).toContainEqual({
       source: '/course/:id/pamphlet',
-      destination: '/api/course/:id?asset=pamphlet'
-    });
-    expect(vercelConfig.rewrites).toContainEqual({
-      source: '/api/course/:id/pamphlet',
-      destination: '/api/course/:id?asset=pamphlet'
-    });
-    expect(vercelConfig.rewrites).toContainEqual({
-      source: '/c/:id',
-      destination: '/api/course/:id'
-    });
-    expect(vercelConfig.rewrites).not.toContainEqual({
-      source: '/course/:id',
-      destination: '/api/course/:id'
+      destination: '/api/public-courses?asset=pamphlet&id=:id'
     });
     expect(existsSync(legacyLoginUrl)).toBe(false);
   });

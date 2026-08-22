@@ -33,8 +33,7 @@ import { ZodError } from 'zod';
 import {
   defaultCourseTemplates,
   homepageProgramOffers,
-  pickPublicCourseByKey,
-  pickPublicCoursesByKey
+  selectActivePublicCourses
 } from '../../../shared/contracts/courseDefaults.mjs';
 import { mockBootstrapData } from '../../../src/repositories/mock/mockData.js';
 import { mockCourses } from '../../../src/repositories/mock/mockCourses.js';
@@ -387,21 +386,17 @@ export async function deleteCourseForUser(payload: DeleteCourseRequest) {
   });
 }
 
-export async function getPublicCourseById(id: string) {
-  const course = pickPublicCourseByKey(getStore().courses, id);
-  return course ? toCourseResponse(course) : null;
-}
-
-export async function getPublicCoursePage(id: string) {
-  const page = pickPublicCoursesByKey(getStore().courses, id);
+export async function getPublicCourses(programKey = '') {
+  const page = selectActivePublicCourses(getStore().courses, programKey);
   return {
     selected: page.selected ? toCourseResponse(page.selected) : null,
-    family: page.family.map((course) => toCourseResponse(course))
+    courses: page.courses.map((course) => toCourseResponse(course)),
+    selectionMatched: page.selectionMatched
   };
 }
 
 export async function getPublicCoursePamphlet(id: string) {
-  const course = pickPublicCourseByKey(getStore().courses, id);
+  const course = getStore().courses.find((item) => item.id === id);
   if (!course?.pamphletFileId) {
     return null;
   }

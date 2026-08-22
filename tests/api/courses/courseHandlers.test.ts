@@ -75,7 +75,7 @@ describe('course API handlers', () => {
           code: 'HP',
           label: 'Happiness Program',
           active: true,
-          registerPath: '/c/hp'
+          registerPath: '/courses?program=hp'
         }
       ]
     });
@@ -87,7 +87,9 @@ describe('course API handlers', () => {
     expect(state.statusCode).toBe(200);
     expect(state.body).toMatchObject({
       success: true,
-      offers: [{ code: 'HP', active: true, registerPath: '/c/hp' }]
+      offers: [
+        { code: 'HP', active: true, registerPath: '/courses?program=hp' }
+      ]
     });
     expect(mockReadSessionUser).not.toHaveBeenCalled();
     expect(mockStore.listCoursesForAuthorizedUser).not.toHaveBeenCalled();

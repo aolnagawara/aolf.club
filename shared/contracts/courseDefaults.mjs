@@ -137,14 +137,10 @@ export function formatCourseTitle(courseType, programCode) {
   return label ? type + ' · ' + label : type;
 }
 
-export function publicCourseFamilySlug(courseType) {
-  return normalizeCourseType(courseType)
+export function publicCourseProgramKey(courseType, programCode) {
+  const type = normalizeCourseType(courseType)
     .toLowerCase()
     .replace(/[^a-z0-9]/g, '');
-}
-
-export function publicCourseSlug(courseType, programCode) {
-  const type = publicCourseFamilySlug(courseType);
   if (!type) {
     return '';
   }
@@ -152,71 +148,35 @@ export function publicCourseSlug(courseType, programCode) {
   return code ? type + '-' + code : type;
 }
 
-export function publicCoursePath(courseType, programCode) {
-  const slug = publicCourseSlug(courseType, programCode);
-  return slug ? '/c/' + encodeURIComponent(slug) : '';
+export function publicCoursesPath(programKey) {
+  const key = String(programKey || '')
+    .trim()
+    .toLowerCase();
+  return key ? '/courses?program=' + encodeURIComponent(key) : '/courses';
 }
 
-export function publicCourseFamilyPath(courseType) {
-  const slug = publicCourseFamilySlug(courseType);
-  return slug ? '/c/' + encodeURIComponent(slug) : '';
-}
-
-function sortPublicCourses(left, right) {
-  if (Boolean(left.isActive) !== Boolean(right.isActive)) {
-    return left.isActive ? -1 : 1;
-  }
-  const programCmp = String(
-    normalizeProgramCode(left.courseType, left.programCode)
-  ).localeCompare(
-    String(normalizeProgramCode(right.courseType, right.programCode))
+export function selectActivePublicCourses(courses, programKey) {
+  const activeCourses = (Array.isArray(courses) ? courses : []).filter(
+    (course) => Boolean(course && course.isActive)
   );
-  if (programCmp) {
-    return programCmp;
-  }
-  return String(right.updatedAt || '').localeCompare(
-    String(left.updatedAt || '')
-  );
-}
-
-export function pickPublicCoursesByKey(courses, key) {
-  const wanted = String(key || '').trim();
-  const list = (Array.isArray(courses) ? courses : []).filter(Boolean);
-  if (!wanted) {
-    return { selected: null, family: [] };
-  }
-  const slug = wanted.toLowerCase();
-  const exact = list
-    .filter(
-      (course) =>
-        publicCourseSlug(course.courseType, course.programCode) === slug
-    )
-    .sort(sortPublicCourses);
-  if (exact.length) {
-    const selected = exact[0];
-    const family = list
-      .filter(
+  const wanted = String(programKey || '')
+    .trim()
+    .toLowerCase();
+  const matched = wanted
+    ? activeCourses.find(
         (course) =>
-          publicCourseFamilySlug(course.courseType) ===
-          publicCourseFamilySlug(selected.courseType)
+          publicCourseProgramKey(course.courseType, course.programCode) ===
+          wanted
+      ) ||
+      activeCourses.find(
+        (course) => publicCourseProgramKey(course.courseType) === wanted
       )
-      .sort(sortPublicCourses);
-    return { selected, family };
-  }
-  const family = list
-    .filter((course) => publicCourseFamilySlug(course.courseType) === slug)
-    .sort(sortPublicCourses);
-  return { selected: family[0] || null, family };
-}
-
-export function pickPublicCourseByKey(courses, key) {
-  const wanted = String(key || '').trim();
-  const list = (Array.isArray(courses) ? courses : []).filter(Boolean);
-  const byId = list.find((course) => course.id === wanted);
-  if (byId) {
-    return byId;
-  }
-  return pickPublicCoursesByKey(courses, key).selected;
+    : null;
+  return {
+    selected: matched || activeCourses[0] || null,
+    courses: activeCourses,
+    selectionMatched: Boolean(matched)
+  };
 }
 
 export function defaultCourseTemplates() {
@@ -244,17 +204,17 @@ export const HOMEPAGE_PROGRAM_OFFERS = Object.freeze([
 export function homepageProgramOffers(courses) {
   const list = Array.isArray(courses) ? courses : [];
   return HOMEPAGE_PROGRAM_OFFERS.map((offer) => {
-    const family = publicCourseFamilySlug(offer.code);
+    const programKey = publicCourseProgramKey(offer.code);
     const active = list.some(
       (course) =>
         Boolean(course && course.isActive) &&
-        publicCourseFamilySlug(course.courseType) === family
+        publicCourseProgramKey(course.courseType) === programKey
     );
     return {
       code: offer.code,
       label: offer.label,
       active,
-      registerPath: publicCourseFamilyPath(offer.code)
+      registerPath: publicCoursesPath(programKey)
     };
   });
 }

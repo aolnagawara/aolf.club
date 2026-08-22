@@ -34,34 +34,21 @@ export function formatCourseTitle(
   programCode?: string
 ): string;
 export function publicCoursePamphletPath(id: string): string;
-export function publicCourseFamilySlug(courseType: string): string;
-export function publicCourseSlug(
+export function publicCourseProgramKey(
   courseType: string,
   programCode?: string
 ): string;
-export function publicCoursePath(
-  courseType: string,
-  programCode?: string
-): string;
-export function publicCourseFamilyPath(courseType: string): string;
-export function pickPublicCoursesByKey<
+export function publicCoursesPath(programKey?: string): string;
+export function selectActivePublicCourses<
   T extends {
-    id?: string;
     courseType?: string;
     programCode?: string;
     isActive?: boolean;
-    updatedAt?: string;
   }
->(courses: T[], key: string): { selected: T | null; family: T[] };
-export function pickPublicCourseByKey<
-  T extends {
-    id?: string;
-    courseType?: string;
-    programCode?: string;
-    isActive?: boolean;
-    updatedAt?: string;
-  }
->(courses: T[], key: string): T | null;
+>(
+  courses: T[],
+  programKey?: string
+): { selected: T | null; courses: T[]; selectionMatched: boolean };
 export function defaultCourseTemplates(): Array<{
   courseType: string;
   template: string;

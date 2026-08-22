@@ -13,7 +13,8 @@ import {
   normalizeProgramCode,
   programLabelFor,
   programsForCourseType,
-  publicCoursePath,
+  publicCourseProgramKey,
+  publicCoursesPath,
   templateForCourseType,
   templateLookupKeys
 } from '../../../shared/contracts/courseDefaults.mjs';
@@ -104,9 +105,8 @@ export function createCourseWorkspaceMethods() {
       if (title && title !== displayTitle) {
         return title;
       }
-      return (
-        course.publicPath ||
-        publicCoursePath(course.courseType, course.programCode)
+      return publicCoursesPath(
+        publicCourseProgramKey(course.courseType, course.programCode)
       );
     },
     templateForType(
@@ -247,9 +247,9 @@ export function createCourseWorkspaceMethods() {
       this.courseDraft = createEmptyCourseDraft();
     },
     previewCourse(this: SevaWorkspaceContext, course: Course): void {
-      window.location.href =
-        course.publicPath ||
-        publicCoursePath(course.courseType, course.programCode);
+      window.location.href = publicCoursesPath(
+        publicCourseProgramKey(course.courseType, course.programCode)
+      );
     },
     async saveCourse(this: SevaWorkspaceContext): Promise<void> {
       if (this.isCourseSaving) {

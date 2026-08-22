@@ -21,7 +21,6 @@ import {
   defaultCourseTemplates,
   formatCourseTitle,
   publicCoursePamphletPath,
-  publicCoursePath,
   templateForCourseType
 } from '../../../shared/contracts/courseDefaults.mjs';
 import { mockCourses } from './mockCourses';
@@ -50,7 +49,6 @@ function toCourse(
         parsed.pamphletBase64
       : options.existing?.pamphletImageUrl ||
         (hasPamphlet ? publicCoursePamphletPath(options.id) : ''),
-    publicPath: publicCoursePath(parsed.courseType, parsed.programCode),
     createdAt: options.existing?.createdAt || new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     createdBy: options.existing?.createdBy || 'volunteer@example.com',

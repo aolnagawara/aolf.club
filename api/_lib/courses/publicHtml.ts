@@ -1,8 +1,7 @@
 import {
   programLabelFor,
-  publicCourseFamilyPath,
-  publicCourseFamilySlug,
-  publicCoursePath
+  publicCourseProgramKey,
+  publicCoursesPath
 } from '../../../shared/contracts/courseDefaults.mjs';
 import { fillCourseWhatsappTemplate } from '../../../shared/contracts/courseMatching.js';
 import { formatWhatsappHtml } from './whatsappHtml.js';
@@ -19,7 +18,6 @@ export type PublicCourseView = {
   courseType: string;
   programCode: string;
   programLabel: string;
-  publicPath: string;
   detailsText: string;
   hasPamphlet: boolean;
   pamphletImageUrl: string;
@@ -60,7 +58,6 @@ export function toPublicCourseView(course: {
   title?: string;
   courseType?: string;
   programCode?: string;
-  publicPath?: string;
   whatsappTemplate?: string;
   hasPamphlet?: boolean;
   pamphletImageUrl?: string;
@@ -68,9 +65,6 @@ export function toPublicCourseView(course: {
   const courseType = course.courseType || '';
   const programCode = course.programCode || '';
   const title = course.title || '';
-  const publicPath =
-    String(course.publicPath || '').trim() ||
-    publicCoursePath(courseType, programCode);
   const detailsText = fillCourseWhatsappTemplate(
     course.whatsappTemplate || '',
     {
@@ -87,17 +81,20 @@ export function toPublicCourseView(course: {
     courseType,
     programCode,
     programLabel: programLabelFor(courseType, programCode),
-    publicPath,
     detailsText,
     hasPamphlet: Boolean(course.hasPamphlet || course.pamphletImageUrl),
     pamphletImageUrl: String(course.pamphletImageUrl || '').trim()
   };
 }
 
-function renderPanel(origin: string, course: PublicCourseView): string {
+function renderPanel(
+  origin: string,
+  course: PublicCourseView,
+  selected: boolean
+): string {
   const pamphletUrl = absolutePamphletUrl(origin, course);
   const pamphlet = pamphletUrl
-    ? `<img src="${escapeHtml(pamphletUrl)}" alt="${escapeHtml(course.title)} pamphlet" />`
+    ? `<img src="${escapeHtml(pamphletUrl)}" alt="${escapeHtml(course.title)} pamphlet" loading="${selected ? 'eager' : 'lazy'}" />`
     : '';
   const details = course.detailsText
     ? `<div class="details">${formatWhatsappHtml(course.detailsText)}</div>`
@@ -120,87 +117,68 @@ const NOT_FOUND_HTML = `<!doctype html>
   </body>
 </html>`;
 
-function tabId(index: number): string {
-  return 'p' + String(index);
-}
-
 export function renderPublicCourseHtml(options: {
-  course?: PublicCourseView | null;
-  family?: PublicCourseView[];
+  selected?: PublicCourseView | null;
+  courses?: PublicCourseView[];
   origin: string;
-  logoUrl: string;
-  pageUrl?: string;
+  fallbackImageUrl: string;
+  programKey?: string;
 }): { status: number; html: string } {
-  const family = (
-    options.family && options.family.length
-      ? options.family
-      : options.course
-        ? [options.course]
+  const courses = (
+    options.courses && options.courses.length
+      ? options.courses
+      : options.selected
+        ? [options.selected]
         : []
   ).filter(Boolean);
-  const selected = options.course || family[0] || null;
+  const selected = options.selected || courses[0] || null;
   if (!selected) {
     return { status: 404, html: NOT_FOUND_HTML };
   }
 
   const origin = options.origin.replace(/\/$/, '');
-  const pageUrl =
-    options.pageUrl ||
-    `${origin}${selected.publicPath || '/c/' + encodeURIComponent(selected.id)}`;
+  const programKey = String(options.programKey || '')
+    .trim()
+    .toLowerCase();
+  const pageUrl = origin + publicCoursesPath(programKey);
   const pamphletUrl = absolutePamphletUrl(origin, selected);
-  const ogImage = pamphletUrl || options.logoUrl;
-  const ogDescription =
-    stripMarkupMarkers(selected.detailsText).slice(0, 160) || selected.title;
-  const showTabs = family.length > 1;
-  let tabInputs = '';
-  let tabLabels = '';
-  let panels = `<div class="panels"><section class="panel">${renderPanel(origin, selected)}</section></div>`;
-  let tabCss = '.panel { display: block; }';
+  const ogTitle = programKey ? selected.title : 'AOLF Courses';
+  const ogImage = programKey
+    ? pamphletUrl || options.fallbackImageUrl
+    : options.fallbackImageUrl;
+  const ogDescription = programKey
+    ? stripMarkupMarkers(selected.detailsText).slice(0, 160) || selected.title
+    : 'Explore active AOLF programs, course details, and registration information.';
+  const showTabs = courses.length > 1;
+  let tabs = '';
+  let panels = `<div class="panels"><section class="panel active">${renderPanel(origin, selected, true)}</section></div>`;
   if (showTabs) {
-    tabInputs = family
-      .map((course, index) => {
-        const checked =
-          course.id === selected.id ||
-          (!family.some((item) => item.id === selected.id) && index === 0)
-            ? ' checked'
-            : '';
-        return `<input class="tab-radio" type="radio" name="program" id="tab-${tabId(index)}"${checked} />`;
-      })
-      .join('');
-    tabLabels =
-      '<nav class="tabs">' +
-      family
+    tabs =
+      '<nav class="tabs" role="tablist" aria-label="Active programs">' +
+      courses
         .map(
-          (course, index) =>
-            `<label for="tab-${tabId(index)}">${escapeHtml(
-              course.programLabel || course.title
-            )}</label>`
+          (course) =>
+            `<a role="tab" aria-selected="${course.id === selected.id ? 'true' : 'false'}" class="${course.id === selected.id ? 'active' : ''}" href="${escapeHtml(
+              publicCoursesPath(
+                publicCourseProgramKey(course.courseType, course.programCode)
+              )
+            )}">${escapeHtml(course.title || course.programLabel)}</a>`
         )
         .join('') +
       '</nav>';
     panels =
       '<div class="panels">' +
-      family
-        .map(
-          (course, index) =>
-            `<section class="panel panel-${tabId(index)}">${renderPanel(origin, course)}</section>`
-        )
+      courses
+        .map((course) => {
+          const isSelected = course.id === selected.id;
+          return (
+            `<section class="panel${isSelected ? ' active' : ''}" role="tabpanel">` +
+            renderPanel(origin, course, isSelected) +
+            '</section>'
+          );
+        })
         .join('') +
       '</div>';
-    tabCss =
-      family
-        .map(
-          (_course, index) =>
-            `#tab-${tabId(index)}:checked ~ .panels .panel-${tabId(index)} { display: block; }`
-        )
-        .join('\n      ') +
-      '\n      ' +
-      family
-        .map(
-          (_course, index) =>
-            `#tab-${tabId(index)}:checked ~ .tabs label[for="tab-${tabId(index)}"] { background: #0f766e; color: #fff; }`
-        )
-        .join('\n      ');
   }
 
   return {
@@ -210,10 +188,13 @@ export function renderPublicCourseHtml(options: {
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>${escapeHtml(selected.title)}</title>
-    <meta property="og:title" content="${escapeHtml(selected.title)}" />
+    <title>${escapeHtml(ogTitle)}</title>
+    <link rel="canonical" href="${escapeHtml(pageUrl)}" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="${escapeHtml(ogTitle)}" />
     <meta property="og:description" content="${escapeHtml(ogDescription)}" />
     <meta property="og:image" content="${escapeHtml(ogImage)}" />
+    <meta property="og:image:alt" content="${escapeHtml(programKey ? selected.title + ' pamphlet' : 'AOLF courses')}" />
     <meta property="og:url" content="${escapeHtml(pageUrl)}" />
     <style>
       body { font-family: sans-serif; margin: 0; background: #f8fafc; color: #0f172a; }
@@ -222,39 +203,19 @@ export function renderPublicCourseHtml(options: {
       .details { white-space: pre-wrap; font-size: 0.95rem; line-height: 1.45; margin-top: 0.75rem; }
       .details a { color: #0f766e; text-decoration: underline; word-break: break-word; }
       .details code { font-family: ui-monospace, monospace; font-size: 0.9em; }
-      .tab-radio { position: absolute; opacity: 0; pointer-events: none; }
-      .tabs { display: flex; gap: 0.5rem; margin: 0 0 1rem; }
-      .tabs label { flex: 1; text-align: center; padding: 0.6rem 0.5rem; border-radius: 0.75rem; background: #e2e8f0; font-size: 0.9rem; cursor: pointer; }
+      .tabs { display: grid; grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr)); gap: 0.5rem; margin: 0 0 1rem; }
+      .tabs a { text-align: center; padding: 0.6rem 0.5rem; border-radius: 0.5rem; background: #e2e8f0; color: #334155; font-size: 0.9rem; font-weight: 600; text-decoration: none; }
+      .tabs a.active { background: #0f766e; color: #fff; }
       .panel { display: none; }
-      ${tabCss}
+      .panel.active { display: block; }
     </style>
   </head>
   <body>
     <main>
-      ${tabInputs}
-      ${tabLabels}
+      ${tabs}
       ${panels}
     </main>
   </body>
 </html>`
   };
-}
-
-export function publicPageUrlForKey(
-  origin: string,
-  key: string,
-  selected: PublicCourseView
-): string {
-  const base = origin.replace(/\/$/, '');
-  const wanted = String(key || '')
-    .trim()
-    .toLowerCase();
-  if (wanted && publicCourseFamilySlug(selected.courseType) === wanted) {
-    return base + publicCourseFamilyPath(selected.courseType);
-  }
-  return (
-    base +
-    (selected.publicPath ||
-      publicCoursePath(selected.courseType, selected.programCode))
-  );
 }

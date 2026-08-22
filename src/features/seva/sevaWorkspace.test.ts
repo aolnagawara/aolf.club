@@ -325,7 +325,6 @@ describe('Seva workspace lead lifecycle', () => {
       isActive: true,
       hasPamphlet: false,
       pamphletImageUrl: '',
-      publicPath: '/c/hp',
       createdAt: '',
       updatedAt: '',
       createdBy: '',
@@ -337,7 +336,7 @@ describe('Seva workspace lead lifecycle', () => {
     expect(app.buildWhatsappHref(lead, course)).toContain('919876543210');
     expect(app.buildWhatsappHref(lead, course)).not.toContain('91919876543210');
     expect(app.buildWhatsappHref(lead, course)).toContain(
-      encodeURIComponent('https://aolf.club/c/hp')
+      encodeURIComponent('https://aolf.club/courses?program=hp')
     );
     const hpTemplateHref = app.buildWhatsappHref(lead, {
       ...course,
@@ -347,9 +346,9 @@ describe('Seva workspace lead lifecycle', () => {
     const hpMessage = decodeURIComponent(
       hpTemplateHref.split('text=')[1] || ''
     );
-    expect(hpMessage.indexOf('https://aolf.club/c/hp')).toBeLessThan(
-      hpMessage.indexOf('https://aolt.in/874234')
-    );
+    expect(
+      hpMessage.indexOf('https://aolf.club/courses?program=hp')
+    ).toBeLessThan(hpMessage.indexOf('https://aolt.in/874234'));
     app.dialLead(lead);
     expect(window.location.href).toBe('tel:+919876543210');
   });
@@ -390,7 +389,6 @@ describe('Seva workspace lead lifecycle', () => {
       isActive: true,
       hasPamphlet: false,
       pamphletImageUrl: '',
-      publicPath: '/c/hp',
       createdAt: '',
       updatedAt: '',
       createdBy: '',
@@ -799,7 +797,6 @@ describe('Seva workspace course management', () => {
       isActive: true,
       hasPamphlet: true,
       pamphletImageUrl: '/course/crsHpNcr01AbcDefGhiJK/pamphlet',
-      publicPath: '/c/hp',
       createdAt: '',
       updatedAt: '',
       createdBy: '',
@@ -851,7 +848,6 @@ describe('Seva workspace course management', () => {
       isActive: true,
       hasPamphlet: false,
       pamphletImageUrl: '',
-      publicPath: '/c/hp',
       createdAt: '',
       updatedAt: '',
       createdBy: '',
@@ -862,7 +858,7 @@ describe('Seva workspace course management', () => {
     expect(app.coursePickerSubtitle(course)).toBe('Weekend Happiness Program');
     expect(
       app.coursePickerSubtitle({ ...course, title: 'Happiness Program' })
-    ).toBe('/c/hp');
+    ).toBe('/courses?program=hp');
   });
 });
 

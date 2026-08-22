@@ -17,20 +17,12 @@
       "destination": "/api/courses?id=:id"
     },
     {
-      "source": "/c/:id/pamphlet",
-      "destination": "/api/course/:id?asset=pamphlet"
-    },
-    {
-      "source": "/c/:id",
-      "destination": "/api/course/:id"
+      "source": "/courses",
+      "destination": "/api/public-courses"
     },
     {
       "source": "/course/:id/pamphlet",
-      "destination": "/api/course/:id?asset=pamphlet"
-    },
-    {
-      "source": "/api/course/:id/pamphlet",
-      "destination": "/api/course/:id?asset=pamphlet"
+      "destination": "/api/public-courses?asset=pamphlet&id=:id"
     }
   ]
 }

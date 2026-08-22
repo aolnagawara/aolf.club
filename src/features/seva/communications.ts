@@ -9,7 +9,8 @@ import {
 } from '../../config/campaignDefaults';
 import {
   DEFAULT_COURSE_WHATSAPP_TEMPLATE,
-  publicCoursePath
+  publicCourseProgramKey,
+  publicCoursesPath
 } from '../../../shared/contracts/courseDefaults.mjs';
 import {
   ensureCourseUrlInMessage,
@@ -82,8 +83,9 @@ export function createCommunicationMethods() {
       if (course) {
         const courseUrl =
           String(window.location.origin || '').replace(/\/$/, '') +
-          (course.publicPath ||
-            publicCoursePath(course.courseType, course.programCode));
+          publicCoursesPath(
+            publicCourseProgramKey(course.courseType, course.programCode)
+          );
         message = ensureCourseUrlInMessage(
           fillCourseWhatsappTemplate(
             course.whatsappTemplate || DEFAULT_COURSE_WHATSAPP_TEMPLATE,

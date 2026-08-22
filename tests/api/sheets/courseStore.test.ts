@@ -159,19 +159,19 @@ describe('Sheets course store', () => {
     expect(updated.allowed && updated.value.course.title).toBe('HP');
     expect(updated.allowed && updated.value.course.isActive).toBe(false);
 
-    const publicInactive = await store.getPublicCourseById(
-      created.value.course.id
-    );
-    expect(publicInactive?.title).toBe('HP');
+    const publicInactive = await store.getPublicCourses('hp');
+    expect(publicInactive.courses).toEqual([]);
+    expect(publicInactive.selectionMatched).toBe(false);
 
     const deleted = await store.deleteCourseForAuthorizedUser(USER, {
       id: created.value.course.id
     });
     expect(deleted.allowed).toBe(true);
     expect(deleteSheetRow).toHaveBeenCalledOnce();
-    await expect(
-      store.getPublicCourseById(created.value.course.id)
-    ).resolves.toBeNull();
+    await expect(store.getPublicCourses('hp')).resolves.toMatchObject({
+      courses: [],
+      selectionMatched: false
+    });
   });
 
   it('stores an uploaded pamphlet and serves it from the public reader', async () => {
@@ -188,7 +188,6 @@ describe('Sheets course store', () => {
       return;
     }
     expect(created.value.course.hasPamphlet).toBe(true);
-    expect(created.value.course.publicPath).toBe('/c/hp');
     expect(created.value.course.pamphletImageUrl).toBe(
       '/course/' + created.value.course.id + '/pamphlet'
     );

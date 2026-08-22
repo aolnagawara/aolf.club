@@ -3,16 +3,14 @@ import { resolve } from 'node:path';
 import { mockCourses } from './src/repositories/mock/mockCourses';
 import {
   homepageProgramOffers,
-  pickPublicCourseByKey,
-  pickPublicCoursesByKey
+  selectActivePublicCourses
 } from './shared/contracts/courseDefaults.mjs';
 import {
   renderPublicCourseHtml,
   toPublicCourseView
 } from './api/_lib/courses/publicHtml';
 
-const COURSE_PAMPHLET_PATH = /^\/(?:course|c)\/([^/?#]+)\/pamphlet\/?$/;
-const COURSE_PATH = /^\/c\/([^/?#]+)\/?$/;
+const COURSE_PAMPHLET_PATH = /^\/course\/([^/?#]+)\/pamphlet\/?$/;
 
 type MiddlewareRes = {
   statusCode: number;
@@ -57,7 +55,7 @@ function servePublicCoursePamphlet(
     return false;
   }
   const key = decodeURIComponent(match[1] || '');
-  const course = pickPublicCourseByKey(mockCourses, key);
+  const course = mockCourses.find((item) => item.id === key);
   if (!course?.hasPamphlet) {
     res.statusCode = 404;
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
@@ -70,32 +68,29 @@ function servePublicCoursePamphlet(
   return true;
 }
 
-function servePublicCoursePage(
+function servePublicCoursesPage(
   url: string | undefined,
   host: string | string[] | undefined,
   res: MiddlewareRes
 ): boolean {
-  const pathname = String(url || '').split('?')[0];
-  if (COURSE_PAMPHLET_PATH.test(pathname)) {
+  const requestUrl = new URL(String(url || ''), 'http://localhost');
+  if (requestUrl.pathname !== '/courses') {
     return false;
   }
-  const match = pathname.match(COURSE_PATH);
-  if (!match) {
-    return false;
-  }
-  const key = decodeURIComponent(match[1] || '');
+  const programKey = requestUrl.searchParams.get('program') || '';
   const hostname = Array.isArray(host) ? host[0] : host || 'localhost:5173';
   const origin = 'http://' + hostname;
-  const page = pickPublicCoursesByKey(mockCourses, key);
-  const family = page.family.map((course) => toPublicCourseView(course));
+  const page = selectActivePublicCourses(mockCourses, programKey);
+  const courses = page.courses.map((course) => toPublicCourseView(course));
   const selected = page.selected
     ? toPublicCourseView(page.selected)
-    : family[0] || null;
+    : courses[0] || null;
   const rendered = renderPublicCourseHtml({
-    course: selected,
-    family,
+    selected,
+    courses,
     origin,
-    logoUrl: origin + '/assets/aolf-connect-logo.png'
+    fallbackImageUrl: origin + '/assets/course.webp',
+    programKey: page.selectionMatched ? programKey : ''
   });
   res.statusCode = rendered.status;
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
@@ -138,7 +133,7 @@ function volunteerRewritePlugin() {
         if (servePublicCoursePamphlet(req.url, res)) {
           return;
         }
-        if (servePublicCoursePage(req.url, req.headers?.host, res)) {
+        if (servePublicCoursesPage(req.url, req.headers?.host, res)) {
           return;
         }
         req.url = rewriteVolunteerUrl(req.url);
@@ -163,7 +158,7 @@ function volunteerRewritePlugin() {
         if (servePublicCoursePamphlet(req.url, res)) {
           return;
         }
-        if (servePublicCoursePage(req.url, req.headers?.host, res)) {
+        if (servePublicCoursesPage(req.url, req.headers?.host, res)) {
           return;
         }
         req.url = rewriteVolunteerUrl(req.url);

@@ -14,19 +14,19 @@ describe('homepage program offers', () => {
         code: 'HP',
         label: 'Happiness Program',
         active: true,
-        registerPath: '/c/hp'
+        registerPath: '/courses?program=hp'
       },
       {
         code: 'IP',
         label: 'Intuition Program',
         active: false,
-        registerPath: '/c/ip'
+        registerPath: '/courses?program=ip'
       },
       {
         code: 'Sahaj',
         label: 'Sahaj Samadhi Meditation',
         active: false,
-        registerPath: '/c/sahaj'
+        registerPath: '/courses?program=sahaj'
       }
     ]);
   });
@@ -37,7 +37,7 @@ describe('homepage program offers', () => {
     ]);
     expect(offers.find((offer) => offer.code === 'IP')).toMatchObject({
       active: true,
-      registerPath: '/c/ip'
+      registerPath: '/courses?program=ip'
     });
   });
 });
