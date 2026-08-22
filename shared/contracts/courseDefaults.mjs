@@ -48,8 +48,8 @@ export const DEFAULT_COURSE_TEMPLATE_TYPES = Object.freeze([
 ]);
 
 export const IP_COURSE_PROGRAMS = Object.freeze([
-  Object.freeze({ code: 'j', label: '5–8' }),
-  Object.freeze({ code: 's', label: '8–18' })
+  Object.freeze({ code: 'j', label: 'Junior' }),
+  Object.freeze({ code: 's', label: 'Senior' })
 ]);
 
 export function normalizeCourseType(value) {
@@ -134,7 +134,7 @@ export function publicCoursePamphletPath(id) {
 export function formatCourseTitle(courseType, programCode) {
   const type = normalizeCourseType(courseType) || 'Course';
   const label = programLabelFor(courseType, programCode);
-  return label ? type + ' · ' + label : type;
+  return label ? type + ' ' + label : type;
 }
 
 export function publicCourseProgramKey(courseType, programCode) {

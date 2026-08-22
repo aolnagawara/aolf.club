@@ -860,6 +860,59 @@ describe('Seva workspace course management', () => {
       app.coursePickerSubtitle({ ...course, title: 'Happiness Program' })
     ).toBe('/courses?program=hp');
   });
+
+  it('distinguishes IP Junior and Senior in the WhatsApp picker and links', () => {
+    vi.stubGlobal('window', {
+      location: { origin: 'https://aolf.club' }
+    });
+    const app = sevaWorkspace();
+    const junior = {
+      id: 'crsIpJnr01AbcDefGhiJK',
+      courseType: 'IP',
+      programCode: 'j',
+      title: 'IP Junior',
+      whatsappTemplate: 'Junior {courseUrl}',
+      isActive: true,
+      hasPamphlet: false,
+      pamphletImageUrl: '',
+      createdAt: '',
+      updatedAt: '',
+      createdBy: '',
+      updatedBy: ''
+    };
+    const senior = {
+      ...junior,
+      id: 'crsIpSnr01AbcDefGhiJK',
+      programCode: 's',
+      title: 'IP Senior',
+      whatsappTemplate: 'Senior {courseUrl}'
+    };
+    const lead = app.normalizeLead({
+      id: 'leadIpTest01AbcDefGhI',
+      mobile: '9876543210',
+      name: 'IP lead',
+      wishlistPrograms: ['IP'],
+      campaignId: 'cmpLeads01AbcDefGhIJk',
+      campaignType: 'Leads'
+    });
+    app.courses = [junior, senior];
+
+    expect(app.ipPrograms()).toEqual([
+      { code: 'j', label: 'Junior' },
+      { code: 's', label: 'Senior' }
+    ]);
+    expect(app.pickerCourses(lead)).toEqual([junior, senior]);
+    expect(app.courseDisplayTitle(junior)).toBe('IP Junior');
+    expect(app.courseDisplayTitle(senior)).toBe('IP Senior');
+    expect(app.coursePickerSubtitle(junior)).toBe('/courses?program=ip-j');
+    expect(app.coursePickerSubtitle(senior)).toBe('/courses?program=ip-s');
+    expect(app.buildWhatsappHref(lead, junior)).toContain(
+      encodeURIComponent('https://aolf.club/courses?program=ip-j')
+    );
+    expect(app.buildWhatsappHref(lead, senior)).toContain(
+      encodeURIComponent('https://aolf.club/courses?program=ip-s')
+    );
+  });
 });
 
 describe('Seva workspace program editor', () => {

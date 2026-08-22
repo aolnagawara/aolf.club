@@ -203,9 +203,11 @@ export function renderPublicCourseHtml(options: {
       .details { white-space: pre-wrap; font-size: 0.95rem; line-height: 1.45; margin-top: 0.75rem; }
       .details a { color: #0f766e; text-decoration: underline; word-break: break-word; }
       .details code { font-family: ui-monospace, monospace; font-size: 0.9em; }
-      .tabs { display: grid; grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr)); gap: 0.5rem; margin: 0 0 1rem; }
-      .tabs a { text-align: center; padding: 0.6rem 0.5rem; border-radius: 0.5rem; background: #e2e8f0; color: #334155; font-size: 0.9rem; font-weight: 600; text-decoration: none; }
-      .tabs a.active { background: #0f766e; color: #fff; }
+      .tabs { display: flex; gap: 1.25rem; overflow-x: auto; margin: 0 0 1rem; border-bottom: 1px solid #cbd5e1; }
+      .tabs a { flex: 0 0 auto; padding: 0.65rem 0.125rem 0.55rem; border-bottom: 3px solid transparent; color: #475569; font-size: 0.9rem; font-weight: 600; text-decoration: none; white-space: nowrap; }
+      .tabs a:hover { color: #0f766e; }
+      .tabs a:focus-visible { outline: 2px solid #0f766e; outline-offset: 2px; }
+      .tabs a.active { border-color: #0f766e; color: #0f766e; }
       .panel { display: none; }
       .panel.active { display: block; }
     </style>

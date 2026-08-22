@@ -11,7 +11,6 @@ import {
   isIpCourseType,
   normalizeCourseType,
   normalizeProgramCode,
-  programLabelFor,
   programsForCourseType,
   publicCourseProgramKey,
   publicCoursesPath,
@@ -89,6 +88,9 @@ export function createCourseWorkspaceMethods() {
       return isIpCourseType(this.courseDraft.courseType);
     },
     courseDisplayTitle(this: SevaWorkspaceContext, course: Course): string {
+      if (isIpCourseType(course.courseType)) {
+        return formatCourseTitle(course.courseType, course.programCode);
+      }
       const programs =
         this.appConfig.programs.length > 0
           ? this.appConfig.programs
@@ -96,8 +98,7 @@ export function createCourseWorkspaceMethods() {
       const label =
         programs.find((item) => item.code === course.courseType)?.label ||
         course.courseType;
-      const program = programLabelFor(course.courseType, course.programCode);
-      return program ? label + ' · ' + program : label;
+      return label;
     },
     coursePickerSubtitle(this: SevaWorkspaceContext, course: Course): string {
       const displayTitle = this.courseDisplayTitle(course);

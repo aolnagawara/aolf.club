@@ -174,6 +174,37 @@ describe('Sheets course store', () => {
     });
   });
 
+  it('keeps IP Junior and Senior as separate public programs', async () => {
+    const { store } = createFixture([
+      courseRow({
+        id: 'crsIpJnr01AbcDefGhiJK',
+        courseType: 'IP',
+        programCode: 'j',
+        title: 'IP',
+        whatsappTemplate: 'Junior {courseUrl}'
+      }),
+      courseRow({
+        id: 'crsIpSnr01AbcDefGhiJK',
+        courseType: 'IP',
+        programCode: 's',
+        title: 'IP',
+        whatsappTemplate: 'Senior {courseUrl}'
+      })
+    ]);
+
+    const page = await store.getPublicCourses('ip-s');
+
+    expect(page.selectionMatched).toBe(true);
+    expect(page.selected).toMatchObject({
+      programCode: 's',
+      title: 'IP Senior'
+    });
+    expect(page.courses).toMatchObject([
+      { programCode: 'j', title: 'IP Junior' },
+      { programCode: 's', title: 'IP Senior' }
+    ]);
+  });
+
   it('stores an uploaded pamphlet and serves it from the public reader', async () => {
     const { store } = createFixture([]);
     const pamphletBase64 =

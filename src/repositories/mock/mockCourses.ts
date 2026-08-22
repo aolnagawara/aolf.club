@@ -35,6 +35,34 @@ export const mockCourses: Course[] = [
     updatedBy: 'volunteer@example.com'
   },
   {
+    id: 'crsIpJnr01AbcDefGhiJK',
+    courseType: 'IP',
+    programCode: 'j',
+    title: formatCourseTitle('IP', 'j'),
+    whatsappTemplate: DEFAULT_COURSE_WHATSAPP_TEMPLATE,
+    isActive: true,
+    hasPamphlet: false,
+    pamphletImageUrl: '',
+    createdAt: '2026-08-01T12:00:00.000Z',
+    updatedAt: '2026-08-01T12:00:00.000Z',
+    createdBy: 'volunteer@example.com',
+    updatedBy: 'volunteer@example.com'
+  },
+  {
+    id: 'crsIpSnr01AbcDefGhiJK',
+    courseType: 'IP',
+    programCode: 's',
+    title: formatCourseTitle('IP', 's'),
+    whatsappTemplate: DEFAULT_COURSE_WHATSAPP_TEMPLATE,
+    isActive: true,
+    hasPamphlet: false,
+    pamphletImageUrl: '',
+    createdAt: '2026-08-01T12:00:00.000Z',
+    updatedAt: '2026-08-01T12:00:00.000Z',
+    createdBy: 'volunteer@example.com',
+    updatedBy: 'volunteer@example.com'
+  },
+  {
     id: 'crsVtpNc01AbcDefGhiJK',
     courseType: 'VTP',
     programCode: '',

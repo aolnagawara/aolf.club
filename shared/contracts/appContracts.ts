@@ -199,7 +199,7 @@ export const CourseWriteFieldsSchema = z
       if (program !== 'j' && program !== 's') {
         ctx.addIssue({
           code: 'custom',
-          message: 'Choose 5–8 or 8–18 for IP.',
+          message: 'Choose Junior or Senior for IP.',
           path: ['programCode']
         });
       }

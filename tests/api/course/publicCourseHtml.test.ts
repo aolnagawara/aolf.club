@@ -135,7 +135,7 @@ describe('public course HTML', () => {
   it('renders active programs as links on one tabbed page', () => {
     const junior = toPublicCourseView({
       id: 'crsIpJnr01AbcDefGhiJK',
-      title: 'IP · 5–8',
+      title: 'IP Junior',
       courseType: 'IP',
       programCode: 'j',
       whatsappTemplate: 'Junior https://aolt.in/j',
@@ -145,7 +145,7 @@ describe('public course HTML', () => {
     });
     const senior = toPublicCourseView({
       id: 'crsIpSnr01AbcDefGhiJK',
-      title: 'IP · 8–18',
+      title: 'IP Senior',
       courseType: 'IP',
       programCode: 's',
       whatsappTemplate: 'Senior https://aolt.in/s',
@@ -167,11 +167,15 @@ describe('public course HTML', () => {
       'content="https://store123.public.blob.vercel-storage.com/courses/j/pamphlet.png"'
     );
     expect(rendered.html).toContain('role="tablist"');
+    expect(rendered.html).toContain('border-bottom: 3px solid transparent');
+    expect(rendered.html).toContain('.tabs a.active { border-color:');
     expect(rendered.html).toContain('aria-selected="true"');
     expect(rendered.html).toContain('href="/courses?program=ip-j"');
     expect(rendered.html).toContain('href="/courses?program=ip-s"');
-    expect(rendered.html).toContain('5–8');
-    expect(rendered.html).toContain('8–18');
+    expect(rendered.html).toContain('IP Junior');
+    expect(rendered.html).toContain('IP Senior');
+    expect(rendered.html).not.toContain('5–8');
+    expect(rendered.html).not.toContain('8–18');
     expect(rendered.html).toContain('href="https://aolt.in/j"');
     expect(rendered.html).toContain('href="https://aolt.in/s"');
   });

@@ -695,11 +695,10 @@
                       class="text-sm font-semibold text-slate-800 truncate"
                       x-text="courseDisplayTitle(course)"
                     ></h3>
-                    <p class="text-[11px] text-slate-500 truncate">
-                      <span x-text="course.courseType || 'No type'"></span>
-                      <span x-show="course.programCode"> · </span>
-                      <span x-text="course.title"></span>
-                    </p>
+                    <p
+                      class="text-[11px] text-slate-500 truncate"
+                      x-text="coursePickerSubtitle(course)"
+                    ></p>
                   </div>
                   <span
                     class="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold"
@@ -1133,14 +1132,14 @@
                       type="button"
                       class="rounded-md px-2 py-1.5 text-xs font-semibold"
                       :class="courseDraft.programCode === program.code ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'"
-                      x-text="program.label + ' years'"
+                      x-text="program.label"
                       @click="courseDraft.programCode = program.code; onProgramCodeChange()"
                     ></button>
                   </template>
                 </div>
                 <span class="block text-[11px] font-normal text-slate-500">
-                  Add one IP course per age group. Each has its own message and
-                  pamphlet.
+                  Add separate Junior and Senior courses. Each has its own
+                  message and pamphlet.
                 </span>
               </div>
               <label class="block text-xs font-medium text-slate-700">
