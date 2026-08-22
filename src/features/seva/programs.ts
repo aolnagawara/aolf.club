@@ -220,9 +220,6 @@ export function createProgramMethods() {
         return;
       }
       this.programDraft[key] = this.normalizePrograms([...list, normalized]);
-    },
-    saveProgramEditor(this: SevaWorkspaceContext): void {
-      this.applyProgramEditor();
     }
   };
 }

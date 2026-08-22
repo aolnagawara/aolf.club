@@ -131,7 +131,7 @@ export function createUiMethods() {
       this.activeFollowUpLead = null;
       this.followUpDraft = '';
     },
-    saveFollowUpPicker(this: SevaWorkspaceContext): void {
+    applyFollowUpPicker(this: SevaWorkspaceContext): void {
       if (!this.activeFollowUpLead || !this.followUpDraft) {
         this.closeFollowUpPicker();
         return;

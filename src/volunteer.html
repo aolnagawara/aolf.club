@@ -966,10 +966,10 @@
                 </button>
                 <button
                   type="button"
-                  @click="saveFollowUpPicker()"
+                  @click="applyFollowUpPicker()"
                   class="px-3 py-1.5 text-xs rounded-lg bg-indigo-600 text-white"
                 >
-                  Save
+                  Apply
                 </button>
               </div>
             </div>
@@ -1167,7 +1167,7 @@
             x-show="isProgramEditorOpen"
             x-transition.opacity
             class="fixed inset-0 z-40 bg-slate-900/40 flex items-end sm:items-center justify-center p-3"
-            @click.self="applyProgramEditor()"
+            @click.self="closeProgramEditor()"
             @keydown.escape.window="closeProgramEditor()"
             role="dialog"
             aria-modal="true"
@@ -1233,10 +1233,10 @@
                 </button>
                 <button
                   type="button"
-                  @click="saveProgramEditor()"
+                  @click="applyProgramEditor()"
                   class="px-3 py-1.5 text-xs rounded-lg bg-indigo-600 text-white"
                 >
-                  Save
+                  Apply
                 </button>
               </div>
             </div>

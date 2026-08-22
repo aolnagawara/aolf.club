@@ -101,8 +101,11 @@ describe('AOLF Connect frontend presentation', () => {
     expect(page).toContain('x-text="lead.programSummary"');
     expect(page).toContain('x-for="lead in visibleLeads()"');
     expect(page).toContain("getLeadKey(lead) + '|' + lead.programSummary");
-    expect(page).toContain('@click.self="applyProgramEditor()"');
-    expect(page).toContain('@click="saveProgramEditor()"');
+    expect(page).toContain('@click="applyFollowUpPicker()"');
+    expect(page).toContain('@click.self="closeProgramEditor()"');
+    expect(page).toContain('@click="applyProgramEditor()"');
+    expect(page).not.toContain('saveFollowUpPicker()');
+    expect(page).not.toContain('saveProgramEditor()');
     expect(page).toContain('@click="closeProgramEditor()"');
     expect(page).not.toContain('Featured Programs');
     expect(page).not.toContain('Upcoming Events');

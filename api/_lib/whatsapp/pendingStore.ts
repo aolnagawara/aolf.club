@@ -21,9 +21,8 @@ type MemoryState = {
 };
 
 // Deliberately process-local: pending interactions and message coordination are
-// ephemeral and are never written to Google Sheets. At this app's volume (a few
-// dozen WhatsApp messages/day, one active conversation per volunteer), a single
-// in-memory map is enough - no cross-request locking is needed.
+// ephemeral and are never written to Google Sheets. This is best-effort across
+// warm requests; separate serverless instances cannot share or coordinate it.
 const globalState = globalThis as unknown as {
   __aolfWhatsappState?: MemoryState;
 };

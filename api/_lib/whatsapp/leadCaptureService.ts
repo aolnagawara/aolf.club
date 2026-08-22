@@ -100,6 +100,13 @@ function monthMatchesTerm(
   );
 }
 
+function aliasesForMonth(shortName: string): string[] {
+  const configuredAliases =
+    DEFAULT_MONTH_TERMS.find(([candidate]) => candidate === shortName)?.[1] ||
+    [];
+  return [shortName, ...expandMonthAliases(shortName, configuredAliases)];
+}
+
 function toShortMonth(monthValue: string): string {
   if (!monthValue) {
     return '';
@@ -159,10 +166,13 @@ async function loadParserCatalog(): Promise<LeadParserCatalog> {
 
   const customMonths = parseJsonValue<string[]>(configMap.months, []);
   const monthTerms: ParserTerm[] = customMonths.length
-    ? buildTermsFromList(customMonths).map((term) => ({
-        canonical: toShortMonth(term.canonical) || term.canonical,
-        aliases: [term.canonical]
-      }))
+    ? buildTermsFromList(customMonths).map((term) => {
+        const canonical = toShortMonth(term.canonical) || term.canonical;
+        return {
+          canonical,
+          aliases: [...new Set([term.canonical, ...aliasesForMonth(canonical)])]
+        };
+      })
     : DEFAULT_MONTH_TERMS.map(([shortName, aliases]) => ({
         canonical: shortName,
         aliases: expandMonthAliases(shortName, aliases)
@@ -258,7 +268,15 @@ function campaignMonthErrorMessage(
   );
 }
 
-function resolveLeadCampaign(
+function campaignNameWords(name: string): Set<string> {
+  return new Set(
+    String(name || '')
+      .toLowerCase()
+      .match(/[a-z]+/g) || []
+  );
+}
+
+export function resolveLeadCampaign(
   campaigns: Campaign[],
   monthShort: string
 ): CampaignMonthResolution {
@@ -273,17 +291,13 @@ function resolveLeadCampaign(
   if (!shortMonth) {
     return { status: 'no_month_match', month: monthShort };
   }
-  const longMonth =
-    DEFAULT_MONTH_TERMS.find(
-      ([shortName]) => shortName === shortMonth
-    )?.[1]?.[0] || shortMonth;
-  const monthAliases = expandMonthAliases(shortMonth, [longMonth]);
+  const monthAliases = aliasesForMonth(shortMonth).map((alias) =>
+    alias.toLowerCase()
+  );
 
   const matches = leadsCampaigns.filter((campaign) => {
-    const lowered = campaign.name.toLowerCase();
-    return [shortMonth, longMonth, ...monthAliases].some((alias) =>
-      lowered.includes(alias.toLowerCase())
-    );
+    const words = campaignNameWords(campaign.name);
+    return monthAliases.some((alias) => words.has(alias));
   });
 
   if (matches.length === 1) {

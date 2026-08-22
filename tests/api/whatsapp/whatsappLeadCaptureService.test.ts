@@ -34,6 +34,7 @@ import {
   buildShareableLeadMessage,
   handleButtonReply,
   handleIncomingText,
+  resolveLeadCampaign,
   upsertLeadByMobileAndCampaign
 } from '../../../api/_lib/whatsapp/leadCaptureService.js';
 import {
@@ -70,6 +71,37 @@ const parsedLead = {
 };
 
 describe('WhatsApp lead Sheet upsert', () => {
+  it.each(['Sep', 'Sept', 'September'])(
+    'matches the September campaign for %s',
+    (month) => {
+      const campaign = {
+        id: 'leads-sep',
+        name: 'September Leads',
+        type: 'Leads' as const
+      };
+
+      expect(resolveLeadCampaign([campaign], month)).toEqual({
+        status: 'matched',
+        campaign
+      });
+    }
+  );
+
+  it('does not match a month embedded inside another campaign word', () => {
+    expect(
+      resolveLeadCampaign(
+        [
+          {
+            id: 'marketing-leads',
+            name: 'Marketing Leads',
+            type: 'Leads'
+          }
+        ],
+        'Mar'
+      )
+    ).toEqual({ status: 'no_month_match', month: 'Mar' });
+  });
+
   it('builds an informal plain-text lead summary for team sharing', () => {
     expect(buildShareableLeadMessage(parsedLead)).toBe(
       [
@@ -532,45 +564,49 @@ describe('WhatsApp lead Sheet upsert', () => {
     expect(mockReadSheetValues).not.toHaveBeenCalledWith('data', 'Config!A:B');
   });
 
-  it('parses Sept as Sep and stores it on the pending lead', async () => {
-    mockReadSheetValues.mockImplementation(async (target, range) => {
-      if (target === 'access' && range === 'AllowedUsers!A:Z') {
-        return [
-          ['email', 'name', 'mobile'],
-          ['volunteer@example.com', 'Volunteer', '919876543210']
-        ];
-      }
-      if (target === 'data' && range === 'Config!A:B') {
-        return [
-          ['key', 'value'],
-          [
-            'programs',
-            JSON.stringify([{ code: 'HP', label: 'Happiness Program' }])
-          ]
-        ];
-      }
-      throw new Error(`Unexpected Sheet read: ${target} ${range}`);
-    });
-    const message = 'Priya 9123456789 HP Warm Sept Call tomorrow';
+  it.each(['Sep', 'Sept'])(
+    'parses %s as Sep and stores it on the pending lead',
+    async (monthText) => {
+      mockReadSheetValues.mockImplementation(async (target, range) => {
+        if (target === 'access' && range === 'AllowedUsers!A:Z') {
+          return [
+            ['email', 'name', 'mobile'],
+            ['volunteer@example.com', 'Volunteer', '919876543210']
+          ];
+        }
+        if (target === 'data' && range === 'Config!A:B') {
+          return [
+            ['key', 'value'],
+            [
+              'programs',
+              JSON.stringify([{ code: 'HP', label: 'Happiness Program' }])
+            ],
+            ['months', JSON.stringify(['September'])]
+          ];
+        }
+        throw new Error(`Unexpected Sheet read: ${target} ${range}`);
+      });
+      const message = `Priya 9123456789 HP Warm ${monthText} Call tomorrow`;
 
-    const result = await handleIncomingText(
-      '919876543210',
-      message,
-      'source-message-sept'
-    );
+      const result = await handleIncomingText(
+        '919876543210',
+        message,
+        'source-message-' + monthText.toLowerCase()
+      );
 
-    expect(result).toMatchObject({
-      action: 'show_confirmation',
-      parsed: {
-        mobile: '9123456789',
-        name: 'Priya',
-        course: 'HP',
-        leadQuality: 'Warm',
-        month: 'Sep',
-        notes: 'Call tomorrow'
-      }
-    });
-  });
+      expect(result).toMatchObject({
+        action: 'show_confirmation',
+        parsed: {
+          mobile: '9123456789',
+          name: 'Priya',
+          course: 'HP',
+          leadQuality: 'Warm',
+          month: 'Sep',
+          notes: 'Call tomorrow'
+        }
+      });
+    }
+  );
 
   it('asks for shorter notes instead of Confirm buttons when the token will not fit', async () => {
     mockReadSheetValues.mockImplementation(async (target, range) => {

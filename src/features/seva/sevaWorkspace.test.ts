@@ -880,7 +880,7 @@ describe('Seva workspace program editor', () => {
     app.openProgramEditor(lead);
     app.toggleProgramSelection('wishlist', 'HP');
     app.toggleProgramSelection('done', 'DSN');
-    app.saveProgramEditor();
+    app.applyProgramEditor();
 
     expect(lead.wishlistPrograms).toEqual(['HP']);
     expect(lead.donePrograms).toEqual(['DSN']);

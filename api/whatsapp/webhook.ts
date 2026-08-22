@@ -21,6 +21,7 @@ import {
 import { sendApiError } from '../_lib/http/errors.js';
 
 const MAX_LOG_IDENTIFIER_CHARS = 128;
+// Coalesces overlapping deliveries only inside the current warm runtime.
 const inFlightEvents = new Map<string, Promise<boolean>>();
 const WEBHOOK_RETRY_HINT =
   'We could not finish that WhatsApp reply. Please resend the lead or tap Confirm again.';
