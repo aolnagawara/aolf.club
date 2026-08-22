@@ -2,6 +2,7 @@ import { authService } from './authService';
 import { leadService } from './leadService';
 import { courseService } from './courseService';
 import type {
+  AssignMembersRequest,
   CreateCourseRequest,
   CreateLeadRequest,
   DeleteCourseRequest,
@@ -22,6 +23,9 @@ export const appRuntime = {
   },
   async loadBootstrap(campaignId?: string | null) {
     return leadService.getBootstrap(campaignId);
+  },
+  async assignMembers(payload: AssignMembersRequest) {
+    return leadService.assignMembers(payload);
   },
   async createLead(payload: CreateLeadRequest) {
     return leadService.createLead(payload);

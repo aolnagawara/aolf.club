@@ -161,6 +161,23 @@ export const DeleteLeadResponseSchema = z.object({
   lead: z.object({ id: z.string().min(1) })
 });
 
+export const MAX_MEMBERS_PER_VOLUNTEER = 100;
+export const UNSET_MEMBER_ENGAGEMENT = '__not_set__';
+
+export const AssignMembersRequestSchema = z.object({
+  campaignId: NanoIdSchema,
+  count: z.number().int().min(1).max(MAX_MEMBERS_PER_VOLUNTEER),
+  engagementLevel: z.string().trim().max(100).default('')
+});
+
+export const AssignMembersResponseSchema = z.object({
+  success: z.literal(true),
+  requestedCount: z.number().int().min(1),
+  assignedCount: z.number().int().min(0),
+  remainingCapacity: z.number().int().min(0),
+  members: z.array(LeadSchema)
+});
+
 export const CourseWriteFieldsSchema = z
   .object({
     courseType: z.string().trim().min(1, 'Choose a course type.'),
@@ -274,6 +291,8 @@ export type CreateLeadRequest = z.infer<typeof CreateLeadRequestSchema>;
 export type CreateLeadResponse = z.infer<typeof CreateLeadResponseSchema>;
 export type DeleteLeadRequest = z.infer<typeof DeleteLeadRequestSchema>;
 export type DeleteLeadResponse = z.infer<typeof DeleteLeadResponseSchema>;
+export type AssignMembersRequest = z.infer<typeof AssignMembersRequestSchema>;
+export type AssignMembersResponse = z.infer<typeof AssignMembersResponseSchema>;
 export type Course = z.infer<typeof CourseSchema>;
 export type CourseTemplate = z.infer<typeof CourseTemplateSchema>;
 export type CreateCourseRequest = z.infer<typeof CreateCourseRequestSchema>;

@@ -1,4 +1,8 @@
-import type { UpdateLeadRequest } from '../../../shared/contracts/appContracts';
+import {
+  MAX_MEMBERS_PER_VOLUNTEER,
+  UNSET_MEMBER_ENGAGEMENT,
+  type UpdateLeadRequest
+} from '../../../shared/contracts/appContracts';
 import type {
   Campaign,
   CampaignType,
@@ -414,6 +418,107 @@ export function createRecordActionMethods() {
         }
       } finally {
         this.isBulkActionPending = false;
+      }
+    },
+    memberAssignmentRemainingCapacity(this: SevaWorkspaceContext): number {
+      if (this.campaignType !== 'Members') {
+        return 0;
+      }
+      return Math.max(0, MAX_MEMBERS_PER_VOLUNTEER - this.leads.length);
+    },
+    getMemberAssignmentEngagementOptions(
+      this: SevaWorkspaceContext
+    ): OptionItem[] {
+      const placeholder = this.getQualityFieldLabel();
+      const options = (this.qualityOptions || [])
+        .filter((item) => item.value !== placeholder)
+        .map((item) => ({ value: item.value, label: item.label }));
+      return [
+        { value: '', label: 'Any engagement' },
+        ...options,
+        { value: UNSET_MEMBER_ENGAGEMENT, label: 'Not set' }
+      ];
+    },
+    openAssignMembersModal(this: SevaWorkspaceContext): void {
+      if (this.campaignType !== 'Members' || !this.selectedCampaignId) {
+        return;
+      }
+      const remainingCapacity = this.memberAssignmentRemainingCapacity();
+      if (!remainingCapacity) {
+        this.actionMessage =
+          'You already have 100 members in this Seva campaign.';
+        return;
+      }
+      this.assignMembersDraft = {
+        count: Math.min(10, remainingCapacity),
+        engagementLevel: ''
+      };
+      this.authError = '';
+      this.actionMessage = '';
+      this.isFabOpen = false;
+      this.isAssignMembersModalOpen = true;
+    },
+    closeAssignMembersModal(this: SevaWorkspaceContext): void {
+      if (!this.isAssigningMembers) {
+        this.isAssignMembersModalOpen = false;
+      }
+    },
+    async submitMemberAssignment(this: SevaWorkspaceContext): Promise<void> {
+      const count = Number(this.assignMembersDraft.count);
+      if (
+        this.campaignType !== 'Members' ||
+        !this.selectedCampaignId ||
+        !Number.isInteger(count) ||
+        count < 1 ||
+        count > MAX_MEMBERS_PER_VOLUNTEER
+      ) {
+        this.authError = 'Enter a member count between 1 and 100.';
+        return;
+      }
+
+      this.isAssigningMembers = true;
+      this.authError = '';
+      this.actionMessage = '';
+      try {
+        if (!(await this.flushPendingSaves())) {
+          this.authError =
+            'Save pending edits before assigning additional members.';
+          return;
+        }
+        const response = await window.appRuntime.assignMembers({
+          campaignId: this.selectedCampaignId,
+          count,
+          engagementLevel: this.assignMembersDraft.engagementLevel
+        });
+        const existingIds = new Set(this.leads.map((lead) => lead.id));
+        const assignedMembers = response.members
+          .filter((member) => !existingIds.has(member.id))
+          .map((member) => this.normalizeLead(member));
+        this.leads = [...assignedMembers, ...this.leads];
+        this.isAssignMembersModalOpen = false;
+
+        if (!response.assignedCount) {
+          this.actionMessage = response.remainingCapacity
+            ? 'No unassigned members match that engagement level.'
+            : 'You already have 100 members in this Seva campaign.';
+          return;
+        }
+
+        const noun = response.assignedCount === 1 ? 'member' : 'members';
+        this.actionMessage =
+          response.assignedCount === response.requestedCount
+            ? String(response.assignedCount) + ' ' + noun + ' assigned to you.'
+            : String(response.assignedCount) +
+              ' of ' +
+              String(response.requestedCount) +
+              ' requested members assigned to you.';
+      } catch (error) {
+        this.authError = toUserErrorMessage(
+          error,
+          'Unable to assign members. Please try again.'
+        );
+      } finally {
+        this.isAssigningMembers = false;
       }
     },
     getCreateCampaigns(

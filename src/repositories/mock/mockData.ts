@@ -163,6 +163,36 @@ export const mockBootstrapData: BootstrapResponse = {
       assignedVolunteerEmail: 'volunteer@example.com',
       wishlistPrograms: 'VTP',
       donePrograms: 'HP'
+    },
+    {
+      id: 'memberNew01AbcDefGhIJK',
+      mobile: '9988776655',
+      name: 'Newest Unassigned Member',
+      quality: 'Active',
+      followUp: 'Follow-up',
+      lastUpdated: 'Just now',
+      status: 'Response',
+      notes: 'First unassigned member in Sheet order',
+      campaignId: 'cmpMembs01AbcDefGhIJK',
+      campaignType: 'Members',
+      assignedVolunteerEmail: '',
+      wishlistPrograms: '',
+      donePrograms: 'HP'
+    },
+    {
+      id: 'memberOcc01AbcDefGhIJK',
+      mobile: '9988776644',
+      name: 'Occasional Unassigned Member',
+      quality: 'Occasional',
+      followUp: 'Follow-up',
+      lastUpdated: 'Just now',
+      status: 'Response',
+      notes: 'Second unassigned member in Sheet order',
+      campaignId: 'cmpMembs01AbcDefGhIJK',
+      campaignType: 'Members',
+      assignedVolunteerEmail: '',
+      wishlistPrograms: 'VTP',
+      donePrograms: 'HP'
     }
   ]
 };

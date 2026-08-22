@@ -215,6 +215,7 @@ export function createAuthAndBootstrapMethods() {
       this.isOptionSheetOpen = false;
       this.isFollowUpModalOpen = false;
       this.isProgramEditorOpen = false;
+      this.isAssignMembersModalOpen = false;
       this.leads = [];
       this.campaigns = [];
       this.selectedCampaign = null;
@@ -246,6 +247,51 @@ export function createAuthAndBootstrapMethods() {
         await this.loadBootstrap(targetCampaignId);
       } finally {
         this.isCampaignSwitching = false;
+      }
+    },
+    async refreshCurrentCampaign(this: SevaWorkspaceContext): Promise<void> {
+      if (
+        !this.selectedCampaignId ||
+        this.isLoadingBootstrap ||
+        this.isCampaignSwitching ||
+        this.isCampaignRefreshing
+      ) {
+        return;
+      }
+
+      const currentFilters = {
+        selectedFilter: this.selectedFilter,
+        metricFilter: this.metricFilter,
+        searchQuery: this.searchQuery,
+        programFilter: this.programFilter
+      };
+      this.isCampaignRefreshing = true;
+      this.authError = '';
+      this.actionMessage = '';
+      try {
+        if (!(await this.flushPendingSaves())) {
+          this.authError =
+            'Some changes could not be saved. Please retry before refreshing.';
+          return;
+        }
+        const refreshed = await this.loadBootstrap(this.selectedCampaignId);
+        if (!refreshed) {
+          return;
+        }
+        if (
+          this.filterOptions.some(
+            (option) => option.id === currentFilters.selectedFilter
+          )
+        ) {
+          this.selectedFilter = currentFilters.selectedFilter;
+        }
+        this.metricFilter = currentFilters.metricFilter;
+        this.searchQuery = currentFilters.searchQuery;
+        this.programFilter = currentFilters.programFilter;
+        this.filteredCriteriaKey = '';
+        this.actionMessage = 'Current Seva refreshed.';
+      } finally {
+        this.isCampaignRefreshing = false;
       }
     },
     getSelectedCampaignName(this: SevaWorkspaceContext): string {
@@ -288,19 +334,14 @@ export function createAuthAndBootstrapMethods() {
     async loadBootstrap(
       this: SevaWorkspaceContext,
       campaignId?: string
-    ): Promise<void> {
+    ): Promise<boolean> {
       if (!this.volunteerEmail) {
         this.isVolunteerModalOpen = true;
         this.isLoadingBootstrap = false;
-        return;
+        return false;
       }
 
-      const isCampaignSwitch = Boolean(
-        campaignId &&
-        this.selectedCampaignId &&
-        campaignId !== this.selectedCampaignId
-      );
-      const previousCampaignView = isCampaignSwitch
+      const previousCampaignView = this.selectedCampaignId
         ? captureCampaignView(this)
         : null;
 
@@ -414,6 +455,7 @@ export function createAuthAndBootstrapMethods() {
         this.clearSelection();
         this.isProfileMenuOpen = false;
         this.authError = '';
+        return true;
       } catch (error) {
         if (previousCampaignView) {
           restoreCampaignView(this, previousCampaignView);
@@ -430,6 +472,7 @@ export function createAuthAndBootstrapMethods() {
         ) {
           this.isVolunteerModalOpen = true;
         }
+        return false;
       } finally {
         this.isLoadingBootstrap = false;
       }

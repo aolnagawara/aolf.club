@@ -1,6 +1,8 @@
 import type { LeadRepository } from '../contracts';
 import { nanoid } from 'nanoid';
 import {
+  AssignMembersRequestSchema,
+  AssignMembersResponseSchema,
   BootstrapResponseSchema,
   CreateLeadRequestSchema,
   CreateLeadResponseSchema,
@@ -8,6 +10,9 @@ import {
   DeleteLeadResponseSchema,
   UpdateLeadRequestSchema,
   UpdateLeadResponseSchema,
+  MAX_MEMBERS_PER_VOLUNTEER,
+  type AssignMembersRequest,
+  type AssignMembersResponse,
   type BootstrapResponse,
   type CreateLeadRequest,
   type CreateLeadResponse,
@@ -17,6 +22,7 @@ import {
   type UpdateLeadRequest,
   type UpdateLeadResponse
 } from '../../../shared/contracts/appContracts';
+import { matchesMemberEngagement } from '../../../shared/memberAssignment';
 import { mockBootstrapData } from './mockData';
 
 export class MockLeadRepository implements LeadRepository {
@@ -45,6 +51,55 @@ export class MockLeadRepository implements LeadRepository {
     };
 
     return BootstrapResponseSchema.parse(payload);
+  }
+
+  async assignMembers(
+    payload: AssignMembersRequest
+  ): Promise<AssignMembersResponse> {
+    const parsed = AssignMembersRequestSchema.parse(payload);
+    const campaign = mockBootstrapData.config.campaigns.find(
+      (item) => item.id === parsed.campaignId
+    );
+    if (!campaign) {
+      throw new Error('CAMPAIGN_NOT_FOUND');
+    }
+    if (campaign.type !== 'Members') {
+      throw new Error('CAMPAIGN_TYPE_MISMATCH');
+    }
+
+    const volunteerEmail = mockBootstrapData.user.email.toLowerCase();
+    const assignedCount = this.leads.filter(
+      (lead) =>
+        lead.campaignId === campaign.id &&
+        lead.campaignType === 'Members' &&
+        lead.assignedVolunteerEmail.toLowerCase() === volunteerEmail
+    ).length;
+    const availableCapacity = Math.max(
+      0,
+      MAX_MEMBERS_PER_VOLUNTEER - assignedCount
+    );
+    const selected = this.leads
+      .filter(
+        (lead) =>
+          lead.campaignId === campaign.id &&
+          lead.campaignType === 'Members' &&
+          !lead.assignedVolunteerEmail.trim() &&
+          matchesMemberEngagement(lead.quality, parsed.engagementLevel)
+      )
+      .slice(0, Math.min(parsed.count, availableCapacity));
+
+    selected.forEach((lead) => {
+      lead.assignedVolunteerEmail = volunteerEmail;
+      lead.lastUpdated = 'Just now';
+    });
+
+    return AssignMembersResponseSchema.parse({
+      success: true,
+      requestedCount: parsed.count,
+      assignedCount: selected.length,
+      remainingCapacity: availableCapacity - selected.length,
+      members: selected.map((lead) => ({ ...lead }))
+    });
   }
 
   async updateLead(payload: UpdateLeadRequest): Promise<UpdateLeadResponse> {

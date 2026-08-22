@@ -1,5 +1,7 @@
 import type { LeadRepository } from '../contracts';
 import {
+  AssignMembersRequestSchema,
+  AssignMembersResponseSchema,
   BootstrapResponseSchema,
   CreateLeadRequestSchema,
   CreateLeadResponseSchema,
@@ -7,6 +9,8 @@ import {
   DeleteLeadResponseSchema,
   UpdateLeadRequestSchema,
   UpdateLeadResponseSchema,
+  type AssignMembersRequest,
+  type AssignMembersResponse,
   type BootstrapResponse,
   type CreateLeadRequest,
   type CreateLeadResponse,
@@ -28,6 +32,17 @@ export class HttpLeadRepository implements LeadRepository {
       '/api/bootstrap' + query
     );
     return BootstrapResponseSchema.parse(response);
+  }
+
+  async assignMembers(
+    payload: AssignMembersRequest
+  ): Promise<AssignMembersResponse> {
+    const parsed = AssignMembersRequestSchema.parse(payload);
+    const response = await this.apiClient.post<unknown>(
+      '/api/leads/assign',
+      parsed
+    );
+    return AssignMembersResponseSchema.parse(response);
   }
 
   async updateLead(payload: UpdateLeadRequest): Promise<UpdateLeadResponse> {

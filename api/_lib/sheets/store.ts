@@ -1,4 +1,6 @@
 import {
+  AssignMembersRequestSchema,
+  AssignMembersResponseSchema,
   AppConfigSchema,
   BootstrapResponseSchema,
   CreateCourseRequestSchema,
@@ -16,7 +18,9 @@ import {
   UpdateCourseResponseSchema,
   UpdateLeadRequestSchema,
   UpdateLeadResponseSchema,
+  MAX_MEMBERS_PER_VOLUNTEER,
   type AppConfig,
+  type AssignMembersResponse,
   type BootstrapResponse,
   type Campaign,
   type Course,
@@ -31,6 +35,7 @@ import {
   type UpdateLeadRequest,
   type UpdateLeadResponse
 } from '../../../shared/contracts/appContracts.js';
+import { matchesMemberEngagement } from '../../../shared/memberAssignment.js';
 import { nanoid } from 'nanoid';
 import { ZodError } from 'zod';
 import {
@@ -542,6 +547,116 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
         volunteers: snapshot.volunteers
       },
       leads
+    });
+  }
+
+  async function assignMembers(
+    user: SessionUser,
+    snapshot: MetadataSnapshot,
+    operation: SheetsOperation,
+    rawPayload: unknown
+  ): Promise<AssignMembersResponse> {
+    const payload = AssignMembersRequestSchema.parse(rawPayload);
+    const selectedCampaign = selectCampaign(snapshot, payload.campaignId);
+    if (selectedCampaign.type !== 'Members') {
+      throw new Error('CAMPAIGN_TYPE_MISMATCH');
+    }
+
+    const layout = getSheetLayout();
+    const rows = await readSheetValues('data', layout.membersRange, operation);
+    const headers = (rows[0] || []).map((value) => String(value || '').trim());
+    const columns = resolveLeadColumns(headers);
+    if (
+      columns.id < 0 ||
+      columns.quality < 0 ||
+      columns.campaignId < 0 ||
+      columns.assignedVolunteerEmail < 0
+    ) {
+      throw new Error(
+        'Member sheet must contain id, quality, campaignId, and assignedVolunteerEmail columns.'
+      );
+    }
+
+    const volunteerEmail = normalizeEmail(user.email);
+    const candidates: Array<{ rowNumber: number; values: string[] }> = [];
+    let currentAssignedCount = 0;
+
+    for (let rowIndex = 1; rowIndex < rows.length; rowIndex += 1) {
+      const row = rows[rowIndex] || [];
+      if (!rowMatchesCampaign(row, columns, selectedCampaign)) {
+        continue;
+      }
+
+      const assignedEmail = normalizeEmail(
+        getCell(row, columns.assignedVolunteerEmail)
+      );
+      if (assignedEmail === volunteerEmail) {
+        currentAssignedCount += 1;
+        continue;
+      }
+      if (
+        assignedEmail ||
+        !getCell(row, columns.id) ||
+        !matchesMemberEngagement(
+          getCell(row, columns.quality),
+          payload.engagementLevel
+        )
+      ) {
+        continue;
+      }
+
+      candidates.push({ rowNumber: rowIndex + 1, values: row });
+    }
+
+    const availableCapacity = Math.max(
+      0,
+      MAX_MEMBERS_PER_VOLUNTEER - currentAssignedCount
+    );
+    const selected = candidates.slice(
+      0,
+      Math.min(payload.count, availableCapacity)
+    );
+    const timestamp = now().toISOString();
+    const tabName = getTabName(layout.membersRange);
+    const updates = selected.flatMap((candidate) => {
+      const rowUpdates = [
+        {
+          range:
+            tabName +
+            '!' +
+            columnLabel(columns.assignedVolunteerEmail + 1) +
+            String(candidate.rowNumber),
+          values: [[volunteerEmail]]
+        }
+      ];
+      if (columns.lastUpdated >= 0) {
+        rowUpdates.push({
+          range:
+            tabName +
+            '!' +
+            columnLabel(columns.lastUpdated + 1) +
+            String(candidate.rowNumber),
+          values: [[timestamp]]
+        });
+      }
+      return rowUpdates;
+    });
+
+    if (updates.length) {
+      await updateSheetValuesBatch('data', updates, operation);
+    }
+
+    const members = selected.map((candidate) => ({
+      ...mapRowToLead(candidate.values, columns, selectedCampaign),
+      assignedVolunteerEmail: volunteerEmail,
+      lastUpdated: timestamp
+    }));
+    return AssignMembersResponseSchema.parse({
+      success: true,
+      requestedCount: payload.count,
+      assignedCount: members.length,
+      remainingCapacity: availableCapacity - members.length,
+      members
     });
   }
 
@@ -1069,6 +1184,23 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
         return {
           allowed: true,
           value: await getBootstrap(user, snapshot, activeOperation, campaignId)
+        };
+      });
+    },
+
+    async assignMembersForAuthorizedUser(
+      user: SessionUser,
+      payload: unknown,
+      operation?: SheetsOperation
+    ): Promise<AuthorizedStoreResult<AssignMembersResponse>> {
+      return withStoreOperation(operation, async (activeOperation) => {
+        const snapshot = await loadMetadataSnapshot(activeOperation);
+        if (!isUserAllowed(snapshot, user)) {
+          return { allowed: false };
+        }
+        return {
+          allowed: true,
+          value: await assignMembers(user, snapshot, activeOperation, payload)
         };
       });
     },

@@ -85,6 +85,13 @@ export function createSevaWorkspaceInitialState(): SevaWorkspaceState {
     statusOptions: [],
     isLoadingBootstrap: false,
     isCampaignSwitching: false,
+    isCampaignRefreshing: false,
+    isAssignMembersModalOpen: false,
+    assignMembersDraft: {
+      count: 10,
+      engagementLevel: ''
+    },
+    isAssigningMembers: false,
     qualityMetaMap: { ...DEFAULT_QUALITY_META_MAP },
     defaultQualityMeta: { ...DEFAULT_QUALITY_META },
     statusIconMap: { ...DEFAULT_STATUS_ICON_MAP },

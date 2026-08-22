@@ -1,5 +1,7 @@
 import type {
   AuthenticatedUser,
+  AssignMembersRequest,
+  AssignMembersResponse,
   BootstrapResponse,
   CreateCourseRequest,
   CreateCourseResponse,
@@ -24,6 +26,7 @@ export interface AuthProvider {
 
 export interface LeadRepository {
   getBootstrap(campaignId?: string | null): Promise<BootstrapResponse>;
+  assignMembers(payload: AssignMembersRequest): Promise<AssignMembersResponse>;
   createLead(payload: CreateLeadRequest): Promise<CreateLeadResponse>;
   updateLead(payload: UpdateLeadRequest): Promise<UpdateLeadResponse>;
   deleteLead(payload: DeleteLeadRequest): Promise<DeleteLeadResponse>;

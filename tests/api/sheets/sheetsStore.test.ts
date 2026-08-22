@@ -7,6 +7,7 @@ import type {
 
 const CAMPAIGN_A = 'cmpLeads01AbcDefGhIJk';
 const CAMPAIGN_B = 'cmpLeads02AbcDefGhIJk';
+const MEMBERS_CAMPAIGN = 'cmpMembs01AbcDefGhIJK';
 const USER = {
   id: 'user-1',
   email: 'volunteer@example.com',
@@ -31,7 +32,8 @@ const CONFIG_ROWS = [
 const CAMPAIGN_ROWS = [
   ['id', 'name', 'type'],
   [CAMPAIGN_A, 'August', 'Leads'],
-  [CAMPAIGN_B, 'September', 'Leads']
+  [CAMPAIGN_B, 'September', 'Leads'],
+  [MEMBERS_CAMPAIGN, 'Member Reconnect', 'Members']
 ];
 const LEAD_HEADERS = [
   'id',
@@ -55,7 +57,8 @@ function createFixture(
     ['email', 'name'],
     [USER.email, 'Current Volunteer'],
     [OTHER_VOLUNTEER_EMAIL, 'Another Volunteer']
-  ]
+  ],
+  memberRows: string[][] = []
 ) {
   const readSheetValues = vi.fn(
     async (
@@ -69,6 +72,9 @@ function createFixture(
       }
       if (range === LAYOUT.leadsRange) {
         return [leadHeaders, ...leadRows];
+      }
+      if (range === LAYOUT.membersRange) {
+        return [leadHeaders, ...memberRows];
       }
       return [];
     }
@@ -200,6 +206,151 @@ describe('Sheets store campaign and access scoping', () => {
       ...fixture.readSheetValuesBatch.mock.calls.map((call) => call[2])
     ].filter(Boolean);
     expect(new Set(operationArguments).size).toBe(1);
+  });
+
+  it('assigns matching members in Sheet order without sorting candidates', async () => {
+    const fixture = createFixture([], LEAD_HEADERS, undefined, [
+      [
+        'member-newest',
+        'Newest matching member',
+        'Active',
+        '',
+        '',
+        'Response',
+        '',
+        MEMBERS_CAMPAIGN,
+        'Members',
+        ''
+      ],
+      [
+        'member-inactive',
+        'Inactive member between matches',
+        'Inactive',
+        '',
+        '',
+        'Response',
+        '',
+        MEMBERS_CAMPAIGN,
+        'Members',
+        ''
+      ],
+      [
+        'member-owned-elsewhere',
+        'Already assigned elsewhere',
+        'Active',
+        '',
+        '',
+        'Response',
+        '',
+        MEMBERS_CAMPAIGN,
+        'Members',
+        OTHER_VOLUNTEER_EMAIL
+      ],
+      [
+        'member-next',
+        'Next matching member',
+        'Active',
+        '',
+        '',
+        'Response',
+        '',
+        MEMBERS_CAMPAIGN,
+        'Members',
+        ''
+      ],
+      [
+        'member-already-mine',
+        'Already assigned to me',
+        'Active',
+        '',
+        '',
+        'Response',
+        '',
+        MEMBERS_CAMPAIGN,
+        'Members',
+        USER.email
+      ]
+    ]);
+
+    const result = await fixture.store.assignMembersForAuthorizedUser(USER, {
+      campaignId: MEMBERS_CAMPAIGN,
+      count: 3,
+      engagementLevel: 'Active'
+    });
+
+    expect(result.allowed).toBe(true);
+    if (!result.allowed) {
+      throw new Error('Expected user to be authorized.');
+    }
+    expect(result.value).toMatchObject({
+      requestedCount: 3,
+      assignedCount: 2,
+      remainingCapacity: 97
+    });
+    expect(result.value.members.map((member) => member.id)).toEqual([
+      'member-newest',
+      'member-next'
+    ]);
+    expect(fixture.updateSheetValuesBatch).toHaveBeenCalledOnce();
+    const updates = fixture.updateSheetValuesBatch.mock.calls[0][1];
+    expect(updates).toEqual([
+      { range: 'Members!J2', values: [[USER.email]] },
+      {
+        range: 'Members!E2',
+        values: [['2026-08-05T12:00:00.000Z']]
+      },
+      { range: 'Members!J5', values: [[USER.email]] },
+      {
+        range: 'Members!E5',
+        values: [['2026-08-05T12:00:00.000Z']]
+      }
+    ]);
+  });
+
+  it('stops assigning when the volunteer already has 100 campaign members', async () => {
+    const assignedRows = Array.from({ length: 100 }, (_, index) => [
+      'assigned-' + String(index),
+      'Assigned member ' + String(index),
+      'Active',
+      '',
+      '',
+      'Response',
+      '',
+      MEMBERS_CAMPAIGN,
+      'Members',
+      USER.email
+    ]);
+    const fixture = createFixture([], LEAD_HEADERS, undefined, [
+      ...assignedRows,
+      [
+        'member-unassigned',
+        'Unassigned member',
+        'Active',
+        '',
+        '',
+        'Response',
+        '',
+        MEMBERS_CAMPAIGN,
+        'Members',
+        ''
+      ]
+    ]);
+
+    const result = await fixture.store.assignMembersForAuthorizedUser(USER, {
+      campaignId: MEMBERS_CAMPAIGN,
+      count: 1,
+      engagementLevel: ''
+    });
+
+    expect(result).toMatchObject({
+      allowed: true,
+      value: {
+        assignedCount: 0,
+        remainingCapacity: 0,
+        members: []
+      }
+    });
+    expect(fixture.updateSheetValuesBatch).not.toHaveBeenCalled();
   });
 
   it('updates the matching stable id in the destination campaign', async () => {

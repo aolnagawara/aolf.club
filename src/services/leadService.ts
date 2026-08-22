@@ -4,6 +4,7 @@ import { MockLeadRepository } from '../repositories/mock/mockLeadRepository';
 import { HttpLeadRepository } from '../repositories/http/httpLeadRepository';
 import { ApiClient } from './apiClient';
 import type {
+  AssignMembersRequest,
   CreateLeadRequest,
   DeleteLeadRequest,
   UpdateLeadRequest
@@ -21,6 +22,9 @@ const leadRepository = createRepository();
 export const leadService = {
   getBootstrap(campaignId?: string | null) {
     return leadRepository.getBootstrap(campaignId);
+  },
+  assignMembers(payload: AssignMembersRequest) {
+    return leadRepository.assignMembers(payload);
   },
   createLead(payload: CreateLeadRequest) {
     return leadRepository.createLead(payload);

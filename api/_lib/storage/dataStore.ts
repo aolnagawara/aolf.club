@@ -1,10 +1,12 @@
 import {
+  AssignMembersRequestSchema,
   CreateCourseRequestSchema,
   CreateLeadRequestSchema,
   DeleteCourseRequestSchema,
   DeleteLeadRequestSchema,
   UpdateCourseRequestSchema,
   UpdateLeadRequestSchema,
+  type AssignMembersResponse,
   type BootstrapResponse,
   type Course,
   type CreateCourseResponse,
@@ -26,6 +28,7 @@ import type { SheetsOperation } from '../sheets/client.js';
 import type { SessionUser } from '../auth/session.js';
 import type { PamphletBytes } from '../courses/pamphletStore.js';
 import {
+  assignMembersToUser as assignMockMembersToUser,
   createCourseForUser as createMockCourseForUser,
   createLeadForUser as createMockLeadForUser,
   deleteCourseForUser as deleteMockCourseForUser,
@@ -55,6 +58,11 @@ export type ApiDataStore = {
     campaignId?: string | null,
     operation?: SheetsOperation
   ) => Promise<AuthorizedStoreResult<BootstrapResponse>>;
+  assignMembersForAuthorizedUser: (
+    user: SessionUser,
+    payload: unknown,
+    operation?: SheetsOperation
+  ) => Promise<AuthorizedStoreResult<AssignMembersResponse>>;
   createLeadForAuthorizedUser: (
     user: SessionUser,
     payload: unknown,
@@ -132,6 +140,19 @@ const mockStore: ApiDataStore = {
     return {
       allowed: true,
       value: await getMockBootstrapForUser(user, campaignId)
+    };
+  },
+
+  async assignMembersForAuthorizedUser(user, payload) {
+    if (!isMockUserAllowed(user.email)) {
+      return { allowed: false };
+    }
+    return {
+      allowed: true,
+      value: await assignMockMembersToUser(
+        user,
+        AssignMembersRequestSchema.parse(payload)
+      )
     };
   },
 

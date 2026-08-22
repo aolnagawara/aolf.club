@@ -1,4 +1,6 @@
 import {
+  AssignMembersRequestSchema,
+  AssignMembersResponseSchema,
   BootstrapResponseSchema,
   CreateCourseRequestSchema,
   CreateCourseResponseSchema,
@@ -14,6 +16,8 @@ import {
   UpdateCourseResponseSchema,
   UpdateLeadRequestSchema,
   UpdateLeadResponseSchema,
+  MAX_MEMBERS_PER_VOLUNTEER,
+  type AssignMembersRequest,
   type AuthenticatedUser,
   type Course,
   type CreateLeadRequest,
@@ -23,6 +27,7 @@ import {
   type UpdateCourseRequest,
   type UpdateLeadRequest
 } from '../../../shared/contracts/appContracts.js';
+import { matchesMemberEngagement } from '../../../shared/memberAssignment.js';
 import { nanoid } from 'nanoid';
 import { ZodError } from 'zod';
 import {
@@ -161,6 +166,57 @@ export async function updateLeadForUser(
       id: parsed.id,
       lastUpdated: 'Just now'
     }
+  });
+}
+
+export async function assignMembersToUser(
+  user: AuthenticatedUser,
+  payload: AssignMembersRequest
+) {
+  const parsed = AssignMembersRequestSchema.parse(payload);
+  const campaign = mockBootstrapData.config.campaigns.find(
+    (item) => item.id === parsed.campaignId
+  );
+  if (!campaign) {
+    throw new Error('CAMPAIGN_NOT_FOUND');
+  }
+  if (campaign.type !== 'Members') {
+    throw new Error('CAMPAIGN_TYPE_MISMATCH');
+  }
+
+  const store = getStore();
+  const volunteerEmail = normalizeEmail(user.email);
+  const currentCount = store.leads.filter(
+    (lead) =>
+      lead.campaignId === campaign.id &&
+      lead.campaignType === 'Members' &&
+      isAssignedToUser(lead, volunteerEmail)
+  ).length;
+  const availableCapacity = Math.max(
+    0,
+    MAX_MEMBERS_PER_VOLUNTEER - currentCount
+  );
+  const selected = store.leads
+    .filter(
+      (lead) =>
+        lead.campaignId === campaign.id &&
+        lead.campaignType === 'Members' &&
+        !normalizeEmail(lead.assignedVolunteerEmail) &&
+        matchesMemberEngagement(lead.quality, parsed.engagementLevel)
+    )
+    .slice(0, Math.min(parsed.count, availableCapacity));
+
+  selected.forEach((lead) => {
+    lead.assignedVolunteerEmail = volunteerEmail;
+    lead.lastUpdated = 'Just now';
+  });
+
+  return AssignMembersResponseSchema.parse({
+    success: true,
+    requestedCount: parsed.count,
+    assignedCount: selected.length,
+    remainingCapacity: availableCapacity - selected.length,
+    members: selected.map((lead) => ({ ...lead }))
   });
 }
 

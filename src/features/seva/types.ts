@@ -49,6 +49,11 @@ export interface CreateRecordDraft {
   campaignId: string;
 }
 
+export interface AssignMembersDraft {
+  count: number;
+  engagementLevel: string;
+}
+
 export interface LeadSnapshot {
   name: string;
   quality: string;
@@ -138,6 +143,10 @@ export interface SevaWorkspaceState {
   statusOptions: string[];
   isLoadingBootstrap: boolean;
   isCampaignSwitching: boolean;
+  isCampaignRefreshing: boolean;
+  isAssignMembersModalOpen: boolean;
+  assignMembersDraft: AssignMembersDraft;
+  isAssigningMembers: boolean;
   qualityMetaMap: Record<string, QualityMeta>;
   defaultQualityMeta: QualityMeta;
   statusIconMap: Record<string, string>;
