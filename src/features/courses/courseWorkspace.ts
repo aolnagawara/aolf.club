@@ -145,12 +145,15 @@ export function createCourseWorkspaceMethods() {
       if (!file) {
         return;
       }
-      if (file.size > MAX_PAMPHLET_BYTES) {
-        this.courseEditorError = PAMPHLET_SIZE_ERROR;
+      this.courseEditorError = '';
+      if (file.size >= MAX_PAMPHLET_BYTES) {
+        this.coursePamphletError = PAMPHLET_SIZE_ERROR;
+        this.coursePamphletFileName = '';
         input.value = '';
         return;
       }
-      this.courseEditorError = '';
+      this.coursePamphletError = '';
+      this.coursePamphletFileName = file.name;
       const reader = new FileReader();
       reader.onload = () => {
         const dataUrl = String(reader.result || '');
@@ -163,14 +166,17 @@ export function createCourseWorkspaceMethods() {
         this.courseDraft.clearPamphlet = false;
       };
       reader.onerror = () => {
-        this.courseEditorError =
+        this.coursePamphletError =
           'Unable to read that pamphlet image. Please choose it again.';
+        this.coursePamphletFileName = '';
         input.value = '';
       };
       reader.readAsDataURL(file);
     },
     clearCoursePamphlet(this: SevaWorkspaceContext): void {
       this.courseEditorError = '';
+      this.coursePamphletError = '';
+      this.coursePamphletFileName = '';
       this.courseDraft.hasPamphlet = false;
       this.courseDraft.clearPamphlet = true;
       this.courseDraft.pamphletBase64 = '';
@@ -213,6 +219,8 @@ export function createCourseWorkspaceMethods() {
     },
     openCourseEditor(this: SevaWorkspaceContext, course?: Course): void {
       this.courseEditorError = '';
+      this.coursePamphletError = '';
+      this.coursePamphletFileName = '';
       if (course) {
         this.courseDraft = courseToDraft(course);
       } else {
@@ -234,6 +242,8 @@ export function createCourseWorkspaceMethods() {
       this.isCourseEditorOpen = false;
       this.isCourseSaving = false;
       this.courseEditorError = '';
+      this.coursePamphletError = '';
+      this.coursePamphletFileName = '';
       this.courseDraft = createEmptyCourseDraft();
     },
     previewCourse(this: SevaWorkspaceContext, course: Course): void {
@@ -251,13 +261,15 @@ export function createCourseWorkspaceMethods() {
           this.courseDraft.pamphletMimeType
         );
         if (!inspected.ok) {
-          this.courseEditorError = inspected.message;
+          this.courseEditorError = '';
+          this.coursePamphletError = inspected.message;
           return;
         }
       }
       this.isCourseSaving = true;
       this.authError = '';
       this.courseEditorError = '';
+      this.coursePamphletError = '';
       try {
         const payload = {
           courseType: this.courseDraft.courseType,
@@ -286,10 +298,12 @@ export function createCourseWorkspaceMethods() {
         this.actionMessage = 'Course saved.';
         this.closeCourseEditor();
       } catch (error) {
-        this.courseEditorError = toUserErrorMessage(
-          error,
-          'Unable to save the course.'
-        );
+        const message = toUserErrorMessage(error, 'Unable to save the course.');
+        if (message === PAMPHLET_SIZE_ERROR) {
+          this.coursePamphletError = message;
+        } else {
+          this.courseEditorError = message;
+        }
       } finally {
         this.isCourseSaving = false;
       }

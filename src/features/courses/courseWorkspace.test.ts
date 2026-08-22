@@ -13,13 +13,15 @@ describe('course editor validation', () => {
     const app = sevaWorkspace();
     app.openCourseEditor();
     const input = {
-      files: [{ size: MAX_PAMPHLET_BYTES + 1, type: 'image/png' }],
+      files: [{ size: MAX_PAMPHLET_BYTES, type: 'image/png' }],
       value: 'pamphlet.png'
     };
 
     app.onPamphletSelected({ target: input } as unknown as Event);
 
-    expect(app.courseEditorError).toBe('Pamphlet must be 600 KB or smaller.');
+    expect(app.coursePamphletError).toBe('Image must be < 600 kb');
+    expect(app.coursePamphletFileName).toBe('');
+    expect(app.courseEditorError).toBe('');
     expect(app.authError).toBe('');
     expect(app.isCourseEditorOpen).toBe(true);
     expect(input.value).toBe('');

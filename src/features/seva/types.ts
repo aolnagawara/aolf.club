@@ -162,6 +162,8 @@ export interface SevaWorkspaceState {
   isCourseEditorOpen: boolean;
   isCourseSaving: boolean;
   courseEditorError: string;
+  coursePamphletError: string;
+  coursePamphletFileName: string;
   courseDraft: CourseDraft;
   isCoursePickerOpen: boolean;
   coursePickerLead: Lead | null;
