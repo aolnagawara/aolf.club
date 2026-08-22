@@ -103,12 +103,7 @@ export function createCourseWorkspaceMethods() {
     coursePickerSubtitle(this: SevaWorkspaceContext, course: Course): string {
       const displayTitle = this.courseDisplayTitle(course);
       const title = String(course.title || '').trim();
-      if (title && title !== displayTitle) {
-        return title;
-      }
-      return publicCoursesPath(
-        publicCourseProgramKey(course.courseType, course.programCode)
-      );
+      return title && title !== displayTitle ? title : '';
     },
     templateForType(
       this: SevaWorkspaceContext,

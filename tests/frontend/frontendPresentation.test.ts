@@ -125,6 +125,7 @@ describe('AOLF Connect frontend presentation', () => {
     expect(volunteerPage).toContain(':disabled="!cleanPhone(lead.mobile)"');
     expect(volunteerPage).toContain('Call Tracker');
     expect(volunteerPage).toContain('Course Management');
+    expect(volunteerPage).toContain(`x-text="course.courseType || 'No type'"`);
     expect(volunteerPage).not.toContain('type="month"');
     expect(volunteerPage).toContain('showsProgramTabs()');
     expect(volunteerPage).toContain('type="file"');

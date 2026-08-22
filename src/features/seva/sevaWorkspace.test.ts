@@ -836,7 +836,7 @@ describe('Seva workspace course management', () => {
     expect(app.courses[0].hasPamphlet).toBe(false);
   });
 
-  it('uses a non-duplicate subtitle in the WhatsApp course picker', () => {
+  it('only shows a distinct course title as the WhatsApp picker subtitle', () => {
     const app = sevaWorkspace();
     app.appConfig.programs = [{ code: 'HP', label: 'Happiness Program' }];
     const course = {
@@ -858,7 +858,7 @@ describe('Seva workspace course management', () => {
     expect(app.coursePickerSubtitle(course)).toBe('Weekend Happiness Program');
     expect(
       app.coursePickerSubtitle({ ...course, title: 'Happiness Program' })
-    ).toBe('/courses?program=hp');
+    ).toBe('');
   });
 
   it('distinguishes IP Junior and Senior in the WhatsApp picker and links', () => {
@@ -904,8 +904,8 @@ describe('Seva workspace course management', () => {
     expect(app.pickerCourses(lead)).toEqual([junior, senior]);
     expect(app.courseDisplayTitle(junior)).toBe('IP Junior');
     expect(app.courseDisplayTitle(senior)).toBe('IP Senior');
-    expect(app.coursePickerSubtitle(junior)).toBe('/courses?program=ip-j');
-    expect(app.coursePickerSubtitle(senior)).toBe('/courses?program=ip-s');
+    expect(app.coursePickerSubtitle(junior)).toBe('');
+    expect(app.coursePickerSubtitle(senior)).toBe('');
     expect(app.buildWhatsappHref(lead, junior)).toContain(
       encodeURIComponent('https://aolf.club/courses?program=ip-j')
     );
