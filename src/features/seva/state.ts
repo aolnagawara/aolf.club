@@ -106,6 +106,7 @@ export function createSevaWorkspaceInitialState(): SevaWorkspaceState {
     isLoadingCourses: false,
     isCourseEditorOpen: false,
     isCourseSaving: false,
+    courseEditorError: '',
     courseDraft: createEmptyCourseDraft(),
     isCoursePickerOpen: false,
     coursePickerLead: null

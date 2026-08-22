@@ -1098,6 +1098,12 @@
                 class="text-base font-semibold text-slate-900"
                 x-text="courseDraft.id ? 'Edit course' : 'Add course'"
               ></h3>
+              <div
+                x-show="courseEditorError"
+                role="alert"
+                class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700"
+                x-text="courseEditorError"
+              ></div>
               <label class="block text-xs font-medium text-slate-700">
                 Course type
                 <select
@@ -1152,6 +1158,7 @@
               </label>
               <label class="block text-xs font-medium text-slate-700">
                 Pamphlet image
+                <span class="font-normal text-slate-400">(max 600 KB)</span>
                 <input
                   type="file"
                   accept="image/jpeg,image/png,image/webp"

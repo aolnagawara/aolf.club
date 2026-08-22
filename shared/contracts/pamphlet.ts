@@ -1,4 +1,5 @@
-export const MAX_PAMPHLET_BYTES = 1_500_000;
+export const MAX_PAMPHLET_BYTES = 600 * 1024;
+export const PAMPHLET_SIZE_ERROR = 'Pamphlet must be 600 KB or smaller.';
 export const ALLOWED_PAMPHLET_MIME_TYPES = [
   'image/jpeg',
   'image/png',
@@ -43,7 +44,7 @@ export function inspectPamphletUpload(
   if (pamphletByteLengthFromBase64(base64) > MAX_PAMPHLET_BYTES) {
     return {
       ok: false,
-      message: 'Pamphlet must be 1.5 MB or smaller.'
+      message: PAMPHLET_SIZE_ERROR
     };
   }
   if (!String(base64 || '').trim()) {
