@@ -36,13 +36,14 @@ export function formatWhatsappHtml(raw: string): string {
   text = text.replace(
     /(?<!\d)(?:\+91[\s-]*)?[6-9]\d{9}(?!\d)/g,
     (phone: string) => {
-    const digits = phone.replace(/\D/g, '');
-    const href =
-      digits.length === 12 && digits.startsWith('91') ? '+' + digits : digits;
-    return stash(
-      '<a href="tel:' + escapeHtml(href) + '">' + escapeHtml(phone) + '</a>'
-    );
-  });
+      const digits = phone.replace(/\D/g, '');
+      const href =
+        digits.length === 12 && digits.startsWith('91') ? '+' + digits : digits;
+      return stash(
+        '<a href="tel:' + escapeHtml(href) + '">' + escapeHtml(phone) + '</a>'
+      );
+    }
+  );
   text = text.replace(/_\*([^*\n]+)\*_/g, (_match, inner: string) =>
     stash('<em><strong>' + escapeHtml(inner) + '</strong></em>')
   );

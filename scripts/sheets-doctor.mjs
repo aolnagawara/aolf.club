@@ -17,13 +17,10 @@ const REQUEST_TIMEOUT_MS = 10_000;
 async function withDeadline(promise, timeoutMessage, onTimeout) {
   let timeout;
   const deadline = new Promise((_, reject) => {
-    timeout = setTimeout(
-      () => {
-        onTimeout?.();
-        reject(new Error(timeoutMessage));
-      },
-      REQUEST_TIMEOUT_MS
-    );
+    timeout = setTimeout(() => {
+      onTimeout?.();
+      reject(new Error(timeoutMessage));
+    }, REQUEST_TIMEOUT_MS);
   });
   try {
     return await Promise.race([promise, deadline]);

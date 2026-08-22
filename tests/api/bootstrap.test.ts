@@ -1,8 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type {
-  ApiRequest,
-  ApiResponse
-} from '../../api/_lib/http/responses.js';
+import type { ApiRequest, ApiResponse } from '../../api/_lib/http/responses.js';
 import { SheetsRequestError } from '../../api/_lib/sheets/client.js';
 
 const { mockReadSessionUser, mockStore } = vi.hoisted(() => ({

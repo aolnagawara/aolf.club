@@ -95,9 +95,8 @@ describe('CreateLeadRequestSchema', () => {
 
 describe('CourseWriteFieldsSchema', () => {
   it('requires course type and rejects invalid pamphlets', async () => {
-    const { CourseWriteFieldsSchema } = await import(
-      '../../shared/contracts/appContracts'
-    );
+    const { CourseWriteFieldsSchema } =
+      await import('../../shared/contracts/appContracts');
     expect(
       CourseWriteFieldsSchema.parse({
         courseType: 'HP'

@@ -44,10 +44,7 @@ function stripMarkupMarkers(value: string): string {
     .trim();
 }
 
-function absolutePamphletUrl(
-  origin: string,
-  course: PublicCourseView
-): string {
+function absolutePamphletUrl(origin: string, course: PublicCourseView): string {
   const stored = String(course.pamphletImageUrl || '').trim();
   if (/^https:\/\//i.test(stored)) {
     return stored;
@@ -249,7 +246,9 @@ export function publicPageUrlForKey(
   selected: PublicCourseView
 ): string {
   const base = origin.replace(/\/$/, '');
-  const wanted = String(key || '').trim().toLowerCase();
+  const wanted = String(key || '')
+    .trim()
+    .toLowerCase();
   if (wanted && publicCourseFamilySlug(selected.courseType) === wanted) {
     return base + publicCourseFamilyPath(selected.courseType);
   }

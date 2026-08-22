@@ -33,11 +33,7 @@ export type SheetsRequestAction =
   | 'spreadsheets.batchUpdate';
 
 export type SheetsFailureKind =
-  | 'timeout'
-  | 'authentication'
-  | 'permission'
-  | 'network'
-  | 'upstream';
+  'timeout' | 'authentication' | 'permission' | 'network' | 'upstream';
 
 export class SheetsRequestError extends Error {
   constructor(
@@ -175,7 +171,11 @@ export function waitForSheetsOperation<T>(
 }
 
 function readGoogleResponseData<T>(response: unknown): T {
-  if (typeof response !== 'object' || response === null || !('data' in response)) {
+  if (
+    typeof response !== 'object' ||
+    response === null ||
+    !('data' in response)
+  ) {
     throw new Error('Google API response was missing a body.');
   }
   return (response as { data: T }).data;
@@ -200,7 +200,11 @@ function getErrorCode(error: unknown): string {
 function getErrorRequestUrl(error: unknown): string {
   const config = readErrorRecord(readErrorRecord(error)?.config);
   const url = config?.url;
-  return url instanceof URL ? url.toString() : typeof url === 'string' ? url : '';
+  return url instanceof URL
+    ? url.toString()
+    : typeof url === 'string'
+      ? url
+      : '';
 }
 
 function getSafeUpstreamError(error: unknown): string | undefined {

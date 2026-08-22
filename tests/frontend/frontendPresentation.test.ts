@@ -28,7 +28,7 @@ describe('AOLF Connect frontend presentation', () => {
     expect(page).toContain('src="./publicPage.ts"');
     expect(page).toContain('x-data="homepagePrograms"');
     expect(page).toContain('class="program-cta"');
-    expect(page).toContain('text-decoration:underline');
+    expect(page).toMatch(/text-decoration:\s*underline/);
     expect(page).toContain('Know More');
     expect(page).toContain('Happiness Program (Adults)');
     expect(page).toContain('Intuition Program (Kids & Teens)');

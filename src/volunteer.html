@@ -271,374 +271,374 @@
           </div>
 
           <div x-show="workspaceView === 'callTracker'" class="space-y-4">
-          <!-- 2. CAMPAIGN OVERVIEW CARD -->
-          <section
-            class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 space-y-3"
-          >
-            <div class="flex justify-between items-center">
-              <span
-                class="text-xs font-bold uppercase tracking-wider text-slate-400"
-                >Seva Overview</span
-              >
-              <span
-                class="text-xs px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-full font-medium flex items-center gap-1"
-              >
+            <!-- 2. CAMPAIGN OVERVIEW CARD -->
+            <section
+              class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 space-y-3"
+            >
+              <div class="flex justify-between items-center">
                 <span
-                  class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"
-                ></span>
-                Active
-              </span>
-            </div>
-
-            <div>
-              <button
-                type="button"
-                @click="openCampaignSheet()"
-                :disabled="isLoadingBootstrap || isCampaignSwitching"
-                class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 font-medium text-slate-700 text-left flex items-center justify-between disabled:opacity-70 disabled:cursor-not-allowed"
-              >
-                <span x-text="getSelectedCampaignName()"></span>
-                <span
-                  x-show="isCampaignSwitching"
-                  class="inline-block w-4 h-4 border-2 border-slate-300 border-t-indigo-600 rounded-full animate-spin"
-                ></span>
-              </button>
-            </div>
-
-            <div class="space-y-2">
-              <div class="flex items-center justify-between gap-2">
-                <button
-                  type="button"
-                  @click="isFilterPanelOpen = !isFilterPanelOpen"
-                  class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-slate-700 text-xs font-medium"
+                  class="text-xs font-bold uppercase tracking-wider text-slate-400"
+                  >Seva Overview</span
                 >
-                  <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5"></i>
-                  Filter
-                </button>
                 <span
-                  class="text-[10px] text-slate-400 truncate"
-                  x-text="getFilterSummary()"
-                ></span>
+                  class="text-xs px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-full font-medium flex items-center gap-1"
+                >
+                  <span
+                    class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"
+                  ></span>
+                  Active
+                </span>
               </div>
 
-              <div
-                x-show="isFilterPanelOpen"
-                x-transition.opacity
-                class="space-y-2"
-              >
-                <div class="flex items-center gap-1.5 flex-wrap">
-                  <template x-for="chip in filterOptions" :key="chip.id">
-                    <button
-                      type="button"
-                      @click="selectedFilter = chip.id"
-                      class="px-2 py-1 rounded-full text-[10px] border transition-colors"
-                      :class="selectedFilter === chip.id ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-50 text-slate-600 border-slate-200'"
-                      x-text="chip.label"
-                    ></button>
-                  </template>
-                </div>
+              <div>
+                <button
+                  type="button"
+                  @click="openCampaignSheet()"
+                  :disabled="isLoadingBootstrap || isCampaignSwitching"
+                  class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 font-medium text-slate-700 text-left flex items-center justify-between disabled:opacity-70 disabled:cursor-not-allowed"
+                >
+                  <span x-text="getSelectedCampaignName()"></span>
+                  <span
+                    x-show="isCampaignSwitching"
+                    class="inline-block w-4 h-4 border-2 border-slate-300 border-t-indigo-600 rounded-full animate-spin"
+                  ></span>
+                </button>
+              </div>
 
-                <div class="relative">
-                  <i
-                    data-lucide="search"
-                    class="w-3.5 h-3.5 text-slate-400 absolute left-2 top-1/2 -translate-y-1/2"
-                  ></i>
-                  <input
-                    type="text"
-                    x-model.debounce.250ms="searchQuery"
-                    aria-label="Search records"
-                    placeholder="Search name or phone"
-                    class="w-full pl-8 pr-16 text-xs border border-slate-200 rounded-lg py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                  />
+              <div class="space-y-2">
+                <div class="flex items-center justify-between gap-2">
                   <button
                     type="button"
-                    x-show="searchQuery"
-                    @click="searchQuery = ''"
-                    class="absolute right-1.5 top-1/2 -translate-y-1/2 px-1.5 py-0.5 text-[10px] rounded border border-slate-200 text-slate-500 bg-white"
+                    @click="isFilterPanelOpen = !isFilterPanelOpen"
+                    class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-slate-700 text-xs font-medium"
                   >
-                    Clear
+                    <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5"></i>
+                    Filter
                   </button>
+                  <span
+                    class="text-[10px] text-slate-400 truncate"
+                    x-text="getFilterSummary()"
+                  ></span>
                 </div>
 
-                <!-- Program filter chips -->
                 <div
-                  x-show="appConfig.programs && appConfig.programs.length > 0"
-                  class="pt-1"
+                  x-show="isFilterPanelOpen"
+                  x-transition.opacity
+                  class="space-y-2"
                 >
-                  <div class="text-[10px] font-medium text-slate-400 mb-1">
-                    Filter by program
-                  </div>
                   <div class="flex items-center gap-1.5 flex-wrap">
-                    <button
-                      type="button"
-                      @click="programFilter = ''"
-                      class="px-2 py-1 rounded-full text-[10px] border transition-colors"
-                      :class="programFilter === '' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-50 text-slate-600 border-slate-200'"
-                    >
-                      All
-                    </button>
-                    <template
-                      x-for="prog in (appConfig.programs.length ? appConfig.programs : defaultPrograms)"
-                      :key="'pf-' + prog.code"
-                    >
+                    <template x-for="chip in filterOptions" :key="chip.id">
                       <button
                         type="button"
-                        @click="programFilter = (programFilter === prog.code ? '' : prog.code)"
+                        @click="selectedFilter = chip.id"
                         class="px-2 py-1 rounded-full text-[10px] border transition-colors"
-                        :class="programFilter === prog.code ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-50 text-slate-600 border-slate-200'"
-                        x-text="prog.code"
+                        :class="selectedFilter === chip.id ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-50 text-slate-600 border-slate-200'"
+                        x-text="chip.label"
                       ></button>
                     </template>
                   </div>
-                </div>
-              </div>
-            </div>
 
-            <!-- Tappable Metrics Filters -->
-            <div class="pt-1">
-              <div
-                class="bg-slate-50 rounded-xl border border-slate-200 p-1.5 flex items-center gap-1.5 overflow-x-auto"
-              >
-                <button
-                  type="button"
-                  @click="metricFilter = 'all'"
-                  class="shrink-0 px-2.5 py-1 rounded-lg text-xs font-medium border"
-                  :class="metricFilter === 'all' ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-700 border-slate-200'"
-                >
-                  <span x-text="leads.length"></span> Total
-                </button>
-                <button
-                  type="button"
-                  @click="metricFilter = 'due'"
-                  class="shrink-0 px-2.5 py-1 rounded-lg text-xs font-medium border"
-                  :class="metricFilter === 'due' ? 'bg-rose-600 text-white border-rose-600' : 'bg-white text-rose-700 border-rose-200'"
-                >
-                  🔴 <span x-text="countDueFollowUps()"></span> Due
-                </button>
-                <button
-                  type="button"
-                  @click="metricFilter = 'upcoming'"
-                  class="shrink-0 px-2.5 py-1 rounded-lg text-xs font-medium border"
-                  :class="metricFilter === 'upcoming' ? 'bg-amber-500 text-white border-amber-500' : 'bg-white text-amber-700 border-amber-200'"
-                >
-                  🟡 <span x-text="countUpcomingFollowUps()"></span> Upcoming
-                </button>
-              </div>
-            </div>
-          </section>
-
-          <!-- 3. LEADS QUEUE SECTION -->
-          <section class="space-y-3">
-            <div class="flex justify-between items-center">
-              <h2
-                class="text-xs font-bold uppercase tracking-wider text-slate-500"
-                x-text="getCampaignUiMeta().queueTitle"
-              ></h2>
-              <span
-                class="text-xs text-slate-400"
-                x-text="visibleLeads().length + ' shown · ' + filteredLeads().length + ' matching · ' + leads.length + ' total'"
-              ></span>
-            </div>
-
-            <!-- Reusable Lead Card Loop -->
-            <template
-              x-for="lead in visibleLeads()"
-              :key="getLeadKey(lead) + '|' + lead.programSummary"
-            >
-              <div
-                class="bg-white rounded-xl shadow-sm border p-3.5 space-y-2.5 transition-colors touch-manipulation"
-                :class="isLeadSelected(lead) ? 'border-indigo-500 bg-indigo-50/60 ring-2 ring-indigo-200' : 'border-slate-200'"
-                :data-card-id="getLeadKey(lead)"
-                @pointerdown="handleCardPointerDown($event, lead)"
-                @pointermove="handleCardPointerMove($event)"
-                @pointerup="cancelCardLongPress()"
-                @pointerleave="cancelCardLongPress()"
-                @pointercancel="cancelCardLongPress()"
-                @click.capture="handleCardClick($event, lead)"
-                :aria-selected="isLeadSelected(lead)"
-              >
-                <!-- Top Row: Quality, Follow-up, Last Updated -->
-                <div class="flex justify-between items-start gap-2 text-xs">
-                  <div
-                    x-show="isSelectionMode()"
-                    class="flex items-center gap-2 min-w-0"
-                  >
-                    <span
-                      class="w-6 h-6 shrink-0 rounded-md border-2 flex items-center justify-center transition-colors"
-                      :class="isLeadSelected(lead) ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-white border-slate-300 text-transparent'"
-                      aria-hidden="true"
-                      >✓</span
-                    >
-                    <span
-                      class="text-[11px] font-semibold text-indigo-700 truncate"
-                      x-text="isLeadSelected(lead) ? 'Selected' : 'Tap to select'"
-                    ></span>
-                  </div>
-                  <div
-                    x-show="!isSelectionMode()"
-                    class="flex items-center gap-1 flex-wrap min-w-0"
-                  >
+                  <div class="relative">
+                    <i
+                      data-lucide="search"
+                      class="w-3.5 h-3.5 text-slate-400 absolute left-2 top-1/2 -translate-y-1/2"
+                    ></i>
+                    <input
+                      type="text"
+                      x-model.debounce.250ms="searchQuery"
+                      aria-label="Search records"
+                      placeholder="Search name or phone"
+                      class="w-full pl-8 pr-16 text-xs border border-slate-200 rounded-lg py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    />
                     <button
                       type="button"
-                      @click="openOptionSheet('quality', lead)"
-                      class="px-2 py-0.5 rounded font-medium border"
-                      :class="getQualityMeta(lead.quality).className"
-                      x-text="getQualityMeta(lead.quality).icon + ' ' + lead.quality"
-                    ></button>
-                    <span
-                      class="text-slate-500 flex items-center gap-1 min-w-0 ml-2"
+                      x-show="searchQuery"
+                      @click="searchQuery = ''"
+                      class="absolute right-1.5 top-1/2 -translate-y-1/2 px-1.5 py-0.5 text-[10px] rounded border border-slate-200 text-slate-500 bg-white"
+                    >
+                      Clear
+                    </button>
+                  </div>
+
+                  <!-- Program filter chips -->
+                  <div
+                    x-show="appConfig.programs && appConfig.programs.length > 0"
+                    class="pt-1"
+                  >
+                    <div class="text-[10px] font-medium text-slate-400 mb-1">
+                      Filter by program
+                    </div>
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                      <button
+                        type="button"
+                        @click="programFilter = ''"
+                        class="px-2 py-1 rounded-full text-[10px] border transition-colors"
+                        :class="programFilter === '' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-50 text-slate-600 border-slate-200'"
+                      >
+                        All
+                      </button>
+                      <template
+                        x-for="prog in (appConfig.programs.length ? appConfig.programs : defaultPrograms)"
+                        :key="'pf-' + prog.code"
+                      >
+                        <button
+                          type="button"
+                          @click="programFilter = (programFilter === prog.code ? '' : prog.code)"
+                          class="px-2 py-1 rounded-full text-[10px] border transition-colors"
+                          :class="programFilter === prog.code ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-50 text-slate-600 border-slate-200'"
+                          x-text="prog.code"
+                        ></button>
+                      </template>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Tappable Metrics Filters -->
+              <div class="pt-1">
+                <div
+                  class="bg-slate-50 rounded-xl border border-slate-200 p-1.5 flex items-center gap-1.5 overflow-x-auto"
+                >
+                  <button
+                    type="button"
+                    @click="metricFilter = 'all'"
+                    class="shrink-0 px-2.5 py-1 rounded-lg text-xs font-medium border"
+                    :class="metricFilter === 'all' ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-700 border-slate-200'"
+                  >
+                    <span x-text="leads.length"></span> Total
+                  </button>
+                  <button
+                    type="button"
+                    @click="metricFilter = 'due'"
+                    class="shrink-0 px-2.5 py-1 rounded-lg text-xs font-medium border"
+                    :class="metricFilter === 'due' ? 'bg-rose-600 text-white border-rose-600' : 'bg-white text-rose-700 border-rose-200'"
+                  >
+                    🔴 <span x-text="countDueFollowUps()"></span> Due
+                  </button>
+                  <button
+                    type="button"
+                    @click="metricFilter = 'upcoming'"
+                    class="shrink-0 px-2.5 py-1 rounded-lg text-xs font-medium border"
+                    :class="metricFilter === 'upcoming' ? 'bg-amber-500 text-white border-amber-500' : 'bg-white text-amber-700 border-amber-200'"
+                  >
+                    🟡 <span x-text="countUpcomingFollowUps()"></span> Upcoming
+                  </button>
+                </div>
+              </div>
+            </section>
+
+            <!-- 3. LEADS QUEUE SECTION -->
+            <section class="space-y-3">
+              <div class="flex justify-between items-center">
+                <h2
+                  class="text-xs font-bold uppercase tracking-wider text-slate-500"
+                  x-text="getCampaignUiMeta().queueTitle"
+                ></h2>
+                <span
+                  class="text-xs text-slate-400"
+                  x-text="visibleLeads().length + ' shown · ' + filteredLeads().length + ' matching · ' + leads.length + ' total'"
+                ></span>
+              </div>
+
+              <!-- Reusable Lead Card Loop -->
+              <template
+                x-for="lead in visibleLeads()"
+                :key="getLeadKey(lead) + '|' + lead.programSummary"
+              >
+                <div
+                  class="bg-white rounded-xl shadow-sm border p-3.5 space-y-2.5 transition-colors touch-manipulation"
+                  :class="isLeadSelected(lead) ? 'border-indigo-500 bg-indigo-50/60 ring-2 ring-indigo-200' : 'border-slate-200'"
+                  :data-card-id="getLeadKey(lead)"
+                  @pointerdown="handleCardPointerDown($event, lead)"
+                  @pointermove="handleCardPointerMove($event)"
+                  @pointerup="cancelCardLongPress()"
+                  @pointerleave="cancelCardLongPress()"
+                  @pointercancel="cancelCardLongPress()"
+                  @click.capture="handleCardClick($event, lead)"
+                  :aria-selected="isLeadSelected(lead)"
+                >
+                  <!-- Top Row: Quality, Follow-up, Last Updated -->
+                  <div class="flex justify-between items-start gap-2 text-xs">
+                    <div
+                      x-show="isSelectionMode()"
+                      class="flex items-center gap-2 min-w-0"
+                    >
+                      <span
+                        class="w-6 h-6 shrink-0 rounded-md border-2 flex items-center justify-center transition-colors"
+                        :class="isLeadSelected(lead) ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-white border-slate-300 text-transparent'"
+                        aria-hidden="true"
+                        >✓</span
+                      >
+                      <span
+                        class="text-[11px] font-semibold text-indigo-700 truncate"
+                        x-text="isLeadSelected(lead) ? 'Selected' : 'Tap to select'"
+                      ></span>
+                    </div>
+                    <div
+                      x-show="!isSelectionMode()"
+                      class="flex items-center gap-1 flex-wrap min-w-0"
                     >
                       <button
                         type="button"
-                        @click="openFollowUpPicker(lead)"
-                        class="inline-flex items-center gap-1 text-[11px] bg-transparent border-b border-dashed border-slate-300 focus:outline-none focus:border-indigo-500 max-w-[116px]"
+                        @click="openOptionSheet('quality', lead)"
+                        class="px-2 py-0.5 rounded font-medium border"
+                        :class="getQualityMeta(lead.quality).className"
+                        x-text="getQualityMeta(lead.quality).icon + ' ' + lead.quality"
+                      ></button>
+                      <span
+                        class="text-slate-500 flex items-center gap-1 min-w-0 ml-2"
                       >
-                        <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
-                        <span
-                          class="truncate"
-                          x-text="formatRelativeDate(lead.followUp, 'Follow-up')"
-                        ></span>
+                        <button
+                          type="button"
+                          @click="openFollowUpPicker(lead)"
+                          class="inline-flex items-center gap-1 text-[11px] bg-transparent border-b border-dashed border-slate-300 focus:outline-none focus:border-indigo-500 max-w-[116px]"
+                        >
+                          <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
+                          <span
+                            class="truncate"
+                            x-text="formatRelativeDate(lead.followUp, 'Follow-up')"
+                          ></span>
+                        </button>
+                      </span>
+                    </div>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                      <span
+                        class="text-[10px] text-slate-400"
+                        x-text="formatShortDate(lead.lastUpdated, 'Just now')"
+                      ></span>
+                      <button
+                        type="button"
+                        x-show="lead.isDirty"
+                        @click="discardLeadChanges(lead)"
+                        class="inline-flex items-center justify-center w-6 h-6 rounded-full border border-slate-200 bg-white text-slate-500"
+                        aria-label="Discard record changes"
+                        title="Discard changes"
+                      >
+                        <span aria-hidden="true">↺</span>
                       </button>
-                    </span>
-                  </div>
-                  <div class="flex items-center gap-1.5 shrink-0">
-                    <span
-                      class="text-[10px] text-slate-400"
-                      x-text="formatShortDate(lead.lastUpdated, 'Just now')"
-                    ></span>
-                    <button
-                      type="button"
-                      x-show="lead.isDirty"
-                      @click="discardLeadChanges(lead)"
-                      class="inline-flex items-center justify-center w-6 h-6 rounded-full border border-slate-200 bg-white text-slate-500"
-                      aria-label="Discard record changes"
-                      title="Discard changes"
-                    >
-                      <span aria-hidden="true">↺</span>
-                    </button>
-                    <button
-                      type="button"
-                      x-show="lead.isDirty"
-                      @click="commitLeadChanges(lead)"
-                      class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-indigo-600 text-white"
-                      aria-label="Save record changes"
-                      title="Save changes"
-                    >
-                      <span aria-hidden="true">✓</span>
-                    </button>
-                  </div>
-                </div>
-
-                <!-- Second Row: Editable Name, Call Status Dropdown, Call/WhatsApp Actions -->
-                <div class="flex items-center justify-between gap-2">
-                  <!-- Name (Editable on double click) -->
-                  <div
-                    class="font-semibold text-slate-900 text-sm truncate flex-1"
-                  >
-                    <span
-                      x-show="!lead.isEditingName"
-                      @dblclick="lead.isEditingName = true"
-                      x-text="lead.name"
-                      class="cursor-pointer"
-                      title="Double-click to edit name"
-                    ></span>
-                    <input
-                      type="text"
-                      x-show="lead.isEditingName"
-                      x-model="lead.name"
-                      @input="markLeadDirty(lead)"
-                      @blur="finishNameEditing(lead)"
-                      @keyup.enter="$event.currentTarget.blur()"
-                      @keyup.escape="$event.currentTarget.blur()"
-                      class="w-full border rounded px-1 text-sm outline-none focus:ring-1 focus:ring-indigo-500"
-                    />
-                    <div
-                      x-show="shouldShowProgramEditor()"
-                      @click="openProgramEditor(lead)"
-                      class="mt-0.5 text-[11px] leading-snug font-medium text-slate-500 truncate max-w-[220px] cursor-pointer"
-                      title="Tap to edit programs"
-                      x-text="lead.programSummary"
-                    ></div>
-                  </div>
-
-                  <!-- Call Status Badge -->
-                  <button
-                    type="button"
-                    @click="openOptionSheet('status', lead)"
-                    class="text-xs border border-slate-200 rounded px-2 py-1 bg-slate-50 text-slate-700"
-                    x-text="getStatusMeta(lead.status).icon + ' ' + lead.status"
-                  ></button>
-
-                  <!-- Call & WhatsApp Action Icons -->
-                  <div class="flex items-center space-x-1 text-slate-600">
-                    <!-- Native Phone Call -->
-                    <button
-                      @click="dialLead(lead)"
-                      type="button"
-                      :disabled="!cleanPhone(lead.mobile)"
-                      class="p-1.5 bg-slate-50 hover:bg-emerald-50 hover:text-emerald-600 rounded-full transition-colors border border-slate-200"
-                      :class="!cleanPhone(lead.mobile) ? 'cursor-not-allowed opacity-40' : ''"
-                      title="Call Lead"
-                      aria-label="Call lead"
-                    >
-                      <i data-lucide="phone" class="w-4 h-4"></i>
-                    </button>
-                    <!-- WhatsApp Web/App Redirect -->
-                    <button
-                      type="button"
-                      x-show="canOpenWhatsapp(lead)"
-                      @click="openWhatsappForLead(lead)"
-                      class="p-1.5 bg-slate-50 hover:bg-green-50 hover:text-green-600 rounded-full transition-colors border border-slate-200"
-                      title="Open WhatsApp"
-                      aria-label="Open WhatsApp"
-                    >
-                      <svg
-                        data-icon="whatsapp"
-                        viewBox="0 0 16 16"
-                        fill="currentColor"
-                        class="w-4 h-4"
-                        aria-hidden="true"
+                      <button
+                        type="button"
+                        x-show="lead.isDirty"
+                        @click="commitLeadChanges(lead)"
+                        class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-indigo-600 text-white"
+                        aria-label="Save record changes"
+                        title="Save changes"
                       >
-                        <path
-                          d="M13.601 2.326A7.854 7.854 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.933 7.933 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93a7.898 7.898 0 0 0-2.327-5.607m-5.607 12.2a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.066-.315-.099-.445.099-.133.197-.513.646-.627.775-.116.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.984-.59-.525-.987-1.175-1.103-1.372-.116-.198-.013-.306.087-.404.09-.088.197-.232.296-.346.1-.116.133-.198.198-.33.066-.133.033-.248-.017-.347-.05-.099-.445-1.076-.611-1.47-.16-.389-.323-.335-.445-.34-.116-.006-.248-.006-.38-.006a.729.729 0 0 0-.529.248c-.182.198-.69.677-.69 1.654s.71 1.916.81 2.049c.098.132 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.15.906.129 1.248.08.38-.058 1.171-.48 1.338-.943.164-.462.164-.86.116-.943-.05-.082-.182-.132-.38-.23"
-                        />
-                      </svg>
-                    </button>
+                        <span aria-hidden="true">✓</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Second Row: Editable Name, Call Status Dropdown, Call/WhatsApp Actions -->
+                  <div class="flex items-center justify-between gap-2">
+                    <!-- Name (Editable on double click) -->
+                    <div
+                      class="font-semibold text-slate-900 text-sm truncate flex-1"
+                    >
+                      <span
+                        x-show="!lead.isEditingName"
+                        @dblclick="lead.isEditingName = true"
+                        x-text="lead.name"
+                        class="cursor-pointer"
+                        title="Double-click to edit name"
+                      ></span>
+                      <input
+                        type="text"
+                        x-show="lead.isEditingName"
+                        x-model="lead.name"
+                        @input="markLeadDirty(lead)"
+                        @blur="finishNameEditing(lead)"
+                        @keyup.enter="$event.currentTarget.blur()"
+                        @keyup.escape="$event.currentTarget.blur()"
+                        class="w-full border rounded px-1 text-sm outline-none focus:ring-1 focus:ring-indigo-500"
+                      />
+                      <div
+                        x-show="shouldShowProgramEditor()"
+                        @click="openProgramEditor(lead)"
+                        class="mt-0.5 text-[11px] leading-snug font-medium text-slate-500 truncate max-w-[220px] cursor-pointer"
+                        title="Tap to edit programs"
+                        x-text="lead.programSummary"
+                      ></div>
+                    </div>
+
+                    <!-- Call Status Badge -->
+                    <button
+                      type="button"
+                      @click="openOptionSheet('status', lead)"
+                      class="text-xs border border-slate-200 rounded px-2 py-1 bg-slate-50 text-slate-700"
+                      x-text="getStatusMeta(lead.status).icon + ' ' + lead.status"
+                    ></button>
+
+                    <!-- Call & WhatsApp Action Icons -->
+                    <div class="flex items-center space-x-1 text-slate-600">
+                      <!-- Native Phone Call -->
+                      <button
+                        @click="dialLead(lead)"
+                        type="button"
+                        :disabled="!cleanPhone(lead.mobile)"
+                        class="p-1.5 bg-slate-50 hover:bg-emerald-50 hover:text-emerald-600 rounded-full transition-colors border border-slate-200"
+                        :class="!cleanPhone(lead.mobile) ? 'cursor-not-allowed opacity-40' : ''"
+                        title="Call Lead"
+                        aria-label="Call lead"
+                      >
+                        <i data-lucide="phone" class="w-4 h-4"></i>
+                      </button>
+                      <!-- WhatsApp Web/App Redirect -->
+                      <button
+                        type="button"
+                        x-show="canOpenWhatsapp(lead)"
+                        @click="openWhatsappForLead(lead)"
+                        class="p-1.5 bg-slate-50 hover:bg-green-50 hover:text-green-600 rounded-full transition-colors border border-slate-200"
+                        title="Open WhatsApp"
+                        aria-label="Open WhatsApp"
+                      >
+                        <svg
+                          data-icon="whatsapp"
+                          viewBox="0 0 16 16"
+                          fill="currentColor"
+                          class="w-4 h-4"
+                          aria-hidden="true"
+                        >
+                          <path
+                            d="M13.601 2.326A7.854 7.854 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.933 7.933 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93a7.898 7.898 0 0 0-2.327-5.607m-5.607 12.2a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.066-.315-.099-.445.099-.133.197-.513.646-.627.775-.116.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.984-.59-.525-.987-1.175-1.103-1.372-.116-.198-.013-.306.087-.404.09-.088.197-.232.296-.346.1-.116.133-.198.198-.33.066-.133.033-.248-.017-.347-.05-.099-.445-1.076-.611-1.47-.16-.389-.323-.335-.445-.34-.116-.006-.248-.006-.38-.006a.729.729 0 0 0-.529.248c-.182.198-.69.677-.69 1.654s.71 1.916.81 2.049c.098.132 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.15.906.129 1.248.08.38-.058 1.171-.48 1.338-.943.164-.462.164-.86.116-.943-.05-.082-.182-.132-.38-.23"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Third Row: Note Text Box -->
+                  <div>
+                    <textarea
+                      x-model="lead.notes"
+                      @input="markLeadDirty(lead)"
+                      aria-label="Record notes"
+                      rows="2"
+                      placeholder="Add notes..."
+                      class="w-full text-xs p-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-slate-50/50 text-slate-700 resize-none"
+                    ></textarea>
                   </div>
                 </div>
+              </template>
 
-                <!-- Third Row: Note Text Box -->
-                <div>
-                  <textarea
-                    x-model="lead.notes"
-                    @input="markLeadDirty(lead)"
-                    aria-label="Record notes"
-                    rows="2"
-                    placeholder="Add notes..."
-                    class="w-full text-xs p-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-slate-50/50 text-slate-700 resize-none"
-                  ></textarea>
-                </div>
+              <div x-show="hasMoreLeads()" class="flex justify-center pt-1">
+                <button
+                  type="button"
+                  @click="loadMoreLeads()"
+                  class="px-4 py-2 text-xs font-medium rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+                  aria-label="Load more Seva records"
+                >
+                  Load more
+                </button>
               </div>
-            </template>
 
-            <div x-show="hasMoreLeads()" class="flex justify-center pt-1">
-              <button
-                type="button"
-                @click="loadMoreLeads()"
-                class="px-4 py-2 text-xs font-medium rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
-                aria-label="Load more Seva records"
+              <div
+                x-show="filteredLeads().length === 0"
+                class="bg-white rounded-xl border border-slate-200 p-4 text-center text-xs text-slate-500"
               >
-                Load more
-              </button>
-            </div>
-
-            <div
-              x-show="filteredLeads().length === 0"
-              class="bg-white rounded-xl border border-slate-200 p-4 text-center text-xs text-slate-500"
-            >
-              No records found for this filter or search.
-            </div>
-          </section>
+                No records found for this filter or search.
+              </div>
+            </section>
           </div>
 
           <section
@@ -1007,15 +1007,17 @@
                     x-for="prog in (appConfig.programs.length ? appConfig.programs : defaultPrograms)"
                     :key="prog.code"
                   >
-                    <option :value="prog.code" x-text="prog.label + ' (' + prog.code + ')'"></option>
+                    <option
+                      :value="prog.code"
+                      x-text="prog.label + ' (' + prog.code + ')'"
+                    ></option>
                   </template>
                 </select>
               </label>
-              <div
-                class="space-y-1"
-                x-show="showsProgramTabs()"
-              >
-                <span class="block text-xs font-medium text-slate-700">Program</span>
+              <div class="space-y-1" x-show="showsProgramTabs()">
+                <span class="block text-xs font-medium text-slate-700"
+                  >Program</span
+                >
                 <div class="grid grid-cols-2 gap-1 rounded-lg bg-slate-100 p-1">
                   <template x-for="program in ipPrograms()" :key="program.code">
                     <button
@@ -1028,7 +1030,8 @@
                   </template>
                 </div>
                 <span class="block text-[11px] font-normal text-slate-500">
-                  Add one IP course per age group. Each has its own message and pamphlet.
+                  Add one IP course per age group. Each has its own message and
+                  pamphlet.
                 </span>
               </div>
               <label class="block text-xs font-medium text-slate-700">
@@ -1040,8 +1043,8 @@
                 ></textarea>
                 <span class="mt-1 block text-[11px] font-normal text-slate-500">
                   Put dates, time, venue, and registration in this message. Keep
-                  {courseUrl} just before another URL so WhatsApp can preview the
-                  pamphlet. {name} is optional.
+                  {courseUrl} just before another URL so WhatsApp can preview
+                  the pamphlet. {name} is optional.
                 </span>
               </label>
               <label class="block text-xs font-medium text-slate-700">
@@ -1067,7 +1070,9 @@
               >
                 Remove pamphlet
               </button>
-              <label class="flex items-center gap-2 text-xs font-medium text-slate-700">
+              <label
+                class="flex items-center gap-2 text-xs font-medium text-slate-700"
+              >
                 <input type="checkbox" x-model="courseDraft.isActive" />
                 Active
               </label>
@@ -1110,13 +1115,19 @@
               >
                 Select a course
               </div>
-              <template x-for="course in pickerCourses(coursePickerLead)" :key="course.id">
+              <template
+                x-for="course in pickerCourses(coursePickerLead)"
+                :key="course.id"
+              >
                 <button
                   type="button"
                   @click="selectCourseForWhatsapp(course)"
                   class="w-full min-h-11 text-left px-2 py-2 rounded-lg text-sm border border-slate-200 bg-white text-slate-700"
                 >
-                  <span class="font-medium" x-text="courseDisplayTitle(course)"></span>
+                  <span
+                    class="font-medium"
+                    x-text="courseDisplayTitle(course)"
+                  ></span>
                   <span
                     class="block text-[11px] text-slate-500"
                     x-text="coursePickerSubtitle(course)"

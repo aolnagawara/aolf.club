@@ -1,9 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  ApiClient,
-  ApiClientError,
-  toUserErrorMessage
-} from './apiClient';
+import { ApiClient, ApiClientError, toUserErrorMessage } from './apiClient';
 
 describe('ApiClient error handling', () => {
   beforeEach(() => {
@@ -37,9 +33,9 @@ describe('ApiClient error handling', () => {
       )
     );
 
-    const error = await new ApiClient('').get('/api/bootstrap').catch(
-      (reason: unknown) => reason
-    );
+    const error = await new ApiClient('')
+      .get('/api/bootstrap')
+      .catch((reason: unknown) => reason);
 
     expect(error).toEqual(expect.any(ApiClientError));
     expect(error).toMatchObject({
@@ -52,11 +48,14 @@ describe('ApiClient error handling', () => {
   });
 
   it('turns a browser network exception into a safe retryable error', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('fetch failed')));
-
-    const error = await new ApiClient('').get('/api/bootstrap').catch(
-      (reason: unknown) => reason
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockRejectedValue(new TypeError('fetch failed'))
     );
+
+    const error = await new ApiClient('')
+      .get('/api/bootstrap')
+      .catch((reason: unknown) => reason);
 
     expect(error).toMatchObject({
       status: 0,

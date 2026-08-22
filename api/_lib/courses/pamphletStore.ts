@@ -4,10 +4,7 @@ export type PamphletBytes = {
 };
 
 export type PamphletStore = {
-  upload(
-    courseId: string,
-    pamphlet: PamphletBytes
-  ): Promise<string>;
+  upload(courseId: string, pamphlet: PamphletBytes): Promise<string>;
   download(fileId: string): Promise<PamphletBytes | null>;
   remove(fileId: string): Promise<void>;
   removeCourse(courseId: string, fileId?: string): Promise<void>;

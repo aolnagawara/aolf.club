@@ -6,10 +6,7 @@ import {
   publicPageUrlForKey
 } from '../_lib/courses/publicHtml.js';
 
-function headerValue(
-  headers: ApiRequest['headers'],
-  name: string
-): string {
+function headerValue(headers: ApiRequest['headers'], name: string): string {
   const value = headers[name] ?? headers[name.toLowerCase()];
   if (Array.isArray(value)) {
     return String(value[0] || '');
@@ -44,11 +41,7 @@ export function getRequestOrigin(req: ApiRequest): string {
   return proto + '://' + host;
 }
 
-async function servePamphlet(
-  req: ApiRequest,
-  res: ApiResponse,
-  key: string
-) {
+async function servePamphlet(req: ApiRequest, res: ApiResponse, key: string) {
   res.setHeader('Cache-Control', 'public, max-age=60');
 
   if (req.method && req.method !== 'GET' && req.method !== 'HEAD') {

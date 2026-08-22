@@ -4,10 +4,7 @@ import type {
   CampaignUiMeta,
   OptionItem
 } from './types';
-import {
-  isApiClientError,
-  toUserErrorMessage
-} from '../../services/apiClient';
+import { isApiClientError, toUserErrorMessage } from '../../services/apiClient';
 import {
   getDefaultCampaignUiMeta,
   getDefaultQualityOptionsForCampaignType,
@@ -48,11 +45,7 @@ function consumeAuthRedirectError(): string {
 
   url.searchParams.delete('error');
   if (window.history && typeof window.history.replaceState === 'function') {
-    window.history.replaceState(
-      {},
-      '',
-      url.pathname + url.search + url.hash
-    );
+    window.history.replaceState({}, '', url.pathname + url.search + url.hash);
   }
   return (
     AUTH_REDIRECT_MESSAGES[errorCode] ||

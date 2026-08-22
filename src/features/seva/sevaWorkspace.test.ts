@@ -860,8 +860,9 @@ describe('Seva workspace course management', () => {
 
     expect(app.courseDisplayTitle(course)).toBe('Happiness Program');
     expect(app.coursePickerSubtitle(course)).toBe('Weekend Happiness Program');
-    expect(app.coursePickerSubtitle({ ...course, title: 'Happiness Program' }))
-      .toBe('/c/hp');
+    expect(
+      app.coursePickerSubtitle({ ...course, title: 'Happiness Program' })
+    ).toBe('/c/hp');
   });
 });
 

@@ -146,7 +146,10 @@ export function reportApiError(
 ): ReportedApiError {
   const classified = classifyApiError(error, context, override);
   const traceId = randomUUID();
-  const durationMs = Math.max(0, Date.now() - (context.startedAt || Date.now()));
+  const durationMs = Math.max(
+    0,
+    Date.now() - (context.startedAt || Date.now())
+  );
   const sheetsDetails =
     error instanceof SheetsRequestError
       ? {

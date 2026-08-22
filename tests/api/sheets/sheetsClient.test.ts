@@ -70,11 +70,10 @@ describe('Sheets operation deadline', () => {
   it('rejects a Google response that has no data body', async () => {
     mockJwtRequest.mockResolvedValue({});
 
-    const error = await appendSheetRow(
-      'data',
-      'Leads!A:M',
-      ['lead-1', 'Example Lead']
-    ).catch((reason: unknown) => reason);
+    const error = await appendSheetRow('data', 'Leads!A:M', [
+      'lead-1',
+      'Example Lead'
+    ]).catch((reason: unknown) => reason);
 
     expect(error).toEqual(expect.any(SheetsRequestError));
     expect(error).toMatchObject({
@@ -121,19 +120,16 @@ describe('Sheets operation deadline', () => {
       config: { url: 'https://sheets.googleapis.com/v4/spreadsheets/id' }
     });
 
-    const error = await appendSheetRow(
-      'data',
-      'Leads!A:M',
-      ['lead-1']
-    ).catch((reason: unknown) => reason);
+    const error = await appendSheetRow('data', 'Leads!A:M', ['lead-1']).catch(
+      (reason: unknown) => reason
+    );
 
     expect(error).toEqual(expect.any(SheetsRequestError));
     expect(error).toMatchObject({
       kind: 'upstream',
       upstreamStatus: 503,
       retryable: true,
-      safeUpstreamError:
-        'UNAVAILABLE: Service temporarily unavailable.'
+      safeUpstreamError: 'UNAVAILABLE: Service temporarily unavailable.'
     });
   });
 });

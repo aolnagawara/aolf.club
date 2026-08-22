@@ -223,19 +223,13 @@ export function createSheetsHealthHandler(
         .getApiDataStore()
         .authorizeUser(user, operation);
       if (!authorization.allowed) {
-        return sendApiError(
-          res,
-          new Error('Authorization denied.'),
-          context,
-          {
-            status: 403,
-            code: 'FORBIDDEN',
-            message:
-              'Your account is not authorized to view Sheets diagnostics.',
-            retryable: false,
-            category: 'authorization_denied'
-          }
-        );
+        return sendApiError(res, new Error('Authorization denied.'), context, {
+          status: 403,
+          code: 'FORBIDDEN',
+          message: 'Your account is not authorized to view Sheets diagnostics.',
+          retryable: false,
+          category: 'authorization_denied'
+        });
       }
 
       return res.status(200).json({

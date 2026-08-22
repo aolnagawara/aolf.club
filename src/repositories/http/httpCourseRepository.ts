@@ -29,10 +29,7 @@ export class HttpCourseRepository implements CourseRepository {
     payload: CreateCourseRequest
   ): Promise<CreateCourseResponse> {
     const parsed = CreateCourseRequestSchema.parse(payload);
-    const response = await this.apiClient.post<unknown>(
-      '/api/courses',
-      parsed
-    );
+    const response = await this.apiClient.post<unknown>('/api/courses', parsed);
     return CreateCourseResponseSchema.parse(response);
   }
 

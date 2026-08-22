@@ -1,10 +1,7 @@
 import type { ApiErrorCode } from '../../shared/contracts/appContracts';
 
 export type ApiClientErrorCode =
-  | ApiErrorCode
-  | 'NETWORK_ERROR'
-  | 'TIMEOUT'
-  | 'INVALID_RESPONSE';
+  ApiErrorCode | 'NETWORK_ERROR' | 'TIMEOUT' | 'INVALID_RESPONSE';
 
 export class ApiClient {
   constructor(
@@ -113,9 +110,7 @@ export class ApiClient {
         typeof errorData?.code === 'string'
           ? (errorData.code as ApiClientErrorCode)
           : undefined,
-        typeof errorData?.retryable === 'boolean'
-          ? errorData.retryable
-          : false,
+        typeof errorData?.retryable === 'boolean' ? errorData.retryable : false,
         typeof errorData?.traceId === 'string' ? errorData.traceId : undefined
       );
     }

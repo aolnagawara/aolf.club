@@ -62,9 +62,13 @@ export function createCourseWorkspaceMethods() {
     },
     pickerCourses(this: SevaWorkspaceContext, lead?: Lead | null): Course[] {
       const active = this.activeCourses();
-      const programs = (lead?.wishlistPrograms || []).map((item) =>
-        String(item || '').trim().toUpperCase()
-      ).filter(Boolean);
+      const programs = (lead?.wishlistPrograms || [])
+        .map((item) =>
+          String(item || '')
+            .trim()
+            .toUpperCase()
+        )
+        .filter(Boolean);
       if (!programs.length) {
         return active;
       }
@@ -113,8 +117,7 @@ export function createCourseWorkspaceMethods() {
         return;
       }
       if (isIpCourseType(this.courseDraft.courseType)) {
-        this.courseDraft.programCode =
-          this.courseDraft.programCode || 'j';
+        this.courseDraft.programCode = this.courseDraft.programCode || 'j';
       } else {
         this.courseDraft.programCode = '';
       }
@@ -132,10 +135,7 @@ export function createCourseWorkspaceMethods() {
         this.courseDraft.programCode
       );
     },
-    onPamphletSelected(
-      this: SevaWorkspaceContext,
-      event: Event
-    ): void {
+    onPamphletSelected(this: SevaWorkspaceContext, event: Event): void {
       const input = event.target as HTMLInputElement | null;
       const file = input?.files?.[0];
       if (!file) {
@@ -176,7 +176,10 @@ export function createCourseWorkspaceMethods() {
         await this.loadCourses();
       }
     },
-    async loadCourses(this: SevaWorkspaceContext, force = false): Promise<void> {
+    async loadCourses(
+      this: SevaWorkspaceContext,
+      force = false
+    ): Promise<void> {
       if (this.isLoadingCourses) {
         return;
       }
@@ -291,7 +294,10 @@ export function createCourseWorkspaceMethods() {
         );
       }
     },
-    async deleteCourse(this: SevaWorkspaceContext, course: Course): Promise<void> {
+    async deleteCourse(
+      this: SevaWorkspaceContext,
+      course: Course
+    ): Promise<void> {
       if (
         !window.confirm(
           'Delete ' +
@@ -339,10 +345,7 @@ export function createCourseWorkspaceMethods() {
       this.coursePickerLead = lead;
       this.isCoursePickerOpen = true;
     },
-    selectCourseForWhatsapp(
-      this: SevaWorkspaceContext,
-      course: Course
-    ): void {
+    selectCourseForWhatsapp(this: SevaWorkspaceContext, course: Course): void {
       const lead = this.coursePickerLead;
       this.closeCoursePicker();
       if (!lead || !course.isActive) {

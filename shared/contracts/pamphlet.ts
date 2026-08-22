@@ -12,7 +12,9 @@ export function isAllowedPamphletMimeType(
   value: string
 ): value is AllowedPamphletMimeType {
   return (ALLOWED_PAMPHLET_MIME_TYPES as readonly string[]).includes(
-    String(value || '').trim().toLowerCase()
+    String(value || '')
+      .trim()
+      .toLowerCase()
   );
 }
 

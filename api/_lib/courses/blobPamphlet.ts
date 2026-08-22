@@ -139,7 +139,10 @@ export function createBlobPamphletStore(
   return {
     async upload(courseId, pamphlet) {
       const pathname =
-        'courses/' + courseId + '/pamphlet' + extensionForMime(pamphlet.mimeType);
+        'courses/' +
+        courseId +
+        '/pamphlet' +
+        extensionForMime(pamphlet.mimeType);
       const response = await withDeadline(
         fetchImpl(BLOB_API_URL + '/?pathname=' + encodeURIComponent(pathname), {
           method: 'PUT',

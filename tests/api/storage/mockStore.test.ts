@@ -24,9 +24,11 @@ describe('mock store courses', () => {
       { courseType: 'Sahaj', isActive: true }
     );
     expect(created.course.title).toBe('Sahaj');
-    await expect(getPublicCourseById(created.course.id)).resolves.toMatchObject({
-      title: 'Sahaj'
-    });
+    await expect(getPublicCourseById(created.course.id)).resolves.toMatchObject(
+      {
+        title: 'Sahaj'
+      }
+    );
     await deleteCourseForUser({ id: created.course.id });
     await expect(getPublicCourseById(created.course.id)).resolves.toBeNull();
   });

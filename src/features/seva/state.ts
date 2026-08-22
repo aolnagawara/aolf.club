@@ -7,9 +7,7 @@ import {
   DEFAULT_STATUS_ICON_MAP,
   getDefaultPrograms
 } from '../../config/campaignDefaults';
-import {
-  templateForCourseType
-} from '../../../shared/contracts/courseDefaults.mjs';
+import { templateForCourseType } from '../../../shared/contracts/courseDefaults.mjs';
 
 export function createEmptyCourseDraft(courseType = 'HP') {
   return {

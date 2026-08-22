@@ -13,7 +13,7 @@ const COURSE = {
   courseType: 'HP',
   programCode: '',
   whatsappTemplate:
-    '_*HAPPINESS PROGRAM*_\n*Benefits You\'ll Experience:*\nRegister at https://aolt.in/874234',
+    "_*HAPPINESS PROGRAM*_\n*Benefits You'll Experience:*\nRegister at https://aolt.in/874234",
   hasPamphlet: true
 };
 
@@ -51,13 +51,13 @@ describe('public course HTML', () => {
       origin: 'https://aolf.club',
       logoUrl: 'https://aolf.club/assets/aolf-connect-logo.png'
     });
-    expect(rendered.html).toContain('<em><strong>HAPPINESS PROGRAM</strong></em>');
+    expect(rendered.html).toContain(
+      '<em><strong>HAPPINESS PROGRAM</strong></em>'
+    );
     expect(rendered.html).toContain(
       '<strong>Benefits You&#39;ll Experience:</strong>'
     );
-    expect(rendered.html).toContain(
-      'href="https://aolt.in/874234"'
-    );
+    expect(rendered.html).toContain('href="https://aolt.in/874234"');
     expect(rendered.html).toContain('target="_blank"');
     expect(rendered.html).not.toContain('*Benefits');
   });

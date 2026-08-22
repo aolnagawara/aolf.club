@@ -198,7 +198,11 @@ export function expectedCourseHeaders(): readonly string[] {
 }
 
 export function hasDuplicateCourseSlot(
-  courses: readonly { id?: string; courseType?: string; programCode?: string }[],
+  courses: readonly {
+    id?: string;
+    courseType?: string;
+    programCode?: string;
+  }[],
   candidate: { id?: string; courseType: string; programCode?: string }
 ): boolean {
   const wanted = courseSlotKey(candidate.courseType, candidate.programCode);
