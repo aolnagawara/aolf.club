@@ -3,6 +3,7 @@ import { dirname, resolve } from 'node:path';
 import * as XLSX from 'xlsx';
 import { SHEET_HEADERS } from '../shared/contracts/sheetContract.mjs';
 import {
+  DEFAULT_EVENT_WHATSAPP_TEMPLATE,
   defaultCourseTemplateRows,
   DEFAULT_HP_WHATSAPP_TEMPLATE,
   formatCourseTitle
@@ -88,7 +89,8 @@ const configRows = [
   ['programDisplayOrder', '["HP","VTP","DSN","IP","IP2","Sahaj","YES+"]'],
   ['showDonePrograms', 'true'],
   ['defaultCampaignMessage', 'Hi {name}, greetings from Art of Living.'],
-  ['whatsappCountryCode', '91']
+  ['whatsappCountryCode', '91'],
+  ['centerWhatsappNumber', '918884560660']
 ];
 
 const allowedUsersRows = [
@@ -101,10 +103,26 @@ const coursesRows = [
   [...SHEET_HEADERS.courses],
   [
     'crsHpNcr01AbcDefGhiJK',
+    'Course',
     'HP',
     '',
     formatCourseTitle('HP', ''),
     DEFAULT_HP_WHATSAPP_TEMPLATE,
+    '',
+    '',
+    'true',
+    '2026-08-01T12:00:00.000Z',
+    '2026-08-01T12:00:00.000Z',
+    'volunteer@example.com',
+    'volunteer@example.com'
+  ],
+  [
+    'evtSats01AbcDefGhiJKL',
+    'Event',
+    '',
+    '',
+    'Weekly Member Follow-up',
+    DEFAULT_EVENT_WHATSAPP_TEMPLATE,
     '',
     '',
     'true',
@@ -143,7 +161,7 @@ XLSX.utils.book_append_sheet(
 XLSX.utils.book_append_sheet(
   workbook,
   XLSX.utils.aoa_to_sheet(coursesRows),
-  'Courses'
+  'Activities'
 );
 XLSX.utils.book_append_sheet(
   workbook,

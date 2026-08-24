@@ -101,6 +101,7 @@ export const DEFAULT_STATUS_ICON_MAP: Readonly<Record<string, string>> = {
 export const DEFAULT_CAMPAIGN_MESSAGE =
   'Hi {name}, greetings from Art of Living.';
 export const DEFAULT_WHATSAPP_COUNTRY_CODE = '91';
+export const DEFAULT_CENTER_WHATSAPP_NUMBER = '918884560660';
 
 const DEFAULT_UI_BY_TYPE: Readonly<Record<CampaignType, CampaignUiMeta>> = {
   Members: {
@@ -161,6 +162,7 @@ export function createDefaultAppConfig(): AppConfig {
     statusIconMap: {},
     defaultStatusIcon: DEFAULT_STATUS_ICON,
     defaultCampaignMessage: DEFAULT_CAMPAIGN_MESSAGE,
-    whatsappCountryCode: DEFAULT_WHATSAPP_COUNTRY_CODE
+    whatsappCountryCode: DEFAULT_WHATSAPP_COUNTRY_CODE,
+    centerWhatsappNumber: DEFAULT_CENTER_WHATSAPP_NUMBER
   };
 }

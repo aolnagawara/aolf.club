@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import { resolve } from 'node:path';
 import { mockCourses } from './src/repositories/mock/mockCourses';
 import {
+  DEFAULT_CENTER_WHATSAPP_NUMBER,
   homepageProgramOffers,
   selectActivePublicCourses
 } from './shared/contracts/courseDefaults.mjs';
@@ -39,7 +40,8 @@ function servePublicCourseCatalog(
   res.end(
     JSON.stringify({
       success: true,
-      offers: homepageProgramOffers(mockCourses)
+      offers: homepageProgramOffers(mockCourses),
+      whatsappNumber: DEFAULT_CENTER_WHATSAPP_NUMBER
     })
   );
   return true;

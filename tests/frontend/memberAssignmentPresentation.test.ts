@@ -23,5 +23,9 @@ describe('campaign workspace actions', () => {
     expect(page).toContain('Assign Members to Me');
     expect(page).toContain('@submit.prevent="submitMemberAssignment()"');
     expect(page).toContain('Engagement level');
+    expect(page).toContain('toggleMemberAssignmentEngagement(option.value)');
+    expect(page).not.toContain('Any engagement');
+    expect(page).not.toContain('Not set');
+    expect(page).not.toContain('x-model="assignMembersDraft.engagementLevel"');
   });
 });

@@ -39,6 +39,7 @@ describe('shared sheet primitives', () => {
     expect(SHEET_HEADERS.members).toEqual(SHEET_HEADERS.leads);
     expect(SHEET_HEADERS.courses).toEqual([
       'id',
+      'activityType',
       'courseType',
       'programCode',
       'title',

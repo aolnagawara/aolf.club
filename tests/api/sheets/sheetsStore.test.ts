@@ -18,7 +18,7 @@ const LAYOUT = {
   campaignsRange: 'Campaigns!A:F',
   leadsRange: 'Leads!A:Z',
   membersRange: 'Members!A:Z',
-  coursesRange: 'Courses!A:Z',
+  coursesRange: 'Activities!A:Z',
   courseTemplatesRange: 'CourseTemplates!A:B',
   configRange: 'Config!A:B',
   allowedUsersRange: 'AllowedUsers!A:Z'
@@ -275,7 +275,7 @@ describe('Sheets store campaign and access scoping', () => {
     const result = await fixture.store.assignMembersForAuthorizedUser(USER, {
       campaignId: MEMBERS_CAMPAIGN,
       count: 3,
-      engagementLevel: 'Active'
+      engagementLevels: ['Active']
     });
 
     expect(result.allowed).toBe(true);
@@ -339,7 +339,7 @@ describe('Sheets store campaign and access scoping', () => {
     const result = await fixture.store.assignMembersForAuthorizedUser(USER, {
       campaignId: MEMBERS_CAMPAIGN,
       count: 1,
-      engagementLevel: ''
+      engagementLevels: []
     });
 
     expect(result).toMatchObject({

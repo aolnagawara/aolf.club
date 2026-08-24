@@ -1,21 +1,26 @@
-import { UNSET_MEMBER_ENGAGEMENT } from './contracts/appContracts.js';
+function normalizeEngagement(value: string | undefined): string {
+  return String(value || '')
+    .trim()
+    .toLowerCase();
+}
+
+export function isUnsetMemberEngagement(quality: string | undefined): boolean {
+  const current = normalizeEngagement(quality);
+  return !current || current === 'engagement';
+}
 
 export function matchesMemberEngagement(
   quality: string | undefined,
-  engagementLevel: string
+  engagementLevels: readonly string[]
 ): boolean {
-  const requested = String(engagementLevel || '')
-    .trim()
-    .toLowerCase();
-  if (!requested) {
+  const requested = engagementLevels.map(normalizeEngagement).filter(Boolean);
+  if (!requested.length) {
     return true;
   }
 
-  const current = String(quality || '')
-    .trim()
-    .toLowerCase();
-  if (requested === UNSET_MEMBER_ENGAGEMENT) {
-    return !current || current === 'engagement';
+  if (isUnsetMemberEngagement(quality)) {
+    return true;
   }
-  return current === requested;
+
+  return requested.includes(normalizeEngagement(quality));
 }

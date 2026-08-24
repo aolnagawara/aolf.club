@@ -1006,7 +1006,7 @@
   </head>
 
   <body>
-    <div class="app-shell" id="home">
+    <div class="app-shell" id="home" x-data="homepagePrograms">
       <header class="topbar">
         <a class="brand" href="#home" aria-label="AOLF Connect home">
           <img src="/assets/aolf-connect-logo.png" alt="AOLF Connect logo" />
@@ -1166,11 +1166,7 @@
             </div>
           </section>
 
-          <section
-            id="programs"
-            aria-labelledby="programs-title"
-            x-data="homepagePrograms"
-          >
+          <section id="programs" aria-labelledby="programs-title">
             <div class="program-head">
               <h2 id="programs-title">Programs We Offer</h2>
               <a
@@ -1277,6 +1273,7 @@
               <a
                 class="schedule-ask"
                 href="https://wa.me/918884560660"
+                :href="centerWhatsappHref()"
                 target="_blank"
                 rel="noopener noreferrer"
                 >Ask for timings ↗</a
@@ -1381,6 +1378,7 @@
               class="mini"
               id="contact"
               href="https://wa.me/918884560660"
+              :href="centerWhatsappHref()"
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -1423,6 +1421,7 @@
       <a
         class="nav-item"
         href="https://wa.me/918884560660"
+        :href="centerWhatsappHref()"
         target="_blank"
         rel="noopener noreferrer"
         ><span class="nav-icon"
@@ -1463,6 +1462,7 @@
         <a
           class="menu-link"
           href="https://wa.me/918884560660"
+          :href="centerWhatsappHref()"
           target="_blank"
           rel="noopener noreferrer"
           >Contact <span>↗</span></a

@@ -6,11 +6,15 @@ import {
 } from '../../../shared/contracts/appContracts.js';
 import { isHttpsUrl } from './blobPamphlet.js';
 import {
+  activityAudience,
   courseSlotKey,
+  formatActivityTitle,
   formatCourseTitle,
+  isCourseActivity,
   normalizeProgramCode,
+  normalizeActivityType,
   publicCoursePamphletPath,
-  templateForCourseType
+  templateForActivity
 } from '../../../shared/contracts/courseDefaults.mjs';
 import { SHEET_HEADERS } from '../../../shared/contracts/sheetContract.mjs';
 import { findHeaderIndex } from '../sheets/table.js';
@@ -50,12 +54,15 @@ function parseBooleanCell(raw: string | undefined, fallback = true): boolean {
 }
 
 export function toCourseResponse(record: CourseRecord): Course {
+  const activityType = normalizeActivityType(record.activityType);
   const programCode = normalizeProgramCode(
     record.courseType,
     record.programCode
   );
   return CourseSchema.parse({
     id: record.id,
+    activityType,
+    targetAudience: activityAudience(activityType),
     courseType: record.courseType,
     programCode,
     title: record.title,
@@ -81,21 +88,31 @@ export function applyCourseDefaults(
     pamphletMimeType?: string;
   }
 ): CourseRecord {
-  const courseType = String(input.courseType || '').trim();
-  const programCode = normalizeProgramCode(courseType, input.programCode);
+  const activityType = normalizeActivityType(input.activityType);
+  const courseType =
+    activityType === 'Course' ? String(input.courseType || '').trim() : '';
+  const programCode =
+    activityType === 'Course'
+      ? normalizeProgramCode(courseType, input.programCode)
+      : '';
   const pamphletFileId =
     options.pamphletFileId ?? options.existing?.pamphletFileId ?? '';
   const pamphletMimeType =
     options.pamphletMimeType ?? options.existing?.pamphletMimeType ?? '';
   const record: CourseRecord = {
     id: options.id,
+    activityType,
+    targetAudience: activityAudience(activityType),
     courseType,
     programCode,
-    title: formatCourseTitle(courseType, programCode),
+    title:
+      activityType === 'Event'
+        ? String(input.title || '').trim()
+        : formatCourseTitle(courseType, programCode),
     whatsappTemplate:
       String(input.whatsappTemplate || '').trim() ||
       options.existing?.whatsappTemplate ||
-      templateForCourseType(courseType, programCode),
+      templateForActivity(activityType, courseType, programCode),
     isActive: input.isActive,
     hasPamphlet: Boolean(pamphletFileId),
     pamphletImageUrl: pamphletPublicUrl(options.id, pamphletFileId),
@@ -123,16 +140,26 @@ export function courseFromRow(
       record[header] = String(row[index] || '').trim();
     }
   });
-  const courseType = record.courseType || '';
-  const programCode = normalizeProgramCode(courseType, record.programCode);
-  if (!record.id || !courseType) {
+  const activityType = normalizeActivityType(record.activityType);
+  const courseType = activityType === 'Course' ? record.courseType || '' : '';
+  const programCode =
+    activityType === 'Course'
+      ? normalizeProgramCode(courseType, record.programCode)
+      : '';
+  if (
+    !record.id ||
+    (activityType === 'Course' && !courseType) ||
+    (activityType === 'Event' && !String(record.title || '').trim())
+  ) {
     return null;
   }
   try {
     return applyCourseDefaults(
       {
+        activityType,
         courseType,
         programCode,
+        title: record.title || '',
         whatsappTemplate: record.whatsappTemplate || '',
         isActive: parseBooleanCell(record.isActive, true),
         pamphletBase64: '',
@@ -146,9 +173,13 @@ export function courseFromRow(
         pamphletMimeType: record.pamphletMimeType || '',
         existing: {
           id: record.id,
+          activityType,
+          targetAudience: activityAudience(activityType),
           courseType,
           programCode,
-          title: record.title || formatCourseTitle(courseType, programCode),
+          title:
+            record.title ||
+            formatActivityTitle({ activityType, courseType, programCode }),
           whatsappTemplate: record.whatsappTemplate || '',
           isActive: parseBooleanCell(record.isActive, true),
           hasPamphlet: Boolean(record.pamphletFileId),
@@ -170,6 +201,7 @@ export function courseFromRow(
 export function courseToRow(headers: string[], course: CourseRecord): string[] {
   const cells: Record<string, string> = {
     id: course.id,
+    activityType: normalizeActivityType(course.activityType),
     courseType: course.courseType || '',
     programCode: normalizeProgramCode(course.courseType, course.programCode),
     title: course.title || '',
@@ -195,15 +227,25 @@ export function expectedCourseHeaders(): readonly string[] {
 
 export function hasDuplicateCourseSlot(
   courses: readonly {
+    activityType?: string;
     id?: string;
     courseType?: string;
     programCode?: string;
   }[],
-  candidate: { id?: string; courseType: string; programCode?: string }
+  candidate: {
+    activityType?: string;
+    id?: string;
+    courseType: string;
+    programCode?: string;
+  }
 ): boolean {
+  if (!isCourseActivity(candidate)) {
+    return false;
+  }
   const wanted = courseSlotKey(candidate.courseType, candidate.programCode);
   return courses.some(
     (course) =>
+      isCourseActivity(course) &&
       course.id !== candidate.id &&
       courseSlotKey(course.courseType || '', course.programCode) === wanted
   );

@@ -99,18 +99,32 @@ describe('CourseWriteFieldsSchema', () => {
       await import('../../shared/contracts/appContracts');
     expect(
       CourseWriteFieldsSchema.parse({
+        activityType: 'Course',
         courseType: 'HP'
       }).isActive
     ).toBe(true);
     expect(
       CourseWriteFieldsSchema.parse({
+        activityType: 'Course',
         courseType: 'IP',
         programCode: 'j'
       }).programCode
     ).toBe('j');
-    expect(() => CourseWriteFieldsSchema.parse({ courseType: 'IP' })).toThrow();
     expect(() =>
       CourseWriteFieldsSchema.parse({
+        activityType: 'Course',
+        courseType: 'IP'
+      })
+    ).toThrow();
+    expect(
+      CourseWriteFieldsSchema.parse({
+        activityType: 'Event',
+        title: 'Weekly Follow-up'
+      }).title
+    ).toBe('Weekly Follow-up');
+    expect(() =>
+      CourseWriteFieldsSchema.parse({
+        activityType: 'Course',
         courseType: 'HP',
         pamphletBase64: 'abc',
         pamphletMimeType: 'image/svg+xml'

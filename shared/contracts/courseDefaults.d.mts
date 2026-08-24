@@ -1,4 +1,6 @@
 export const DEFAULT_COURSE_WHATSAPP_TEMPLATE: string;
+export const DEFAULT_EVENT_WHATSAPP_TEMPLATE: string;
+export const DEFAULT_CENTER_WHATSAPP_NUMBER: string;
 export const DEFAULT_HP_WHATSAPP_TEMPLATE: string;
 export const DEFAULT_COURSE_TEMPLATE_TYPES: readonly string[];
 export const IP_COURSE_PROGRAMS: readonly {
@@ -6,6 +8,10 @@ export const IP_COURSE_PROGRAMS: readonly {
   readonly label: string;
 }[];
 
+export function normalizeActivityType(value?: string): 'Course' | 'Event';
+export function activityAudience(activityType?: string): 'Leads' | 'Members';
+export function isEventActivity(activity?: { activityType?: string }): boolean;
+export function isCourseActivity(activity?: { activityType?: string }): boolean;
 export function normalizeCourseType(value: string): string;
 export function isIpCourseType(courseType: string): boolean;
 export function programsForCourseType(
@@ -28,11 +34,22 @@ export function templateForCourseType(
   courseType: string,
   programCode?: string
 ): string;
+export function templateForActivity(
+  activityType: string,
+  courseType?: string,
+  programCode?: string
+): string;
 export function defaultCourseTemplateRows(): string[][];
 export function formatCourseTitle(
   courseType: string,
   programCode?: string
 ): string;
+export function formatActivityTitle(activity?: {
+  activityType?: string;
+  title?: string;
+  courseType?: string;
+  programCode?: string;
+}): string;
 export function publicCoursePamphletPath(id: string): string;
 export function publicCourseProgramKey(
   courseType: string,
@@ -41,6 +58,7 @@ export function publicCourseProgramKey(
 export function publicCoursesPath(programKey?: string): string;
 export function selectActivePublicCourses<
   T extends {
+    activityType?: string;
     courseType?: string;
     programCode?: string;
     isActive?: boolean;
@@ -59,6 +77,7 @@ export const HOMEPAGE_PROGRAM_OFFERS: readonly {
 }[];
 export function homepageProgramOffers(
   courses: Array<{
+    activityType?: string;
     courseType?: string;
     isActive?: boolean;
     programCode?: string;

@@ -116,7 +116,7 @@ async function deleteBlobUrls(
       'Pamphlet delete timed out.'
     );
   } catch {
-    // Best-effort cleanup; the Courses row is the source of truth.
+    // Best-effort cleanup; the Activities row is the source of truth.
   }
 }
 

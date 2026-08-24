@@ -20,7 +20,7 @@ const LAYOUT = {
   campaignsRange: 'Campaigns!A:F',
   leadsRange: 'Leads!A:Z',
   membersRange: 'Members!A:Z',
-  coursesRange: 'Courses!A:Z',
+  coursesRange: 'Activities!A:Z',
   courseTemplatesRange: 'CourseTemplates!A:B',
   configRange: 'Config!A:B',
   allowedUsersRange: 'AllowedUsers!A:Z'
@@ -29,6 +29,7 @@ const LAYOUT = {
 function courseRow(overrides: Record<string, string> = {}) {
   const values: Record<string, string> = {
     id: COURSE_ID,
+    activityType: 'Course',
     courseType: 'HP',
     programCode: '',
     title: 'HP',
@@ -96,7 +97,8 @@ function createFixture(
         return [
           ['key', 'value'],
           ['id', 'cfgMain01AbcDefGhIJK9'],
-          ['campaignId', 'cmpLeads01AbcDefGhIJk']
+          ['campaignId', 'cmpLeads01AbcDefGhIJk'],
+          ['centerWhatsappNumber', '919876543210']
         ];
       }
       return [];
@@ -135,6 +137,7 @@ describe('Sheets course store', () => {
     const { store, appendSheetRow, deleteSheetRow } = createFixture([]);
 
     const created = await store.createCourseForAuthorizedUser(USER, {
+      activityType: 'Course',
       courseType: 'HP',
       isActive: true
     });
@@ -152,7 +155,9 @@ describe('Sheets course store', () => {
 
     const updated = await store.updateCourseForAuthorizedUser(USER, {
       id: created.value.course.id,
+      activityType: 'Course',
       courseType: 'HP',
+      title: created.value.course.title,
       whatsappTemplate: created.value.course.whatsappTemplate,
       isActive: false
     });
@@ -205,11 +210,59 @@ describe('Sheets course store', () => {
     ]);
   });
 
+  it('returns the configured center WhatsApp number for the homepage catalog', async () => {
+    const { store } = createFixture([
+      courseRow({
+        id: 'crsHpNcr01AbcDefGhiJK',
+        courseType: 'HP',
+        isActive: 'false'
+      })
+    ]);
+
+    await expect(store.listPublicHomepageOffers()).resolves.toMatchObject({
+      success: true,
+      whatsappNumber: '919876543210'
+    });
+  });
+
+  it('stores event activities without exposing them as public courses', async () => {
+    const { store } = createFixture([]);
+
+    const created = await store.createCourseForAuthorizedUser(USER, {
+      activityType: 'Event',
+      title: 'Weekly Member Follow-up',
+      whatsappTemplate: 'Hi {name}, join {course}.',
+      isActive: true
+    });
+
+    expect(created.allowed).toBe(true);
+    if (!created.allowed) {
+      return;
+    }
+    expect(created.value.course).toMatchObject({
+      activityType: 'Event',
+      targetAudience: 'Members',
+      courseType: '',
+      title: 'Weekly Member Follow-up'
+    });
+
+    const listed = await store.listCoursesForAuthorizedUser(USER);
+    expect(listed.allowed && listed.value.courses).toMatchObject([
+      { activityType: 'Event', title: 'Weekly Member Follow-up' }
+    ]);
+    await expect(store.getPublicCourses('')).resolves.toMatchObject({
+      selected: null,
+      courses: [],
+      selectionMatched: false
+    });
+  });
+
   it('stores an uploaded pamphlet and serves it from the public reader', async () => {
     const { store } = createFixture([]);
     const pamphletBase64 =
       'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
     const created = await store.createCourseForAuthorizedUser(USER, {
+      activityType: 'Course',
       courseType: 'HP',
       pamphletBase64,
       pamphletMimeType: 'image/png'
@@ -245,6 +298,7 @@ describe('Sheets course store', () => {
     const pamphletBase64 =
       'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
     const created = await store.createCourseForAuthorizedUser(USER, {
+      activityType: 'Course',
       courseType: 'HP',
       pamphletBase64,
       pamphletMimeType: 'image/png'
@@ -260,6 +314,7 @@ describe('Sheets course store', () => {
     const { store, appendSheetRow } = createFixture([courseRow()]);
     await expect(
       store.createCourseForAuthorizedUser(USER, {
+        activityType: 'Course',
         courseType: 'HP',
         pamphletBase64: 'abc',
         pamphletMimeType: 'image/svg+xml'

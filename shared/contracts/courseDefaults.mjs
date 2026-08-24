@@ -1,6 +1,11 @@
 export const DEFAULT_COURSE_WHATSAPP_TEMPLATE =
   'Hi {name}, you are invited to {course} ({dates}).\n\n{courseUrl}';
 
+export const DEFAULT_EVENT_WHATSAPP_TEMPLATE =
+  'Hi {name}, you are invited to {course}.\n\nPlease reply here for details.';
+
+export const DEFAULT_CENTER_WHATSAPP_NUMBER = '918884560660';
+
 export const DEFAULT_HP_WHATSAPP_TEMPLATE = `_*🌿✨HAPPINESS PROGRAM by The Art of Living ✨🌿*_
 
 😌 Feeling stressed, tired, or overwhelmed?
@@ -51,6 +56,26 @@ export const IP_COURSE_PROGRAMS = Object.freeze([
   Object.freeze({ code: 'j', label: 'Junior' }),
   Object.freeze({ code: 's', label: 'Senior' })
 ]);
+
+export function normalizeActivityType(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase() === 'event'
+    ? 'Event'
+    : 'Course';
+}
+
+export function activityAudience(activityType) {
+  return normalizeActivityType(activityType) === 'Event' ? 'Members' : 'Leads';
+}
+
+export function isEventActivity(activity) {
+  return normalizeActivityType(activity?.activityType) === 'Event';
+}
+
+export function isCourseActivity(activity) {
+  return normalizeActivityType(activity?.activityType) === 'Course';
+}
 
 export function normalizeCourseType(value) {
   return String(value || '').trim();
@@ -109,6 +134,13 @@ export function templateForCourseType(courseType, programCode) {
   return DEFAULT_COURSE_WHATSAPP_TEMPLATE;
 }
 
+export function templateForActivity(activityType, courseType, programCode) {
+  if (normalizeActivityType(activityType) === 'Event') {
+    return DEFAULT_EVENT_WHATSAPP_TEMPLATE;
+  }
+  return templateForCourseType(courseType, programCode);
+}
+
 export function defaultCourseTemplateRows() {
   const rows = [];
   DEFAULT_COURSE_TEMPLATE_TYPES.forEach((courseType) => {
@@ -137,6 +169,13 @@ export function formatCourseTitle(courseType, programCode) {
   return label ? type + ' ' + label : type;
 }
 
+export function formatActivityTitle(activity) {
+  if (isEventActivity(activity)) {
+    return String(activity?.title || '').trim() || 'Event';
+  }
+  return formatCourseTitle(activity?.courseType, activity?.programCode);
+}
+
 export function publicCourseProgramKey(courseType, programCode) {
   const type = normalizeCourseType(courseType)
     .toLowerCase()
@@ -157,7 +196,7 @@ export function publicCoursesPath(programKey) {
 
 export function selectActivePublicCourses(courses, programKey) {
   const activeCourses = (Array.isArray(courses) ? courses : []).filter(
-    (course) => Boolean(course && course.isActive)
+    (course) => Boolean(course && course.isActive) && isCourseActivity(course)
   );
   const wanted = String(programKey || '')
     .trim()
@@ -208,6 +247,7 @@ export function homepageProgramOffers(courses) {
     const active = list.some(
       (course) =>
         Boolean(course && course.isActive) &&
+        isCourseActivity(course) &&
         publicCourseProgramKey(course.courseType) === programKey
     );
     return {

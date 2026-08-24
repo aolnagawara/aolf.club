@@ -7,14 +7,16 @@ import {
   DEFAULT_STATUS_ICON_MAP,
   getDefaultPrograms
 } from '../../config/campaignDefaults';
-import { templateForCourseType } from '../../../shared/contracts/courseDefaults.mjs';
+import { templateForActivity } from '../../../shared/contracts/courseDefaults.mjs';
 
 export function createEmptyCourseDraft(courseType = 'HP') {
   return {
     id: '',
+    activityType: 'Course' as const,
     courseType,
     programCode: '',
-    whatsappTemplate: templateForCourseType(courseType),
+    title: '',
+    whatsappTemplate: templateForActivity('Course', courseType),
     isActive: true,
     hasPamphlet: false,
     clearPamphlet: false,
@@ -89,7 +91,7 @@ export function createSevaWorkspaceInitialState(): SevaWorkspaceState {
     isAssignMembersModalOpen: false,
     assignMembersDraft: {
       count: 10,
-      engagementLevel: ''
+      engagementLevels: []
     },
     isAssigningMembers: false,
     qualityMetaMap: { ...DEFAULT_QUALITY_META_MAP },

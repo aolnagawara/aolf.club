@@ -60,6 +60,7 @@ export const AppConfigSchema = z.object({
   defaultStatusIcon: z.string().optional(),
   defaultCampaignMessage: z.string().optional(),
   whatsappCountryCode: z.string().optional(),
+  centerWhatsappNumber: z.string().optional(),
   allowedUsers: z.array(z.email()).default([]),
   volunteers: z.array(VolunteerSchema).default([])
 });
@@ -162,12 +163,19 @@ export const DeleteLeadResponseSchema = z.object({
 });
 
 export const MAX_MEMBERS_PER_VOLUNTEER = 100;
-export const UNSET_MEMBER_ENGAGEMENT = '__not_set__';
 
 export const AssignMembersRequestSchema = z.object({
   campaignId: NanoIdSchema,
   count: z.number().int().min(1).max(MAX_MEMBERS_PER_VOLUNTEER),
-  engagementLevel: z.string().trim().max(100).default('')
+  engagementLevels: z
+    .array(z.string().trim().max(100))
+    .default([])
+    .transform((values) =>
+      values
+        .map((value) => String(value || '').trim())
+        .filter(Boolean)
+        .filter((value, index, allValues) => allValues.indexOf(value) === index)
+    )
 });
 
 export const AssignMembersResponseSchema = z.object({
@@ -178,10 +186,15 @@ export const AssignMembersResponseSchema = z.object({
   members: z.array(LeadSchema)
 });
 
+export const ActivityTypeSchema = z.enum(['Course', 'Event']);
+export const ActivityAudienceSchema = z.enum(['Leads', 'Members']);
+
 export const CourseWriteFieldsSchema = z
   .object({
-    courseType: z.string().trim().min(1, 'Choose a course type.'),
+    activityType: ActivityTypeSchema,
+    courseType: z.string().trim().default(''),
     programCode: z.string().trim().default(''),
+    title: z.string().trim().max(140).default(''),
     whatsappTemplate: z.string().default(''),
     isActive: z.boolean().default(true),
     pamphletBase64: z.string().default(''),
@@ -189,13 +202,45 @@ export const CourseWriteFieldsSchema = z
     clearPamphlet: z.boolean().optional()
   })
   .superRefine((data, ctx) => {
+    if (data.activityType === 'Event') {
+      if (!data.title.trim()) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Enter an event name.',
+          path: ['title']
+        });
+      }
+      if (data.courseType.trim()) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Course type is only used for courses.',
+          path: ['courseType']
+        });
+      }
+      if (data.programCode.trim()) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Program is only used for courses.',
+          path: ['programCode']
+        });
+      }
+    }
+
+    if (data.activityType === 'Course' && !data.courseType.trim()) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Choose a course type.',
+        path: ['courseType']
+      });
+    }
+
     const type = String(data.courseType || '')
       .trim()
       .toUpperCase();
     const program = String(data.programCode || '')
       .trim()
       .toLowerCase();
-    if (type === 'IP') {
+    if (data.activityType === 'Course' && type === 'IP') {
       if (program !== 'j' && program !== 's') {
         ctx.addIssue({
           code: 'custom',
@@ -203,7 +248,7 @@ export const CourseWriteFieldsSchema = z
           path: ['programCode']
         });
       }
-    } else if (program) {
+    } else if (data.activityType === 'Course' && program) {
       ctx.addIssue({
         code: 'custom',
         message: 'Program is only used for IP.',
@@ -226,7 +271,9 @@ export const CourseWriteFieldsSchema = z
 
 export const CourseSchema = z.object({
   id: NanoIdSchema,
-  courseType: z.string().trim().min(1),
+  activityType: ActivityTypeSchema,
+  targetAudience: ActivityAudienceSchema,
+  courseType: z.string().trim().default(''),
   programCode: z.string().trim().default(''),
   title: z.string().default(''),
   whatsappTemplate: z.string().default(''),
@@ -267,7 +314,8 @@ export const HomepageProgramOfferSchema = z.object({
 
 export const PublicHomepageOffersResponseSchema = z.object({
   success: z.literal(true),
-  offers: z.array(HomepageProgramOfferSchema)
+  offers: z.array(HomepageProgramOfferSchema),
+  whatsappNumber: z.string().default('')
 });
 export const CreateCourseResponseSchema = z.object({
   success: z.literal(true),

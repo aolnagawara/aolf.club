@@ -1,4 +1,4 @@
-export const CHAPTER_WHATSAPP_NUMBER = '918884560660';
+import { DEFAULT_CENTER_WHATSAPP_NUMBER } from '../../../shared/contracts/courseDefaults.mjs';
 
 export type HomepageCtaOffer = {
   active?: boolean;
@@ -15,13 +15,16 @@ export type HomepageCta = {
 
 export function knowMoreHref(
   label: string,
-  number = CHAPTER_WHATSAPP_NUMBER
+  number = DEFAULT_CENTER_WHATSAPP_NUMBER
 ): string {
   const text = 'Hi, I would like to know more about the ' + label + '.';
   return 'https://wa.me/' + number + '?text=' + encodeURIComponent(text);
 }
 
-export function homepageCta(offer: HomepageCtaOffer): HomepageCta {
+export function homepageCta(
+  offer: HomepageCtaOffer,
+  whatsappNumber = DEFAULT_CENTER_WHATSAPP_NUMBER
+): HomepageCta {
   if (offer.active && offer.registerPath) {
     return {
       href: offer.registerPath,
@@ -32,7 +35,7 @@ export function homepageCta(offer: HomepageCtaOffer): HomepageCta {
   const name =
     String(offer.label || offer.code || 'program').trim() || 'program';
   return {
-    href: knowMoreHref(name),
+    href: knowMoreHref(name, whatsappNumber),
     label: 'Know More',
     external: true
   };

@@ -84,7 +84,7 @@ export class MockLeadRepository implements LeadRepository {
           lead.campaignId === campaign.id &&
           lead.campaignType === 'Members' &&
           !lead.assignedVolunteerEmail.trim() &&
-          matchesMemberEngagement(lead.quality, parsed.engagementLevel)
+          matchesMemberEngagement(lead.quality, parsed.engagementLevels)
       )
       .slice(0, Math.min(parsed.count, availableCapacity));
 

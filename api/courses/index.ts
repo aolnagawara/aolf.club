@@ -30,19 +30,19 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
           : 'list_courses',
     startedAt: Date.now(),
     messages: {
-      validation: 'Invalid course details.',
+      validation: 'Invalid activity details.',
       timeout: isMutate
-        ? 'Unable to save the course right now. Please try again.'
-        : 'Unable to load courses right now. Please try again.',
+        ? 'Unable to save the activity right now. Please try again.'
+        : 'Unable to load activities right now. Please try again.',
       upstream: isMutate
-        ? 'Unable to save the course right now. Please try again.'
-        : 'Unable to load courses right now. Please try again.',
+        ? 'Unable to save the activity right now. Please try again.'
+        : 'Unable to load activities right now. Please try again.',
       upstreamPermission: isMutate
-        ? 'Unable to save the course. Please contact an admin if this continues.'
-        : 'Unable to access courses. Please contact an admin if this continues.',
+        ? 'Unable to save the activity. Please contact an admin if this continues.'
+        : 'Unable to access activities. Please contact an admin if this continues.',
       internal: isMutate
-        ? 'Unable to save the course.'
-        : 'Unable to load courses.'
+        ? 'Unable to save the activity.'
+        : 'Unable to load activities.'
     }
   };
 
@@ -131,7 +131,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       return sendApiError(res, error, context, {
         status: 404,
         code: 'NOT_FOUND',
-        message: 'Course not found.',
+        message: 'Activity not found.',
         retryable: false,
         category: 'not_found'
       });

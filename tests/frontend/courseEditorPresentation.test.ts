@@ -6,8 +6,8 @@ const volunteerPageUrl = new URL('../../src/volunteer.html', import.meta.url);
 describe('course editor presentation', () => {
   it('renders the image status beside a custom file chooser', () => {
     const page = readFileSync(volunteerPageUrl, 'utf8');
-    const editorStart = page.indexOf('<!-- Course editor -->');
-    const pickerStart = page.indexOf('<!-- WhatsApp course picker -->');
+    const editorStart = page.indexOf('<!-- Activity editor -->');
+    const pickerStart = page.indexOf('<!-- WhatsApp activity picker -->');
     const editor = page.slice(editorStart, pickerStart);
 
     expect(editor).toContain('x-show="courseEditorError"');

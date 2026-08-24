@@ -2,7 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { sevaWorkspace } from './sevaWorkspace';
 import { getLeadCompositeKey } from './leadLifecycle';
 import type { SevaWorkspaceContext, CampaignType, Lead } from './types';
-import type { UpdateLeadResponse } from '../../../shared/contracts/appContracts';
+import type {
+  Course,
+  UpdateLeadResponse
+} from '../../../shared/contracts/appContracts';
 import { MockLeadRepository } from '../../repositories/mock/mockLeadRepository';
 
 function deferred<T>() {
@@ -36,6 +39,26 @@ function createLead(
     campaignId,
     campaignType
   });
+}
+
+function createCourseFixture(overrides: Partial<Course> = {}): Course {
+  return {
+    id: 'crsHpNcr01AbcDefGhiJK',
+    activityType: 'Course',
+    targetAudience: 'Leads',
+    courseType: 'HP',
+    programCode: '',
+    title: 'HP',
+    whatsappTemplate: 'Hi {name}',
+    isActive: true,
+    hasPamphlet: false,
+    pamphletImageUrl: '',
+    createdAt: '',
+    updatedAt: '',
+    createdBy: '',
+    updatedBy: '',
+    ...overrides
+  };
 }
 
 describe('Seva workspace lead lifecycle', () => {
@@ -788,20 +811,11 @@ describe('Seva workspace course management', () => {
   });
 
   it('sends a clear pamphlet request when an existing pamphlet is removed', async () => {
-    const existingCourse = {
-      id: 'crsHpNcr01AbcDefGhiJK',
-      courseType: 'HP',
-      programCode: '',
+    const existingCourse = createCourseFixture({
       title: 'Weekend Happiness Program',
-      whatsappTemplate: 'Hi {name}',
-      isActive: true,
       hasPamphlet: true,
-      pamphletImageUrl: '/course/crsHpNcr01AbcDefGhiJK/pamphlet',
-      createdAt: '',
-      updatedAt: '',
-      createdBy: '',
-      updatedBy: ''
-    };
+      pamphletImageUrl: '/course/crsHpNcr01AbcDefGhiJK/pamphlet'
+    });
     const updateCourse = vi.fn(async (payload) => ({
       success: true as const,
       course: {
@@ -839,20 +853,10 @@ describe('Seva workspace course management', () => {
   it('only shows a distinct course title as the WhatsApp picker subtitle', () => {
     const app = sevaWorkspace();
     app.appConfig.programs = [{ code: 'HP', label: 'Happiness Program' }];
-    const course = {
-      id: 'crsHpNcr01AbcDefGhiJK',
-      courseType: 'HP',
-      programCode: '',
+    const course = createCourseFixture({
       title: 'Weekend Happiness Program',
-      whatsappTemplate: 'Hi {name}',
-      isActive: true,
-      hasPamphlet: false,
-      pamphletImageUrl: '',
-      createdAt: '',
-      updatedAt: '',
-      createdBy: '',
-      updatedBy: ''
-    };
+      whatsappTemplate: 'Hi {name}'
+    });
 
     expect(app.courseDisplayTitle(course)).toBe('Happiness Program');
     expect(app.coursePickerSubtitle(course)).toBe('Weekend Happiness Program');
@@ -866,20 +870,13 @@ describe('Seva workspace course management', () => {
       location: { origin: 'https://aolf.club' }
     });
     const app = sevaWorkspace();
-    const junior = {
+    const junior = createCourseFixture({
       id: 'crsIpJnr01AbcDefGhiJK',
       courseType: 'IP',
       programCode: 'j',
       title: 'IP Junior',
-      whatsappTemplate: 'Junior {courseUrl}',
-      isActive: true,
-      hasPamphlet: false,
-      pamphletImageUrl: '',
-      createdAt: '',
-      updatedAt: '',
-      createdBy: '',
-      updatedBy: ''
-    };
+      whatsappTemplate: 'Junior {courseUrl}'
+    });
     const senior = {
       ...junior,
       id: 'crsIpSnr01AbcDefGhiJK',
@@ -912,6 +909,44 @@ describe('Seva workspace course management', () => {
     expect(app.buildWhatsappHref(lead, senior)).toContain(
       encodeURIComponent('https://aolf.club/courses?program=ip-s')
     );
+  });
+
+  it('shows course activities to leads and event activities to members', () => {
+    const app = sevaWorkspace();
+    const course = createCourseFixture({
+      id: 'crsHpNcr01AbcDefGhiJK',
+      activityType: 'Course',
+      targetAudience: 'Leads',
+      courseType: 'HP',
+      title: 'HP'
+    });
+    const event = createCourseFixture({
+      id: 'evtSats01AbcDefGhiJKL',
+      activityType: 'Event',
+      targetAudience: 'Members',
+      courseType: '',
+      programCode: '',
+      title: 'Weekly Member Follow-up'
+    });
+    const lead = app.normalizeLead({
+      id: 'leadHpTest01AbcDefGhI',
+      name: 'Lead',
+      wishlistPrograms: ['HP'],
+      campaignId: 'cmpLeads01AbcDefGhIJk',
+      campaignType: 'Leads'
+    });
+    const member = app.normalizeLead({
+      id: 'membEvtTest1AbcDefGh',
+      name: 'Member',
+      campaignId: 'cmpMembs01AbcDefGhIJK',
+      campaignType: 'Members'
+    });
+    app.courses = [course, event];
+
+    expect(app.pickerCourses(lead)).toEqual([course]);
+    expect(app.pickerCourses(member)).toEqual([event]);
+    expect(app.courseDisplayTitle(event)).toBe('Weekly Member Follow-up');
+    expect(app.courseCardSubtitle(event)).toBe('Event · Members');
   });
 });
 

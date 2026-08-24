@@ -7,6 +7,7 @@ describe('homepage program offers', () => {
       { courseType: 'HP', isActive: true },
       { courseType: 'DSN', isActive: true },
       { courseType: 'IP2', isActive: true },
+      { activityType: 'Event', courseType: 'Sahaj', isActive: true },
       { courseType: 'Sahaj', isActive: false }
     ]);
     expect(offers).toEqual([

@@ -9,6 +9,9 @@ import {
 } from '../../config/campaignDefaults';
 import {
   DEFAULT_COURSE_WHATSAPP_TEMPLATE,
+  DEFAULT_EVENT_WHATSAPP_TEMPLATE,
+  formatActivityTitle,
+  isEventActivity,
   publicCourseProgramKey,
   publicCoursesPath
 } from '../../../shared/contracts/courseDefaults.mjs';
@@ -81,24 +84,37 @@ export function createCommunicationMethods() {
       }
       let message = this.buildCampaignMessage(lead);
       if (course) {
-        const courseUrl =
-          String(window.location.origin || '').replace(/\/$/, '') +
-          publicCoursesPath(
-            publicCourseProgramKey(course.courseType, course.programCode)
-          );
-        message = ensureCourseUrlInMessage(
-          fillCourseWhatsappTemplate(
-            course.whatsappTemplate || DEFAULT_COURSE_WHATSAPP_TEMPLATE,
+        if (isEventActivity(course)) {
+          message = fillCourseWhatsappTemplate(
+            course.whatsappTemplate || DEFAULT_EVENT_WHATSAPP_TEMPLATE,
             {
               name: lead.name || 'Friend',
-              course: course.title || '',
+              course: formatActivityTitle(course),
               dates: '',
               registrationLink: '',
-              courseUrl
+              courseUrl: ''
             }
-          ),
-          courseUrl
-        );
+          );
+        } else {
+          const courseUrl =
+            String(window.location.origin || '').replace(/\/$/, '') +
+            publicCoursesPath(
+              publicCourseProgramKey(course.courseType, course.programCode)
+            );
+          message = ensureCourseUrlInMessage(
+            fillCourseWhatsappTemplate(
+              course.whatsappTemplate || DEFAULT_COURSE_WHATSAPP_TEMPLATE,
+              {
+                name: lead.name || 'Friend',
+                course: course.title || '',
+                dates: '',
+                registrationLink: '',
+                courseUrl
+              }
+            ),
+            courseUrl
+          );
+        }
       }
       return (
         'https://wa.me/' + destination + '?text=' + encodeURIComponent(message)

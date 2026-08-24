@@ -124,15 +124,15 @@ describe('AOLF Connect frontend presentation', () => {
     expect(volunteerPage).toContain('x-show="canOpenWhatsapp(lead)"');
     expect(volunteerPage).toContain(':disabled="!cleanPhone(lead.mobile)"');
     expect(volunteerPage).toContain('Call Tracker');
-    expect(volunteerPage).toContain('Course Management');
-    expect(volunteerPage).toContain(`x-text="course.courseType || 'No type'"`);
+    expect(volunteerPage).toContain('Activity Management');
+    expect(volunteerPage).toContain('x-text="courseCardSubtitle(course)"');
     expect(volunteerPage).not.toContain('type="month"');
     expect(volunteerPage).toContain('showsProgramTabs()');
     expect(volunteerPage).toContain('type="file"');
     expect(volunteerPage).toContain('@click="clearCoursePamphlet()"');
     expect(volunteerPage).toContain('WhatsApp template');
     expect(volunteerPage).not.toContain('Pamphlet image URL');
-    expect(volunteerPage).not.toContain('x-model="courseDraft.title"');
+    expect(volunteerPage).toContain('x-model="courseDraft.title"');
     expect(volunteerPage).not.toContain('x-model="courseDraft.courseCode"');
   });
 

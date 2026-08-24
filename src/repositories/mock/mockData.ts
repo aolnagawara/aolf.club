@@ -101,6 +101,7 @@ export const mockBootstrapData: BootstrapResponse = {
     defaultStatusIcon: '💬',
     defaultCampaignMessage: 'Hi {name}, greetings from Art of Living.',
     whatsappCountryCode: '91',
+    centerWhatsappNumber: '918884560660',
     allowedUsers: ['volunteer@example.com', 'other-volunteer@example.com'],
     volunteers: [
       { email: 'volunteer@example.com', name: 'Mock Volunteer' },

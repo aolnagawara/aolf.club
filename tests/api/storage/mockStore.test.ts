@@ -21,7 +21,7 @@ describe('mock store courses', () => {
   it('creates and deletes a course used by the public reader', async () => {
     const created = await createCourseForUser(
       { id: 'user-1', email: 'volunteer@example.com' },
-      { courseType: 'Sahaj', isActive: true }
+      { activityType: 'Course', courseType: 'Sahaj', isActive: true }
     );
     expect(created.course.title).toBe('Sahaj');
     await expect(getPublicCourses('sahaj')).resolves.toMatchObject({

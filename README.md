@@ -54,7 +54,7 @@ flowchart TD
     W[WhatsApp Volunteer]
     V[Vercel<br/>AOLF Connect Website + API]
     G[Google OAuth<br/>Volunteer Sign-in]
-    S[Google Sheets<br/>Campaigns / Leads / Members / Courses / CourseTemplates / Config / AllowedUsers]
+    S[Google Sheets<br/>Campaigns / Leads / Members / Activities / CourseTemplates / Config / AllowedUsers]
     M[Meta WhatsApp Cloud API]
 
     U -->|Open website / Seva workspace| V
@@ -117,7 +117,7 @@ The spreadsheet should contain these tabs:
 - `Campaigns`
 - `Leads`
 - `Members`
-- `Courses`
+- `Activities`
 - `CourseTemplates`
 - `Config`
 - `AllowedUsers`
@@ -136,14 +136,14 @@ Add the Google email address of the first volunteer who should be allowed to sig
 
 At minimum, enter the volunteer's email address.
 
-### Courses tab
+### Activities tab
 
-Existing installations need a `Courses` tab and a `CourseTemplates` tab. Run `pnpm run sheets:doctor:fix` or add them by hand.
+Installations need an `Activities` tab and a `CourseTemplates` tab. Run `pnpm run sheets:doctor:fix` or add them by hand.
 
-`Courses` header:
+`Activities` header:
 
 ```text
-id,courseType,programCode,title,whatsappTemplate,pamphletFileId,pamphletMimeType,isActive,createdAt,updatedAt,createdBy,updatedBy
+id,activityType,courseType,programCode,title,whatsappTemplate,pamphletFileId,pamphletMimeType,isActive,createdAt,updatedAt,createdBy,updatedBy
 ```
 
 `CourseTemplates` header:
@@ -152,11 +152,11 @@ id,courseType,programCode,title,whatsappTemplate,pamphletFileId,pamphletMimeType
 courseType,template
 ```
 
-Course Management stores type, an optional IP program (Junior or Senior), the WhatsApp template, and a pamphlet file. Dates, time, venue, and registration belong in the template. `/courses` displays every active program as a tab. Program-specific links such as `/courses?program=ip-j` open the same page with the matching tab selected and provide that program's pamphlet metadata for WhatsApp previews. The Happiness Program default template puts `{courseUrl}` just before the registration URL. Deleting a course also deletes its Vercel Blob pamphlet files.
+Activity Management stores Course and Event activities for preformatted WhatsApp messages. Course rows use `courseType` and optional IP `programCode`; Event rows use `title` as the event name. Dates, time, venue, and registration belong in the WhatsApp template. `/courses` displays every active Course activity as a tab. Program-specific links such as `/courses?program=ip-j` open the same page with the matching tab selected and provide that program's pamphlet metadata for WhatsApp previews. The Happiness Program default template puts `{courseUrl}` just before the registration URL. Deleting a Course activity also deletes its Vercel Blob pamphlet files.
 
-Pamphlets are uploaded from Course Management (JPEG, PNG, or WebP, under 600 KB). They are stored in a **public Vercel Blob** store and WhatsApp reads `og:image` from that Blob URL. `/course/<id>/pamphlet` still works as a same-origin fallback. WhatsApp may cache an older pamphlet after you replace the image.
+Pamphlets are uploaded from Activity Management (JPEG, PNG, or WebP, under 600 KB). They are stored in a **public Vercel Blob** store and WhatsApp reads `og:image` from that Blob URL for Course activities. `/course/<id>/pamphlet` still works as a same-origin fallback. WhatsApp may cache an older pamphlet after you replace the image.
 
-If you already had a Courses tab with the previous columns, doctor will rewrite the header. Re-add those courses in Course Management.
+The `Config` tab should include `centerWhatsappNumber` in international format without `+`, such as `918884560660`. The public website uses this number for its WhatsApp links.
 
 ### Save the Spreadsheet ID
 

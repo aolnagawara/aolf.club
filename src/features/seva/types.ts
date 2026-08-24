@@ -29,8 +29,10 @@ export interface ProgramDraft {
 
 export interface CourseDraft {
   id: string;
+  activityType: 'Course' | 'Event';
   courseType: string;
   programCode: string;
+  title: string;
   whatsappTemplate: string;
   isActive: boolean;
   hasPamphlet: boolean;
@@ -51,7 +53,7 @@ export interface CreateRecordDraft {
 
 export interface AssignMembersDraft {
   count: number;
-  engagementLevel: string;
+  engagementLevels: string[];
 }
 
 export interface LeadSnapshot {

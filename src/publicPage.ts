@@ -1,6 +1,9 @@
 import Alpine from 'alpinejs';
 import './styles/main.css';
-import { homepageProgramOffers } from '../shared/contracts/courseDefaults.mjs';
+import {
+  DEFAULT_CENTER_WHATSAPP_NUMBER,
+  homepageProgramOffers
+} from '../shared/contracts/courseDefaults.mjs';
 import { homepageCta } from './features/public/homepageOffers';
 
 declare global {
@@ -19,6 +22,7 @@ type CatalogOffer = {
 function homepagePrograms() {
   return {
     offers: homepageProgramOffers([]) as CatalogOffer[],
+    whatsappNumber: DEFAULT_CENTER_WHATSAPP_NUMBER,
     cta(code: string) {
       const offer = this.offers.find(
         (item: CatalogOffer) => item.code === code
@@ -28,7 +32,16 @@ function homepagePrograms() {
         active: false,
         registerPath: ''
       };
-      return homepageCta(offer);
+      return homepageCta(offer, this.whatsappNumber);
+    },
+    centerWhatsappHref(text = '') {
+      const number =
+        String(this.whatsappNumber || '').replace(/\D/g, '') ||
+        DEFAULT_CENTER_WHATSAPP_NUMBER;
+      const message = String(text || '').trim();
+      return message
+        ? 'https://wa.me/' + number + '?text=' + encodeURIComponent(message)
+        : 'https://wa.me/' + number;
     },
     async init() {
       try {
@@ -36,7 +49,13 @@ function homepagePrograms() {
         if (!response.ok) {
           return;
         }
-        const body = (await response.json()) as { offers?: CatalogOffer[] };
+        const body = (await response.json()) as {
+          offers?: CatalogOffer[];
+          whatsappNumber?: string;
+        };
+        if (body.whatsappNumber) {
+          this.whatsappNumber = body.whatsappNumber;
+        }
         if (!Array.isArray(body.offers)) {
           return;
         }

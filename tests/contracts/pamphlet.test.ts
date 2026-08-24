@@ -23,6 +23,7 @@ describe('pamphlet upload limits', () => {
     });
     expect(() =>
       CreateCourseRequestSchema.parse({
+        activityType: 'Course',
         courseType: 'HP',
         pamphletBase64: base64ForBytes(MAX_PAMPHLET_BYTES),
         pamphletMimeType: 'image/jpeg'

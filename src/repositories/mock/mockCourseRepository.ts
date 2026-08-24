@@ -18,10 +18,13 @@ import {
   type UpdateCourseResponse
 } from '../../../shared/contracts/appContracts';
 import {
+  activityAudience,
   defaultCourseTemplates,
-  formatCourseTitle,
+  formatActivityTitle,
+  normalizeActivityType,
+  normalizeProgramCode,
   publicCoursePamphletPath,
-  templateForCourseType
+  templateForActivity
 } from '../../../shared/contracts/courseDefaults.mjs';
 import { mockCourses } from './mockCourses';
 
@@ -29,17 +32,32 @@ function toCourse(
   parsed: CreateCourseRequest | UpdateCourseRequest,
   options: { id: string; existing?: Course }
 ): Course {
+  const activityType = normalizeActivityType(parsed.activityType);
+  const courseType =
+    activityType === 'Course' ? String(parsed.courseType || '').trim() : '';
+  const programCode =
+    activityType === 'Course'
+      ? normalizeProgramCode(courseType, parsed.programCode)
+      : '';
   const hasUpload = Boolean(parsed.pamphletBase64.trim());
   const hasPamphlet = hasUpload || Boolean(options.existing?.hasPamphlet);
+  const activity = {
+    activityType,
+    title: parsed.title,
+    courseType,
+    programCode
+  };
   return {
     id: options.id,
-    courseType: parsed.courseType,
-    programCode: parsed.programCode || '',
-    title: formatCourseTitle(parsed.courseType, parsed.programCode),
+    activityType,
+    targetAudience: activityAudience(activityType),
+    courseType,
+    programCode,
+    title: formatActivityTitle(activity),
     whatsappTemplate:
       parsed.whatsappTemplate.trim() ||
       options.existing?.whatsappTemplate ||
-      templateForCourseType(parsed.courseType, parsed.programCode),
+      templateForActivity(activityType, courseType, programCode),
     isActive: parsed.isActive,
     hasPamphlet,
     pamphletImageUrl: hasUpload

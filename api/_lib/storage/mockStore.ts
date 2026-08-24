@@ -31,6 +31,7 @@ import { matchesMemberEngagement } from '../../../shared/memberAssignment.js';
 import { nanoid } from 'nanoid';
 import { ZodError } from 'zod';
 import {
+  DEFAULT_CENTER_WHATSAPP_NUMBER,
   defaultCourseTemplates,
   homepageProgramOffers,
   selectActivePublicCourses
@@ -201,7 +202,7 @@ export async function assignMembersToUser(
         lead.campaignId === campaign.id &&
         lead.campaignType === 'Members' &&
         !normalizeEmail(lead.assignedVolunteerEmail) &&
-        matchesMemberEngagement(lead.quality, parsed.engagementLevel)
+        matchesMemberEngagement(lead.quality, parsed.engagementLevels)
     )
     .slice(0, Math.min(parsed.count, availableCapacity));
 
@@ -413,6 +414,9 @@ export async function getPublicCoursePamphlet(id: string) {
 export async function listPublicHomepageOffers() {
   return PublicHomepageOffersResponseSchema.parse({
     success: true,
-    offers: homepageProgramOffers(getStore().courses)
+    offers: homepageProgramOffers(getStore().courses),
+    whatsappNumber:
+      mockBootstrapData.config.centerWhatsappNumber ||
+      DEFAULT_CENTER_WHATSAPP_NUMBER
   });
 }

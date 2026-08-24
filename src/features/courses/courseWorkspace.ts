@@ -7,13 +7,19 @@ import { toUserErrorMessage } from '../../services/apiClient';
 import { createEmptyCourseDraft } from '../seva/state';
 import { findUniqueActiveCourse } from '../../../shared/contracts/courseMatching';
 import {
+  activityAudience,
+  formatActivityTitle,
   formatCourseTitle,
+  isCourseActivity,
+  isEventActivity,
   isIpCourseType,
+  normalizeActivityType,
   normalizeCourseType,
   normalizeProgramCode,
   programsForCourseType,
   publicCourseProgramKey,
   publicCoursesPath,
+  templateForActivity,
   templateForCourseType,
   templateLookupKeys
 } from '../../../shared/contracts/courseDefaults.mjs';
@@ -44,8 +50,10 @@ function templateFromList(
 function courseToDraft(course: Course): CourseDraft {
   return {
     id: course.id,
+    activityType: normalizeActivityType(course.activityType),
     courseType: course.courseType || '',
     programCode: course.programCode || '',
+    title: course.title || '',
     whatsappTemplate: course.whatsappTemplate || '',
     isActive: course.isActive,
     hasPamphlet: Boolean(course.hasPamphlet),
@@ -61,11 +69,18 @@ function courseToDraft(course: Course): CourseDraft {
 
 export function createCourseWorkspaceMethods() {
   return {
-    activeCourses(this: SevaWorkspaceContext): Course[] {
-      return this.courses.filter((course) => course.isActive);
+    activeCourses(this: SevaWorkspaceContext, lead?: Lead | null): Course[] {
+      const audience = lead?.campaignType || this.campaignType;
+      return this.courses.filter(
+        (course) =>
+          course.isActive && activityAudience(course.activityType) === audience
+      );
     },
     pickerCourses(this: SevaWorkspaceContext, lead?: Lead | null): Course[] {
-      const active = this.activeCourses();
+      const active = this.activeCourses(lead);
+      if (lead?.campaignType === 'Members') {
+        return active.filter((course: Course) => isEventActivity(course));
+      }
       const programs = (lead?.wishlistPrograms || [])
         .map((item) =>
           String(item || '')
@@ -84,10 +99,19 @@ export function createCourseWorkspaceMethods() {
     ipPrograms() {
       return programsForCourseType('IP');
     },
+    isCourseDraftEvent(this: SevaWorkspaceContext): boolean {
+      return this.courseDraft.activityType === 'Event';
+    },
     showsProgramTabs(this: SevaWorkspaceContext): boolean {
-      return isIpCourseType(this.courseDraft.courseType);
+      return (
+        this.courseDraft.activityType === 'Course' &&
+        isIpCourseType(this.courseDraft.courseType)
+      );
     },
     courseDisplayTitle(this: SevaWorkspaceContext, course: Course): string {
+      if (isEventActivity(course)) {
+        return course.title || 'Event';
+      }
       if (isIpCourseType(course.courseType)) {
         return formatCourseTitle(course.courseType, course.programCode);
       }
@@ -101,9 +125,23 @@ export function createCourseWorkspaceMethods() {
       return label;
     },
     coursePickerSubtitle(this: SevaWorkspaceContext, course: Course): string {
+      if (isEventActivity(course)) {
+        return 'Event';
+      }
       const displayTitle = this.courseDisplayTitle(course);
       const title = String(course.title || '').trim();
       return title && title !== displayTitle ? title : '';
+    },
+    courseCardSubtitle(this: SevaWorkspaceContext, course: Course): string {
+      return isEventActivity(course)
+        ? 'Event · Members'
+        : (course.courseType || 'Course') + ' · Leads';
+    },
+    canOpenPublicCoursePage(
+      this: SevaWorkspaceContext,
+      course: Course
+    ): boolean {
+      return isCourseActivity(course);
     },
     templateForType(
       this: SevaWorkspaceContext,
@@ -112,8 +150,28 @@ export function createCourseWorkspaceMethods() {
     ): string {
       return templateFromList(courseType, programCode, this.courseTemplates);
     },
+    onActivityTypeChange(this: SevaWorkspaceContext): void {
+      const nextType = this.courseDraft.activityType;
+      if (nextType === 'Event') {
+        this.courseDraft.courseType = '';
+        this.courseDraft.programCode = '';
+        if (!this.courseDraft.id || !this.courseDraft.whatsappTemplate.trim()) {
+          this.courseDraft.whatsappTemplate = templateForActivity('Event', '');
+        }
+        return;
+      }
+
+      const programs =
+        this.appConfig.programs.length > 0
+          ? this.appConfig.programs
+          : this.defaultPrograms;
+      this.courseDraft.courseType =
+        this.courseDraft.courseType || programs[0]?.code || 'HP';
+      this.courseDraft.title = '';
+      this.onCourseTypeChange();
+    },
     onCourseTypeChange(this: SevaWorkspaceContext): void {
-      if (this.courseDraft.id) {
+      if (this.courseDraft.id || this.courseDraft.activityType === 'Event') {
         return;
       }
       if (isIpCourseType(this.courseDraft.courseType)) {
@@ -127,7 +185,7 @@ export function createCourseWorkspaceMethods() {
       );
     },
     onProgramCodeChange(this: SevaWorkspaceContext): void {
-      if (this.courseDraft.id) {
+      if (this.courseDraft.id || this.courseDraft.activityType === 'Event') {
         return;
       }
       this.courseDraft.whatsappTemplate = this.templateForType(
@@ -207,7 +265,7 @@ export function createCourseWorkspaceMethods() {
       } catch (error) {
         this.authError = toUserErrorMessage(
           error,
-          'Unable to load courses right now.'
+          'Unable to load activities right now.'
         );
       } finally {
         this.isLoadingCourses = false;
@@ -226,10 +284,18 @@ export function createCourseWorkspaceMethods() {
             : this.defaultPrograms;
         const courseType = programs[0]?.code || 'HP';
         const programCode = isIpCourseType(courseType) ? 'j' : '';
+        const activityType =
+          this.campaignType === 'Members' ? 'Event' : 'Course';
         this.courseDraft = {
           ...createEmptyCourseDraft(courseType),
+          activityType,
           programCode,
-          whatsappTemplate: this.templateForType(courseType, programCode)
+          courseType: activityType === 'Event' ? '' : courseType,
+          title: '',
+          whatsappTemplate:
+            activityType === 'Event'
+              ? templateForActivity('Event', '')
+              : this.templateForType(courseType, programCode)
         };
       }
       this.isCourseEditorOpen = true;
@@ -268,11 +334,13 @@ export function createCourseWorkspaceMethods() {
       this.coursePamphletError = '';
       try {
         const payload = {
+          activityType: this.courseDraft.activityType,
           courseType: this.courseDraft.courseType,
           programCode: normalizeProgramCode(
             this.courseDraft.courseType,
             this.courseDraft.programCode
           ),
+          title: this.courseDraft.title,
           whatsappTemplate: this.courseDraft.whatsappTemplate,
           isActive: this.courseDraft.isActive,
           pamphletBase64: this.courseDraft.pamphletBase64,
@@ -291,10 +359,13 @@ export function createCourseWorkspaceMethods() {
           const response = await window.appRuntime.createCourse(payload);
           this.courses = [...this.courses, response.course];
         }
-        this.actionMessage = 'Course saved.';
+        this.actionMessage = 'Activity saved.';
         this.closeCourseEditor();
       } catch (error) {
-        const message = toUserErrorMessage(error, 'Unable to save the course.');
+        const message = toUserErrorMessage(
+          error,
+          'Unable to save the activity.'
+        );
         if (message === PAMPHLET_SIZE_ERROR) {
           this.coursePamphletError = message;
         } else {
@@ -311,8 +382,10 @@ export function createCourseWorkspaceMethods() {
       try {
         const response = await window.appRuntime.updateCourse({
           id: course.id,
+          activityType: course.activityType,
           courseType: course.courseType,
           programCode: course.programCode || '',
+          title: course.title || '',
           whatsappTemplate: course.whatsappTemplate,
           isActive: !course.isActive,
           pamphletBase64: '',
@@ -324,7 +397,7 @@ export function createCourseWorkspaceMethods() {
       } catch (error) {
         this.authError = toUserErrorMessage(
           error,
-          'Unable to update the course.'
+          'Unable to update the activity.'
         );
       }
     },
@@ -334,10 +407,7 @@ export function createCourseWorkspaceMethods() {
     ): Promise<void> {
       if (
         !window.confirm(
-          'Delete ' +
-            (course.title ||
-              formatCourseTitle(course.courseType, course.programCode)) +
-            '? This cannot be undone.'
+          'Delete ' + formatActivityTitle(course) + '? This cannot be undone.'
         )
       ) {
         return;
@@ -345,11 +415,11 @@ export function createCourseWorkspaceMethods() {
       try {
         await window.appRuntime.deleteCourse({ id: course.id });
         this.courses = this.courses.filter((item) => item.id !== course.id);
-        this.actionMessage = 'Course deleted.';
+        this.actionMessage = 'Activity deleted.';
       } catch (error) {
         this.authError = toUserErrorMessage(
           error,
-          'Unable to delete the course.'
+          'Unable to delete the activity.'
         );
       }
     },
@@ -366,7 +436,7 @@ export function createCourseWorkspaceMethods() {
         return;
       }
       await this.loadCourses();
-      const active = this.activeCourses();
+      const active = this.activeCourses(lead);
       if (!active.length) {
         window.open(this.buildWhatsappHref(lead), '_blank', 'noopener');
         return;

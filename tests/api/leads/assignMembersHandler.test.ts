@@ -60,7 +60,7 @@ describe('assign members API', () => {
     const body = {
       campaignId: 'cmpMembs01AbcDefGhIJK',
       count: 5,
-      engagementLevel: 'Active'
+      engagementLevels: ['Active']
     };
     const value = {
       success: true,

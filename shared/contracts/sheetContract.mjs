@@ -2,7 +2,7 @@ export const DEFAULT_SHEET_LAYOUT = Object.freeze({
   campaignsRange: 'Campaigns!A:F',
   leadsRange: 'Leads!A:Z',
   membersRange: 'Members!A:Z',
-  coursesRange: 'Courses!A:Z',
+  coursesRange: 'Activities!A:Z',
   courseTemplatesRange: 'CourseTemplates!A:B',
   configRange: 'Config!A:B',
   allowedUsersRange: 'AllowedUsers!A:Z'
@@ -36,6 +36,7 @@ export const SHEET_HEADERS = Object.freeze({
   members: leadHeaders,
   courses: Object.freeze([
     'id',
+    'activityType',
     'courseType',
     'programCode',
     'title',
@@ -57,5 +58,6 @@ export const REQUIRED_CONFIG_KEYS = Object.freeze([
   'id',
   'campaignId',
   'programs',
-  'programDisplayOrder'
+  'programDisplayOrder',
+  'centerWhatsappNumber'
 ]);

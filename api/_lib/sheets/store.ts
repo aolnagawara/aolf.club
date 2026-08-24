@@ -39,6 +39,7 @@ import { matchesMemberEngagement } from '../../../shared/memberAssignment.js';
 import { nanoid } from 'nanoid';
 import { ZodError } from 'zod';
 import {
+  DEFAULT_CENTER_WHATSAPP_NUMBER,
   defaultCourseTemplates,
   homepageProgramOffers,
   selectActivePublicCourses
@@ -270,6 +271,7 @@ function buildAppConfig(
     defaultStatusIcon: rawConfig.defaultStatusIcon,
     defaultCampaignMessage: rawConfig.defaultCampaignMessage,
     whatsappCountryCode: rawConfig.whatsappCountryCode,
+    centerWhatsappNumber: rawConfig.centerWhatsappNumber,
     allowedUsers: []
   });
 }
@@ -598,7 +600,7 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
         !getCell(row, columns.id) ||
         !matchesMemberEngagement(
           getCell(row, columns.quality),
-          payload.engagementLevel
+          payload.engagementLevels
         )
       ) {
         continue;
@@ -876,7 +878,7 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
     const rows = await readSheetValues('data', layout.coursesRange, operation);
     const headers = (rows[0] || []).map((value) => String(value || '').trim());
     if (!headers.length || resolveCourseIdColumn(headers) < 0) {
-      throw new Error('Course sheet is missing header row.');
+      throw new Error('Activity sheet is missing header row.');
     }
     return { headers, rows };
   }
@@ -941,14 +943,20 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
   async function loadPublicHomepageOffers(
     operation: SheetsOperation
   ): Promise<PublicHomepageOffersResponse> {
-    const { headers, rows } = await readCourseRows(operation);
+    const [{ headers, rows }, configRows] = await Promise.all([
+      readCourseRows(operation),
+      readSheetValues('data', getSheetLayout().configRange, operation)
+    ]);
+    const rawConfig = rowsToConfigMap(configRows);
     const courses = rows
       .slice(1)
       .map((row) => courseFromRow(headers, row))
       .filter((course): course is CourseRecord => Boolean(course));
     return PublicHomepageOffersResponseSchema.parse({
       success: true,
-      offers: homepageProgramOffers(courses)
+      offers: homepageProgramOffers(courses),
+      whatsappNumber:
+        rawConfig.centerWhatsappNumber || DEFAULT_CENTER_WHATSAPP_NUMBER
     });
   }
 
@@ -983,7 +991,12 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
   function assertUniqueCourseSlot(
     rows: string[][],
     headers: string[],
-    candidate: { id?: string; courseType: string; programCode?: string }
+    candidate: {
+      activityType?: string;
+      id?: string;
+      courseType: string;
+      programCode?: string;
+    }
   ): void {
     const courses = rows
       .slice(1)

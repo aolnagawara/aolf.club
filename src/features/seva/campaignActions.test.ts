@@ -135,20 +135,23 @@ describe('current campaign actions', () => {
     expect(app.isAssignMembersModalOpen).toBe(true);
     expect(app.isFabOpen).toBe(false);
     expect(app.getMemberAssignmentEngagementOptions()).toEqual([
-      { value: '', label: 'Any engagement' },
       { value: 'Active', label: 'Active' },
-      { value: 'Occasional', label: 'Occasional' },
-      { value: '__not_set__', label: 'Not set' }
+      { value: 'Occasional', label: 'Occasional' }
+    ]);
+    expect(app.assignMembersDraft.engagementLevels).toEqual([
+      'Active',
+      'Occasional'
     ]);
     app.assignMembersDraft.count = 2;
-    app.assignMembersDraft.engagementLevel = 'Active';
+    app.toggleMemberAssignmentEngagement('Occasional');
+    app.toggleMemberAssignmentEngagement('Occasional');
 
     await app.submitMemberAssignment();
 
     expect(assignMembers).toHaveBeenCalledWith({
       campaignId: MEMBERS_CAMPAIGN.id,
       count: 2,
-      engagementLevel: 'Active'
+      engagementLevels: []
     });
     expect(app.leads.map((member) => member.id)).toEqual([
       'member-newest',
@@ -165,7 +168,7 @@ describe('current campaign actions', () => {
     const response = await repository.assignMembers({
       campaignId: MEMBERS_CAMPAIGN.id,
       count: 1,
-      engagementLevel: 'Active'
+      engagementLevels: ['Active']
     });
     const refreshed = await repository.getBootstrap(MEMBERS_CAMPAIGN.id);
 

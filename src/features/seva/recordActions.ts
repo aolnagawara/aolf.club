@@ -1,6 +1,5 @@
 import {
   MAX_MEMBERS_PER_VOLUNTEER,
-  UNSET_MEMBER_ENGAGEMENT,
   type UpdateLeadRequest
 } from '../../../shared/contracts/appContracts';
 import type {
@@ -65,6 +64,14 @@ function getAllowedVolunteers(context: SevaWorkspaceContext) {
       .toLowerCase(),
     name: String(email || '').split('@')[0] || 'Volunteer'
   }));
+}
+
+function getMemberAssignmentEngagementValues(
+  context: SevaWorkspaceContext
+): string[] {
+  const options =
+    context.getMemberAssignmentEngagementOptions() as OptionItem[];
+  return options.map((option) => option.value).filter(Boolean);
 }
 
 function toUpdateRequest(
@@ -433,11 +440,37 @@ export function createRecordActionMethods() {
       const options = (this.qualityOptions || [])
         .filter((item) => item.value !== placeholder)
         .map((item) => ({ value: item.value, label: item.label }));
-      return [
-        { value: '', label: 'Any engagement' },
-        ...options,
-        { value: UNSET_MEMBER_ENGAGEMENT, label: 'Not set' }
-      ];
+      return options;
+    },
+    isMemberAssignmentEngagementSelected(
+      this: SevaWorkspaceContext,
+      value: string
+    ): boolean {
+      const current = this.assignMembersDraft.engagementLevels || [];
+      if (!current.length) {
+        return getMemberAssignmentEngagementValues(this).includes(value);
+      }
+      return current.includes(value);
+    },
+    toggleMemberAssignmentEngagement(
+      this: SevaWorkspaceContext,
+      value: string
+    ): void {
+      const allValues = getMemberAssignmentEngagementValues(this);
+      if (!value || !allValues.includes(value)) {
+        return;
+      }
+      const current = this.assignMembersDraft.engagementLevels.length
+        ? this.assignMembersDraft.engagementLevels
+        : allValues;
+      if (current.includes(value)) {
+        const next = current.filter((item) => item !== value);
+        this.assignMembersDraft.engagementLevels = next.length
+          ? next
+          : allValues;
+        return;
+      }
+      this.assignMembersDraft.engagementLevels = [...current, value];
     },
     openAssignMembersModal(this: SevaWorkspaceContext): void {
       if (this.campaignType !== 'Members' || !this.selectedCampaignId) {
@@ -451,7 +484,7 @@ export function createRecordActionMethods() {
       }
       this.assignMembersDraft = {
         count: Math.min(10, remainingCapacity),
-        engagementLevel: ''
+        engagementLevels: getMemberAssignmentEngagementValues(this)
       };
       this.authError = '';
       this.actionMessage = '';
@@ -485,10 +518,20 @@ export function createRecordActionMethods() {
             'Save pending edits before assigning additional members.';
           return;
         }
+        const selectedEngagementLevels =
+          this.assignMembersDraft.engagementLevels || [];
+        const allEngagementLevels = getMemberAssignmentEngagementValues(this);
+        const hasAllEngagementLevels =
+          allEngagementLevels.length > 0 &&
+          allEngagementLevels.every((level) =>
+            selectedEngagementLevels.includes(level)
+          );
         const response = await window.appRuntime.assignMembers({
           campaignId: this.selectedCampaignId,
           count,
-          engagementLevel: this.assignMembersDraft.engagementLevel
+          engagementLevels: hasAllEngagementLevels
+            ? []
+            : selectedEngagementLevels
         });
         const existingIds = new Set(this.leads.map((lead) => lead.id));
         const assignedMembers = response.members

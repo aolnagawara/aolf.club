@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
   AssignMembersRequestSchema,
-  MAX_MEMBERS_PER_VOLUNTEER,
-  UNSET_MEMBER_ENGAGEMENT
+  MAX_MEMBERS_PER_VOLUNTEER
 } from '../../shared/contracts/appContracts';
-import { matchesMemberEngagement } from '../../shared/memberAssignment';
+import {
+  isUnsetMemberEngagement,
+  matchesMemberEngagement
+} from '../../shared/memberAssignment';
 
 describe('member assignment contract', () => {
   it('accepts a bounded count and optional engagement level', () => {
@@ -13,7 +15,7 @@ describe('member assignment contract', () => {
         campaignId: 'cmpMembs01AbcDefGhIJK',
         count: MAX_MEMBERS_PER_VOLUNTEER
       })
-    ).toMatchObject({ count: 100, engagementLevel: '' });
+    ).toMatchObject({ count: 100, engagementLevels: [] });
 
     expect(() =>
       AssignMembersRequestSchema.parse({
@@ -23,16 +25,13 @@ describe('member assignment contract', () => {
     ).toThrow();
   });
 
-  it('matches exact engagement values and treats the placeholder as not set', () => {
-    expect(matchesMemberEngagement('Active', '')).toBe(true);
-    expect(matchesMemberEngagement('Active', 'active')).toBe(true);
-    expect(matchesMemberEngagement('Occasional', 'Active')).toBe(false);
-    expect(matchesMemberEngagement('', UNSET_MEMBER_ENGAGEMENT)).toBe(true);
-    expect(matchesMemberEngagement('Engagement', UNSET_MEMBER_ENGAGEMENT)).toBe(
-      true
-    );
-    expect(matchesMemberEngagement('Active', UNSET_MEMBER_ENGAGEMENT)).toBe(
-      false
-    );
+  it('matches any selected engagement and always includes unset values', () => {
+    expect(matchesMemberEngagement('Active', [])).toBe(true);
+    expect(matchesMemberEngagement('Active', ['active'])).toBe(true);
+    expect(matchesMemberEngagement('Occasional', ['Active'])).toBe(false);
+    expect(matchesMemberEngagement('', ['Active'])).toBe(true);
+    expect(matchesMemberEngagement('Engagement', ['Active'])).toBe(true);
+    expect(isUnsetMemberEngagement('Engagement')).toBe(true);
+    expect(isUnsetMemberEngagement('Active')).toBe(false);
   });
 });
