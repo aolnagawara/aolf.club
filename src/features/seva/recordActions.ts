@@ -94,6 +94,34 @@ function toUpdateRequest(
   };
 }
 
+function getMoveCampaignDestinations(context: SevaWorkspaceContext): Campaign[] {
+  if (context.campaignType === 'Members') {
+    return context.campaigns.filter((campaign) => campaign.type === 'Leads');
+  }
+
+  return context.campaigns.filter(
+    (campaign) =>
+      campaign.type === context.campaignType &&
+      campaign.id !== context.selectedCampaignId
+  );
+}
+
+function isMoveCampaignAllowed(
+  context: SevaWorkspaceContext,
+  campaign: Campaign | undefined
+): campaign is Campaign {
+  if (!campaign) {
+    return false;
+  }
+  if (context.campaignType === 'Members') {
+    return campaign.type === 'Leads';
+  }
+  return (
+    campaign.type === context.campaignType &&
+    campaign.id !== context.selectedCampaignId
+  );
+}
+
 export function createRecordActionMethods() {
   return {
     selectedCount(this: SevaWorkspaceContext): number {
@@ -188,18 +216,19 @@ export function createRecordActionMethods() {
       this.toggleLeadSelection(lead);
     },
     openMoveCampaignSheet(this: SevaWorkspaceContext): void {
-      const destinations = this.campaigns.filter(
-        (campaign) =>
-          campaign.type === this.campaignType &&
-          campaign.id !== this.selectedCampaignId
-      );
+      const destinations = getMoveCampaignDestinations(this);
       if (!destinations.length) {
-        this.authError = 'No other Seva is available for these records.';
+        this.authError =
+          this.campaignType === 'Members'
+            ? 'No leads Seva is available for these members.'
+            : 'No other Seva is available for these records.';
         return;
       }
       this.optionSheetMode = 'moveCampaign';
       this.optionSheetTitle =
-        'Move ' + String(this.selectedCount()) + ' selected';
+        (this.campaignType === 'Members' ? 'Copy ' : 'Move ') +
+        String(this.selectedCount()) +
+        ' selected';
       this.optionSheetOptions = destinations.map(
         (campaign: Campaign): OptionItem => ({
           value: campaign.id,
@@ -243,7 +272,7 @@ export function createRecordActionMethods() {
     ): Promise<void> {
       const campaign = this.campaigns.find((item) => item.id === campaignId);
       const records = getSelectedRecords(this);
-      if (!campaign || campaign.type !== this.campaignType || !records.length) {
+      if (!isMoveCampaignAllowed(this, campaign) || !records.length) {
         return;
       }
       this.isBulkActionPending = true;
@@ -251,20 +280,38 @@ export function createRecordActionMethods() {
       this.actionMessage = '';
       try {
         if (!(await this.flushPendingSaves())) {
-          this.authError = 'Save pending edits before moving these records.';
+          this.authError =
+            this.campaignType === 'Members'
+              ? 'Save pending edits before copying these members.'
+              : 'Save pending edits before moving these records.';
           return;
         }
-        const results = await runSequentialLeadRequests(records, (lead) =>
-          window.appRuntime.updateLead(toUpdateRequest(this, lead, campaign))
-        );
+        const results =
+          this.campaignType === 'Members'
+            ? await runSequentialLeadRequests(records, (lead) =>
+                window.appRuntime.createLead({
+                  name: lead.name,
+                  mobile: normalizeIndianMobile(lead.mobile),
+                  notes: lead.notes,
+                  campaignId: campaign.id,
+                  campaignType: 'Leads'
+                })
+              )
+            : await runSequentialLeadRequests(records, (lead) =>
+                window.appRuntime.updateLead(
+                  toUpdateRequest(this, lead, campaign)
+                )
+              );
         const movedIds = new Set(
           records
             .filter((_, index) => results[index].status === 'fulfilled')
             .map((lead) => lead.id)
         );
-        this.leads = this.leads.filter((lead) => !movedIds.has(lead.id));
-        if (movedIds.has(this.activeCardId)) {
-          this.activeCardId = '';
+        if (this.campaignType !== 'Members') {
+          this.leads = this.leads.filter((lead) => !movedIds.has(lead.id));
+          if (movedIds.has(this.activeCardId)) {
+            this.activeCardId = '';
+          }
         }
         this.selectedIds = new Set(
           [...this.selectedIds].filter((id) => !movedIds.has(id))
@@ -273,16 +320,27 @@ export function createRecordActionMethods() {
           this.authError = getBulkFailureMessage(
             results,
             movedIds.size,
-            'Some records could not be moved. The remaining records stay selected.',
-            'Unable to move the selected records. Please try again.'
+            this.campaignType === 'Members'
+              ? 'Some members could not be copied. The remaining members stay selected.'
+              : 'Some records could not be moved. The remaining records stay selected.',
+            this.campaignType === 'Members'
+              ? 'Unable to copy the selected members. Please try again.'
+              : 'Unable to move the selected records. Please try again.'
           );
         } else {
-          const movedNoun = movedIds.size === 1 ? 'record' : 'records';
+          const movedNoun =
+            this.campaignType === 'Members'
+              ? movedIds.size === 1
+                ? 'member'
+                : 'members'
+              : movedIds.size === 1
+                ? 'record'
+                : 'records';
           this.actionMessage =
             String(movedIds.size) +
             ' ' +
             movedNoun +
-            ' moved to ' +
+            (this.campaignType === 'Members' ? ' copied to ' : ' moved to ') +
             campaign.name +
             '.';
           this.clearSelection();
@@ -294,6 +352,10 @@ export function createRecordActionMethods() {
     async deleteSelectedRecords(this: SevaWorkspaceContext): Promise<void> {
       const records = getSelectedRecords(this);
       if (!records.length) {
+        return;
+      }
+      if (this.campaignType === 'Members') {
+        this.authError = 'Members cannot be deleted from this view.';
         return;
       }
       const noun = records.length === 1 ? 'record' : 'records';

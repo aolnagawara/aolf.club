@@ -661,6 +661,130 @@ describe('Seva workspace selection and bulk actions', () => {
     expect(app.selectedCount()).toBe(0);
   });
 
+  it('lists only lead campaigns as member copy destinations', () => {
+    const app = sevaWorkspace();
+    const memberCampaign = {
+      id: 'cmpMembs01AbcDefGhIJK',
+      name: 'Members',
+      type: 'Members' as const
+    };
+    const leadCampaign = {
+      id: 'cmpLeads01AbcDefGhIJk',
+      name: 'Course Leads',
+      type: 'Leads' as const
+    };
+    const otherMemberCampaign = {
+      id: 'cmpMembs02AbcDefGhIJK',
+      name: 'Other Members',
+      type: 'Members' as const
+    };
+    const member = createLead(
+      app,
+      memberCampaign.id,
+      memberCampaign.type,
+      'stable-member-copy-id'
+    );
+    app.leads = [member];
+    app.campaigns = [memberCampaign, leadCampaign, otherMemberCampaign];
+    app.selectedCampaignId = memberCampaign.id;
+    app.campaignType = 'Members';
+    app.toggleLeadSelection(member);
+
+    app.openMoveCampaignSheet();
+
+    expect(app.optionSheetTitle).toBe('Copy 1 selected');
+    expect(app.optionSheetOptions).toEqual([
+      { value: leadCampaign.id, label: leadCampaign.name }
+    ]);
+  });
+
+  it('copies selected members into a lead campaign and keeps members visible', async () => {
+    const createLeadMock = vi.fn(async (payload) => ({
+      success: true as const,
+      lead: {
+        id: 'newLeadCopy01AbcDefGh',
+        mobile: payload.mobile,
+        name: payload.name,
+        quality: 'Quality',
+        followUp: 'Follow-up',
+        lastUpdated: 'Just now',
+        status: 'Response',
+        notes: payload.notes || '',
+        campaignId: payload.campaignId,
+        campaignType: payload.campaignType,
+        assignedVolunteerEmail: 'volunteer@example.com',
+        wishlistPrograms: '',
+        donePrograms: ''
+      }
+    }));
+    const updateLead = vi.fn();
+    vi.stubGlobal('window', {
+      appRuntime: { createLead: createLeadMock, updateLead }
+    });
+    const app = sevaWorkspace();
+    const memberCampaign = {
+      id: 'cmpMembs01AbcDefGhIJK',
+      name: 'Members',
+      type: 'Members' as const
+    };
+    const leadCampaign = {
+      id: 'cmpLeads01AbcDefGhIJk',
+      name: 'Course Leads',
+      type: 'Leads' as const
+    };
+    const member = createLead(
+      app,
+      memberCampaign.id,
+      memberCampaign.type,
+      'stable-member-copy-id'
+    );
+    member.mobile = '+91 98765 43210';
+    member.notes = 'Member note to carry over';
+    app.leads = [member];
+    app.campaigns = [memberCampaign, leadCampaign];
+    app.selectedCampaignId = memberCampaign.id;
+    app.campaignType = 'Members';
+    app.toggleLeadSelection(member);
+
+    await app.moveSelectedRecords(leadCampaign.id);
+
+    expect(createLeadMock).toHaveBeenCalledWith({
+      name: member.name,
+      mobile: '9876543210',
+      notes: 'Member note to carry over',
+      campaignId: leadCampaign.id,
+      campaignType: 'Leads'
+    });
+    expect(updateLead).not.toHaveBeenCalled();
+    expect(app.leads).toEqual([member]);
+    expect(app.selectedCount()).toBe(0);
+    expect(app.actionMessage).toBe('1 member copied to Course Leads.');
+  });
+
+  it('does not delete selected members', async () => {
+    const deleteLead = vi.fn();
+    const confirm = vi.fn(() => true);
+    vi.stubGlobal('window', { appRuntime: { deleteLead }, confirm });
+    const app = sevaWorkspace();
+    const member = createLead(
+      app,
+      'cmpMembs01AbcDefGhIJK',
+      'Members',
+      'stable-member-delete-id'
+    );
+    app.leads = [member];
+    app.campaignType = 'Members';
+    app.toggleLeadSelection(member);
+
+    await app.deleteSelectedRecords();
+
+    expect(confirm).not.toHaveBeenCalled();
+    expect(deleteLead).not.toHaveBeenCalled();
+    expect(app.leads).toEqual([member]);
+    expect(app.selectedCount()).toBe(1);
+    expect(app.authError).toBe('Members cannot be deleted from this view.');
+  });
+
   it('confirms, persists, and locally removes a bulk deletion', async () => {
     const deleteLead = vi.fn(async ({ id }) => ({
       success: true as const,
