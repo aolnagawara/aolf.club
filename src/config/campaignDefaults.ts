@@ -22,6 +22,7 @@ export const DEFAULT_STATUS_OPTIONS_BY_TYPE = {
     'Busy',
     'No Answer',
     'Interested',
+    'Registered',
     'Not Interested',
     'Call Back'
   ],
@@ -90,6 +91,7 @@ export const DEFAULT_STATUS_ICON_MAP: Readonly<Record<string, string>> = {
   Busy: '⏳',
   'No Answer': '🔕',
   Interested: '✅',
+  Registered: '🎟️',
   'Not Interested': '⛔',
   Reached: '📲',
   'Will Attend': '🙌',

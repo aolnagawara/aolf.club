@@ -91,6 +91,7 @@ export const mockBootstrapData: BootstrapResponse = {
       Busy: '⏳',
       'No Answer': '🔕',
       Interested: '✅',
+      Registered: '🎟️',
       'Not Interested': '⛔',
       Reached: '📲',
       'Will Attend': '🙌',
