@@ -126,6 +126,9 @@ describe('AOLF Connect frontend presentation', () => {
     expect(volunteerPage).toContain('Call Tracker');
     expect(volunteerPage).toContain('Activity Management');
     expect(volunteerPage).toContain('x-text="courseCardSubtitle(course)"');
+    expect(volunteerPage).toContain(
+      'class="aspect-square w-full rounded-lg bg-slate-100 object-contain"'
+    );
     expect(volunteerPage).not.toContain('type="month"');
     expect(volunteerPage).toContain('showsProgramTabs()');
     expect(volunteerPage).toContain('type="file"');

@@ -19,5 +19,8 @@ describe('course editor presentation', () => {
     expect(editor).toContain('No image selected');
     expect(editor).toContain('role="alert"');
     expect(editor).toContain('(&lt; 600 KB)');
+    expect(editor).toContain('max-h-80 max-w-full');
+    expect(editor).toContain('object-contain');
+    expect(editor).not.toContain('h-32 w-full rounded-lg object-cover');
   });
 });

@@ -710,7 +710,7 @@
                   x-show="course.hasPamphlet"
                   :src="course.pamphletImageUrl || ('/course/' + course.id + '/pamphlet')"
                   alt=""
-                  class="h-24 w-full rounded-lg object-cover bg-slate-100"
+                  class="aspect-square w-full rounded-lg bg-slate-100 object-contain"
                 />
                 <div class="flex flex-wrap gap-1.5">
                   <button
@@ -1232,7 +1232,7 @@
                 x-show="courseDraft.pamphletPreviewUrl"
                 :src="courseDraft.pamphletPreviewUrl"
                 alt=""
-                class="h-32 w-full rounded-lg object-cover bg-slate-100"
+                class="mx-auto max-h-80 max-w-full rounded-lg bg-slate-100 object-contain"
               />
               <button
                 type="button"
