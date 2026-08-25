@@ -1,28 +1,29 @@
-import {
-  getApiDataStore,
-  type ApiDataStore
-} from '../_lib/storage/dataStore.js';
-import { getSheetsEnv } from '../_lib/config/env.js';
+import type { ApiDataStore } from '../_lib/storage/dataStore.js';
 import type { ApiRequest, ApiResponse } from '../_lib/http/responses.js';
-import { getSheetLayout, type SheetLayout } from '../_lib/sheets/layout.js';
-import {
-  createSheetsOperation,
-  readSheetValuesBatch,
-  type SheetsOperation,
-  type SpreadsheetTarget
+import type { SheetLayout } from '../_lib/sheets/layout.js';
+import type {
+  SheetsOperation,
+  SpreadsheetTarget
 } from '../_lib/sheets/client.js';
 import { getTabName } from '../_lib/sheets/table.js';
 import type { AuthorizationDiagnostics } from '../_lib/sheets/store.js';
-import { readSessionUser, type SessionUser } from '../_lib/auth/session.js';
+import type { SessionUser } from '../_lib/auth/session.js';
 import { sendApiError } from '../_lib/http/errors.js';
 
 const MAX_HEALTH_DATA_ROWS = 200;
 
+type MaybePromise<T> = T | Promise<T>;
+type SheetsEnv = {
+  GOOGLE_SHEETS_DATA_SPREADSHEET_ID: string;
+  GOOGLE_SHEETS_ACCESS_SPREADSHEET_ID: string;
+};
+
 type HealthDependencies = {
   readSessionUser: (req: ApiRequest) => Promise<SessionUser | null>;
-  getApiDataStore: () => ApiDataStore;
-  getSheetsEnv: typeof getSheetsEnv;
-  getSheetLayout: () => SheetLayout;
+  getApiDataStore: () => MaybePromise<ApiDataStore>;
+  getSheetsEnv: () => MaybePromise<SheetsEnv>;
+  getSheetLayout: () => MaybePromise<SheetLayout>;
+  createSheetsOperation: () => MaybePromise<SheetsOperation>;
   readSheetValuesBatch: (
     target: SpreadsheetTarget,
     ranges: readonly string[],
@@ -60,11 +61,36 @@ export function createSheetsHealthHandler(
   overrides: Partial<HealthDependencies> = {}
 ) {
   const dependencies: HealthDependencies = {
-    readSessionUser,
-    getApiDataStore,
-    getSheetsEnv,
-    getSheetLayout,
-    readSheetValuesBatch,
+    async readSessionUser(req) {
+      const { readSessionUser } = await import('../_lib/auth/session.js');
+      return readSessionUser(req);
+    },
+    async getApiDataStore() {
+      const { getApiDataStore } = await import(
+        '../_lib/storage/dataStore.js'
+      );
+      return getApiDataStore();
+    },
+    async getSheetsEnv() {
+      const { getSheetsEnv } = await import('../_lib/config/env.js');
+      return getSheetsEnv();
+    },
+    async getSheetLayout() {
+      const { getSheetLayout } = await import('../_lib/sheets/layout.js');
+      return getSheetLayout();
+    },
+    async createSheetsOperation() {
+      const { createSheetsOperation } = await import(
+        '../_lib/sheets/client.js'
+      );
+      return createSheetsOperation();
+    },
+    async readSheetValuesBatch(target, ranges, operation) {
+      const { readSheetValuesBatch } = await import(
+        '../_lib/sheets/client.js'
+      );
+      return readSheetValuesBatch(target, ranges, operation);
+    },
     ...overrides
   };
 
@@ -72,8 +98,10 @@ export function createSheetsHealthHandler(
     authorizationDiagnostics: AuthorizationDiagnostics | undefined,
     operation: SheetsOperation
   ) {
-    const env = dependencies.getSheetsEnv();
-    const layout = dependencies.getSheetLayout();
+    const [env, layout] = await Promise.all([
+      dependencies.getSheetsEnv(),
+      dependencies.getSheetLayout()
+    ]);
     const headerRanges = [
       getHeaderRange(layout.campaignsRange),
       getHeaderRange(layout.leadsRange),
@@ -201,7 +229,7 @@ export function createSheetsHealthHandler(
       });
     }
 
-    const operation = createSheetsOperation();
+    let operation: SheetsOperation | null = null;
     try {
       const user = await dependencies.readSessionUser(req);
       if (!user) {
@@ -219,9 +247,9 @@ export function createSheetsHealthHandler(
         );
       }
 
-      const authorization = await dependencies
-        .getApiDataStore()
-        .authorizeUser(user, operation);
+      operation = await dependencies.createSheetsOperation();
+      const store = await dependencies.getApiDataStore();
+      const authorization = await store.authorizeUser(user, operation);
       if (!authorization.allowed) {
         return sendApiError(res, new Error('Authorization denied.'), context, {
           status: 403,
@@ -239,7 +267,7 @@ export function createSheetsHealthHandler(
     } catch (error) {
       return sendApiError(res, error, context);
     } finally {
-      operation.dispose();
+      operation?.dispose();
     }
   };
 }

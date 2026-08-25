@@ -127,6 +127,8 @@ function createFixture(
       now: () => new Date('2026-08-20T08:00:00.000Z'),
       imageStore
     }),
+    readSheetValues,
+    readSheetValuesBatch,
     appendSheetRow,
     deleteSheetRow
   };
@@ -177,6 +179,40 @@ describe('Sheets course store', () => {
       courses: [],
       selectionMatched: false
     });
+  });
+
+  it('authorizes course management without reading config or campaign sheets', async () => {
+    const fixture = createFixture([courseRow()]);
+
+    const listed = await fixture.store.listCoursesForAuthorizedUser(USER);
+
+    expect(listed.allowed).toBe(true);
+    expect(fixture.readSheetValuesBatch).not.toHaveBeenCalled();
+    expect(fixture.readSheetValues).toHaveBeenCalledWith(
+      'access',
+      LAYOUT.allowedUsersRange,
+      expect.anything()
+    );
+    expect(fixture.readSheetValues).toHaveBeenCalledWith(
+      'data',
+      LAYOUT.coursesRange,
+      expect.anything()
+    );
+    expect(fixture.readSheetValues).toHaveBeenCalledWith(
+      'data',
+      LAYOUT.courseTemplatesRange,
+      expect.anything()
+    );
+    expect(fixture.readSheetValues).not.toHaveBeenCalledWith(
+      'data',
+      LAYOUT.configRange,
+      expect.anything()
+    );
+    expect(fixture.readSheetValues).not.toHaveBeenCalledWith(
+      'data',
+      LAYOUT.campaignsRange,
+      expect.anything()
+    );
   });
 
   it('keeps IP Junior and Senior as separate public programs', async () => {

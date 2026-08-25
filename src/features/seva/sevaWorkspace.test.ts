@@ -1047,8 +1047,8 @@ describe('Seva workspace course management', () => {
 
     const app = sevaWorkspace();
     app.courses = [existingCourse];
-    app.openCourseEditor(existingCourse);
-    app.clearCourseImage();
+    await app.openCourseEditor(existingCourse);
+    await app.clearCourseImage();
 
     expect(app.courseDraft.hasImage).toBe(false);
     expect(app.courseDraft.clearImage).toBe(true);
@@ -1080,6 +1080,18 @@ describe('Seva workspace course management', () => {
     expect(
       app.coursePickerSubtitle({ ...course, title: 'Happiness Program' })
     ).toBe('');
+  });
+
+  it('uses uploaded blob image URLs directly when available', () => {
+    const app = sevaWorkspace();
+    const imageUrl =
+      'https://store123.public.blob.vercel-storage.com/courses/crsHp/image.jpg';
+    const course = createCourseFixture({
+      hasImage: true,
+      imageUrl
+    });
+
+    expect(app.courseImageUrl(course)).toBe(imageUrl);
   });
 
   it('distinguishes IP Junior and Senior in the WhatsApp picker and links', () => {

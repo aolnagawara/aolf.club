@@ -9,15 +9,15 @@ describe('course editor validation', () => {
     vi.unstubAllGlobals();
   });
 
-  it('shows an oversized image error inside the course editor', () => {
+  it('shows an oversized image error inside the course editor', async () => {
     const app = sevaWorkspace();
-    app.openCourseEditor();
+    await app.openCourseEditor();
     const input = {
       files: [{ size: MAX_IMAGE_BYTES, type: 'image/png' }],
       value: 'image.png'
     };
 
-    app.onImageSelected({ target: input } as unknown as Event);
+    await app.onImageSelected({ target: input } as unknown as Event);
 
     expect(app.courseImageError).toBe('Image must be < 3 MB');
     expect(app.courseImageFileName).toBe('');
@@ -37,7 +37,7 @@ describe('course editor validation', () => {
     });
     vi.stubGlobal('window', { appRuntime: { createCourse } });
     const app = sevaWorkspace();
-    app.openCourseEditor();
+    await app.openCourseEditor();
 
     await app.saveCourse();
 

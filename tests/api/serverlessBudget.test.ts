@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 const API_ROOT = fileURLToPath(new URL('../../api', import.meta.url));
-const HOBBY_FUNCTION_LIMIT = 12;
+const SERVERLESS_ENTRY_LIMIT = 6;
 
 function listServerlessEntryFiles(directory: string): string[] {
   const entries = readdirSync(directory);
@@ -26,12 +26,12 @@ function listServerlessEntryFiles(directory: string): string[] {
 }
 
 describe('Vercel Hobby serverless budget', () => {
-  it('keeps API entry files at or below 12 functions', () => {
+  it('keeps API entry files at or below the consolidated function target', () => {
     const files = listServerlessEntryFiles(API_ROOT).sort();
     expect(
       files.length,
-      'Hobby allows 12 serverless entry files under api/ excluding _lib. Found:\n' +
+      'Expected no more than 6 serverless entry files under api/ excluding _lib. Found:\n' +
         files.join('\n')
-    ).toBeLessThanOrEqual(HOBBY_FUNCTION_LIMIT);
+    ).toBeLessThanOrEqual(SERVERLESS_ENTRY_LIMIT);
   });
 });

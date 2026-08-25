@@ -34,6 +34,11 @@ type ShareNavigator = Navigator & {
   canShare?: (data: ShareData) => boolean;
 };
 
+type ClipboardItemConstructor = {
+  new (items: Record<string, Blob>): ClipboardItem;
+  supports?: (mimeType: string) => boolean;
+};
+
 function matchingCoursesForLead(
   lead: Lead | null | undefined,
   active: readonly Course[]
@@ -169,6 +174,10 @@ export function createCourseWorkspaceMethods() {
     courseImageUrl(this: SevaWorkspaceContext, course: Course): string {
       if (!course.id || !course.hasImage) {
         return '';
+      }
+      const stored = String(course.imageUrl || '').trim();
+      if (/^https:\/\//i.test(stored)) {
+        return stored;
       }
       return publicCourseImagePath(course.id);
     },
@@ -430,7 +439,9 @@ export function createCourseWorkspaceMethods() {
       course: Course
     ): Promise<boolean> {
       const clipboard = navigator.clipboard;
-      const ClipboardItemCtor = window.ClipboardItem;
+      const ClipboardItemCtor = window.ClipboardItem as
+        | ClipboardItemConstructor
+        | undefined;
       if (!clipboard?.write || !ClipboardItemCtor || !course.hasImage) {
         return false;
       }
@@ -439,6 +450,18 @@ export function createCourseWorkspaceMethods() {
         const image = await this.fetchCourseImageFile(course);
         if (!image) {
           return false;
+        }
+        const sourceMimeType = String(image.blob.type || '').trim();
+        if (
+          sourceMimeType &&
+          ClipboardItemCtor.supports?.(sourceMimeType)
+        ) {
+          await clipboard.write([
+            new ClipboardItemCtor({
+              [sourceMimeType]: image.blob
+            })
+          ]);
+          return true;
         }
         const png = await convertImageBlobToPng(image.blob);
         if (!png) {

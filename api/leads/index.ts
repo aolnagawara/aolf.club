@@ -1,7 +1,15 @@
 import type { ApiRequest, ApiResponse } from '../_lib/http/responses.js';
-import { readSessionUser } from '../_lib/auth/session.js';
-import { getApiDataStore } from '../_lib/storage/dataStore.js';
 import { sendApiError } from '../_lib/http/errors.js';
+
+async function loadSessionUser(req: ApiRequest) {
+  const { readSessionUser } = await import('../_lib/auth/session.js');
+  return readSessionUser(req);
+}
+
+async function loadDataStore() {
+  const { getApiDataStore } = await import('../_lib/storage/dataStore.js');
+  return getApiDataStore();
+}
 
 function firstQueryValue(req: ApiRequest, name: string): string {
   const value = req.query[name];
@@ -168,7 +176,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
   }
 
   try {
-    const user = await readSessionUser(req);
+    const user = await loadSessionUser(req);
     if (!user) {
       return sendApiError(res, new Error('Authentication required.'), context, {
         status: 401,
@@ -179,7 +187,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       });
     }
 
-    const store = getApiDataStore();
+    const store = await loadDataStore();
     const result = isAssign
       ? await store.assignMembersForAuthorizedUser(user, req.body)
       : req.method === 'DELETE'

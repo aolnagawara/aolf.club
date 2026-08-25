@@ -149,6 +149,10 @@ type MetadataSnapshot = {
   diagnostics: AuthorizationDiagnostics;
 };
 
+type AccessSnapshot = {
+  allowedUsers: Set<string>;
+};
+
 export type AuthorizationDiagnostics = {
   campaignRows: number;
   allowedUserRows: number;
@@ -491,8 +495,22 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
     };
   }
 
+  async function loadAccessSnapshot(
+    operation: SheetsOperation
+  ): Promise<AccessSnapshot> {
+    const layout = getSheetLayout();
+    const allowedUserRows = await readSheetValues(
+      'access',
+      layout.allowedUsersRange,
+      operation
+    );
+    return {
+      allowedUsers: buildAllowedUsers(allowedUserRows)
+    };
+  }
+
   function isUserAllowed(
-    snapshot: MetadataSnapshot,
+    snapshot: AccessSnapshot,
     user: SessionUser
   ): boolean {
     return snapshot.allowedUsers.has(normalizeEmail(user.email));
@@ -1177,7 +1195,7 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
 
     async isUserAllowed(user: SessionUser, operation?: SheetsOperation) {
       return withStoreOperation(operation, async (activeOperation) =>
-        isUserAllowed(await loadMetadataSnapshot(activeOperation), user)
+        isUserAllowed(await loadAccessSnapshot(activeOperation), user)
       );
     },
 
@@ -1271,7 +1289,7 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
       operation?: SheetsOperation
     ): Promise<AuthorizedStoreResult<ListCoursesResponse>> {
       return withStoreOperation(operation, async (activeOperation) => {
-        const snapshot = await loadMetadataSnapshot(activeOperation);
+        const snapshot = await loadAccessSnapshot(activeOperation);
         if (!isUserAllowed(snapshot, user)) {
           return { allowed: false };
         }
@@ -1288,7 +1306,7 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
       operation?: SheetsOperation
     ): Promise<AuthorizedStoreResult<CreateCourseResponse>> {
       return withStoreOperation(operation, async (activeOperation) => {
-        const snapshot = await loadMetadataSnapshot(activeOperation);
+        const snapshot = await loadAccessSnapshot(activeOperation);
         if (!isUserAllowed(snapshot, user)) {
           return { allowed: false };
         }
@@ -1305,7 +1323,7 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
       operation?: SheetsOperation
     ): Promise<AuthorizedStoreResult<UpdateCourseResponse>> {
       return withStoreOperation(operation, async (activeOperation) => {
-        const snapshot = await loadMetadataSnapshot(activeOperation);
+        const snapshot = await loadAccessSnapshot(activeOperation);
         if (!isUserAllowed(snapshot, user)) {
           return { allowed: false };
         }
@@ -1322,7 +1340,7 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
       operation?: SheetsOperation
     ): Promise<AuthorizedStoreResult<DeleteCourseResponse>> {
       return withStoreOperation(operation, async (activeOperation) => {
-        const snapshot = await loadMetadataSnapshot(activeOperation);
+        const snapshot = await loadAccessSnapshot(activeOperation);
         if (!isUserAllowed(snapshot, user)) {
           return { allowed: false };
         }

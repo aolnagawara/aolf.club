@@ -1,11 +1,15 @@
 import type { ApiRequest, ApiResponse } from '../_lib/http/responses.js';
-import { readSessionUser } from '../_lib/auth/session.js';
-import { getApiDataStore } from '../_lib/storage/dataStore.js';
 import { sendApiError } from '../_lib/http/errors.js';
-import {
-  renderPublicCourseHtml,
-  toPublicCourseView
-} from '../_lib/courses/publicHtml.js';
+
+async function loadDataStore() {
+  const { getApiDataStore } = await import('../_lib/storage/dataStore.js');
+  return getApiDataStore();
+}
+
+async function loadSessionUser(req: ApiRequest) {
+  const { readSessionUser } = await import('../_lib/auth/session.js');
+  return readSessionUser(req);
+}
 
 function firstQueryValue(req: ApiRequest, name: string): string {
   const value = req.query[name];
@@ -66,7 +70,8 @@ async function servePublicCourseImage(
   }
 
   try {
-    const image = await getApiDataStore().getPublicCourseImage(id);
+    const store = await loadDataStore();
+    const image = await store.getPublicCourseImage(id);
     if (!image) {
       res.setHeader('Content-Type', 'text/plain; charset=utf-8');
       return res.status(404).end('Image not found.');
@@ -103,7 +108,12 @@ async function servePublicCoursesPage(req: ApiRequest, res: ApiResponse) {
   const requestedProgram = firstQueryValue(req, 'program').trim().toLowerCase();
 
   try {
-    const page = await getApiDataStore().getPublicCourses(requestedProgram);
+    const [store, publicHtml] = await Promise.all([
+      loadDataStore(),
+      import('../_lib/courses/publicHtml.js')
+    ]);
+    const page = await store.getPublicCourses(requestedProgram);
+    const { renderPublicCourseHtml, toPublicCourseView } = publicHtml;
     const courses = page.courses.map(toPublicCourseView);
     const selected = page.selected
       ? toPublicCourseView(page.selected)
@@ -116,6 +126,9 @@ async function servePublicCoursesPage(req: ApiRequest, res: ApiResponse) {
     });
     return res.status(rendered.status).end(rendered.html);
   } catch {
+    const { renderPublicCourseHtml } = await import(
+      '../_lib/courses/publicHtml.js'
+    );
     const missing = renderPublicCourseHtml({
       selected: null,
       origin
@@ -192,12 +205,13 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
 
   try {
     if (isCatalog) {
-      const offers = await getApiDataStore().listPublicHomepageOffers();
+      const store = await loadDataStore();
+      const offers = await store.listPublicHomepageOffers();
       res.setHeader('Cache-Control', 'public, max-age=60');
       return res.status(200).json(offers);
     }
 
-    const user = await readSessionUser(req);
+    const user = await loadSessionUser(req);
     if (!user) {
       return sendApiError(res, new Error('Authentication required.'), context, {
         status: 401,
@@ -208,7 +222,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       });
     }
 
-    const store = getApiDataStore();
+    const store = await loadDataStore();
     if (isMutate) {
       const requestBody =
         typeof req.body === 'object' && req.body && !Array.isArray(req.body)

@@ -19,40 +19,47 @@ import {
   X,
   createIcons
 } from 'lucide';
-import { sevaWorkspace } from './features/seva/sevaWorkspace';
 import './styles/main.css';
+
+type SevaWorkspaceFactory =
+  typeof import('./features/seva/sevaWorkspace')['sevaWorkspace'];
 
 declare global {
   interface Window {
     appRuntime: typeof appRuntime;
-    sevaWorkspace: typeof sevaWorkspace;
+    sevaWorkspace: SevaWorkspaceFactory;
     Alpine: typeof Alpine;
   }
 }
 
 window.appRuntime = appRuntime;
-window.sevaWorkspace = sevaWorkspace;
 window.Alpine = Alpine;
 
-createIcons({
-  icons: {
-    Calendar,
-    Download,
-    FolderInput,
-    Paperclip,
-    Phone,
-    Plus,
-    RefreshCw,
-    Search,
-    SlidersHorizontal,
-    Trash2,
-    UserCheck,
-    UserCog,
-    UserPlus,
-    UserRoundPlus,
-    Users,
-    X
-  },
-  inTemplates: true
-});
-Alpine.start();
+async function bootstrap() {
+  const { sevaWorkspace } = await import('./features/seva/sevaWorkspace');
+  window.sevaWorkspace = sevaWorkspace;
+  createIcons({
+    icons: {
+      Calendar,
+      Download,
+      FolderInput,
+      Paperclip,
+      Phone,
+      Plus,
+      RefreshCw,
+      Search,
+      SlidersHorizontal,
+      Trash2,
+      UserCheck,
+      UserCog,
+      UserPlus,
+      UserRoundPlus,
+      Users,
+      X
+    },
+    inTemplates: true
+  });
+  Alpine.start();
+}
+
+void bootstrap();

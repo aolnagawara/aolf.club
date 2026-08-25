@@ -1,23 +1,24 @@
 import type { ApiRequest, ApiResponse } from '../_lib/http/responses.js';
-import {
-  buildGoogleAuthUrl,
-  createOAuthState,
-  getUserFromAuthCode
-} from '../_lib/auth/oauth.js';
-import {
-  appendSetCookie,
-  parseCookies,
-  serializeCookie
-} from '../_lib/auth/cookies.js';
-import {
-  clearSessionCookie,
-  readSessionUser,
-  setSessionCookie
-} from '../_lib/auth/session.js';
-import { getApiDataStore } from '../_lib/storage/dataStore.js';
 import { reportApiError, sendApiError } from '../_lib/http/errors.js';
 
 const OAUTH_STATE_COOKIE = 'aolf_oauth_state';
+
+async function loadCookies() {
+  return import('../_lib/auth/cookies.js');
+}
+
+async function loadOAuth() {
+  return import('../_lib/auth/oauth.js');
+}
+
+async function loadSession() {
+  return import('../_lib/auth/session.js');
+}
+
+async function loadDataStore() {
+  const { getApiDataStore } = await import('../_lib/storage/dataStore.js');
+  return getApiDataStore();
+}
 
 function firstQueryValue(req: ApiRequest, name: string): string {
   const value = req.query[name];
@@ -52,7 +53,8 @@ function redirectToLoginWithError(res: ApiResponse, errorCode: string) {
   return res.end();
 }
 
-function clearOAuthStateCookie(res: ApiResponse) {
+async function clearOAuthStateCookie(res: ApiResponse) {
+  const { appendSetCookie, serializeCookie } = await loadCookies();
   appendSetCookie(
     res,
     serializeCookie(OAUTH_STATE_COOKIE, '', {
@@ -78,6 +80,9 @@ async function handleSignin(req: ApiRequest, res: ApiResponse) {
   }
 
   try {
+    const [{ buildGoogleAuthUrl, createOAuthState }, cookies] =
+      await Promise.all([loadOAuth(), loadCookies()]);
+    const { appendSetCookie, serializeCookie } = cookies;
     const state = createOAuthState();
     appendSetCookie(
       res,
@@ -121,11 +126,12 @@ async function handleCallback(req: ApiRequest, res: ApiResponse) {
 
   const queryCode = firstQueryValue(req, 'code');
   const queryState = firstQueryValue(req, 'state');
+  const { parseCookies } = await loadCookies();
   const cookies = parseCookies(req.headers.cookie);
   const stateCookie = cookies[OAUTH_STATE_COOKIE] || '';
 
   if (!queryCode || !queryState || queryState !== stateCookie) {
-    clearOAuthStateCookie(res);
+    await clearOAuthStateCookie(res);
     reportApiError(new Error('Invalid OAuth state.'), context, {
       status: 400,
       code: 'VALIDATION_ERROR',
@@ -137,10 +143,14 @@ async function handleCallback(req: ApiRequest, res: ApiResponse) {
   }
 
   try {
+    const [{ getUserFromAuthCode }, store] = await Promise.all([
+      loadOAuth(),
+      loadDataStore()
+    ]);
     const sessionUser = await getUserFromAuthCode(queryCode);
-    const allowed = await getApiDataStore().isUserAllowed(sessionUser);
+    const allowed = await store.isUserAllowed(sessionUser);
     if (!allowed) {
-      clearOAuthStateCookie(res);
+      await clearOAuthStateCookie(res);
       reportApiError(new Error('Authorization denied.'), context, {
         status: 403,
         code: 'FORBIDDEN',
@@ -151,13 +161,14 @@ async function handleCallback(req: ApiRequest, res: ApiResponse) {
       return redirectToLoginWithError(res, 'forbidden');
     }
 
+    const { setSessionCookie } = await loadSession();
     await setSessionCookie(res, sessionUser);
-    clearOAuthStateCookie(res);
+    await clearOAuthStateCookie(res);
     res.status(302);
     res.setHeader('Location', '/seva');
     return res.end();
   } catch (error) {
-    clearOAuthStateCookie(res);
+    await clearOAuthStateCookie(res);
     const reported = reportApiError(error, context);
     if (reported.code === 'UPSTREAM_TIMEOUT') {
       return redirectToLoginWithError(res, 'upstream_timeout');
@@ -182,6 +193,7 @@ async function handleSession(req: ApiRequest, res: ApiResponse) {
   }
 
   try {
+    const { readSessionUser } = await loadSession();
     const user = await readSessionUser(req);
     return res.status(200).json({
       user: user
@@ -211,6 +223,7 @@ async function handleSignout(req: ApiRequest, res: ApiResponse) {
   }
 
   try {
+    const { clearSessionCookie } = await loadSession();
     clearSessionCookie(res);
     return res.status(200).json({ success: true });
   } catch (error) {

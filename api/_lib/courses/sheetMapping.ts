@@ -120,11 +120,7 @@ export function applyCourseDefaults(
     imageFileId,
     imageMimeType
   };
-  return {
-    ...toCourseResponse(record),
-    imageFileId,
-    imageMimeType
-  };
+  return record;
 }
 
 export function courseFromRow(
