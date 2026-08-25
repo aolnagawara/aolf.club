@@ -89,11 +89,83 @@ function restoreCampaignView(
 
 const SIGN_OUT_SAVE_ERROR =
   'Some changes could not be saved. Please retry before signing out.';
+const CAMPAIGN_URL_PARAM = 'campaignId';
+const PENDING_CAMPAIGN_STORAGE_KEY = 'aolf.pendingCampaignId';
+
+function getSessionStorage(): Storage | undefined {
+  if (typeof window === 'undefined') {
+    return undefined;
+  }
+  try {
+    return window.sessionStorage;
+  } catch {
+    return undefined;
+  }
+}
+
+function readCampaignIdFromUrl(): string {
+  if (
+    typeof window === 'undefined' ||
+    !window.location ||
+    typeof window.location.href !== 'string'
+  ) {
+    return '';
+  }
+  return (
+    new URL(window.location.href).searchParams.get(CAMPAIGN_URL_PARAM) || ''
+  );
+}
+
+function rememberRequestedCampaignId(): string {
+  const campaignId = readCampaignIdFromUrl().trim();
+  const storage = getSessionStorage();
+  if (campaignId) {
+    try {
+      storage?.setItem(PENDING_CAMPAIGN_STORAGE_KEY, campaignId);
+    } catch {
+      // Some browsers block sessionStorage; the current URL still carries the selection.
+    }
+    return campaignId;
+  }
+  try {
+    return storage?.getItem(PENDING_CAMPAIGN_STORAGE_KEY)?.trim() || '';
+  } catch {
+    return '';
+  }
+}
+
+function clearRequestedCampaignId(): void {
+  const storage = getSessionStorage();
+  try {
+    storage?.removeItem(PENDING_CAMPAIGN_STORAGE_KEY);
+  } catch {
+    // Ignore blocked storage; the URL is updated separately.
+  }
+}
+
+function updateCampaignUrl(campaignId: string): void {
+  if (
+    typeof window === 'undefined' ||
+    !window.location ||
+    !window.history ||
+    typeof window.history.replaceState !== 'function'
+  ) {
+    return;
+  }
+  const url = new URL(window.location.href);
+  if (campaignId) {
+    url.searchParams.set(CAMPAIGN_URL_PARAM, campaignId);
+  } else {
+    url.searchParams.delete(CAMPAIGN_URL_PARAM);
+  }
+  window.history.replaceState({}, '', url.pathname + url.search + url.hash);
+}
 
 export function createAuthAndBootstrapMethods() {
   return {
     async init(this: SevaWorkspaceContext): Promise<void> {
       const redirectError = consumeAuthRedirectError();
+      const requestedCampaignId = rememberRequestedCampaignId();
       this.globalPointerDownHandler = (event: PointerEvent) =>
         this.handleGlobalPointerDown(event);
       document.addEventListener(
@@ -101,13 +173,14 @@ export function createAuthAndBootstrapMethods() {
         this.globalPointerDownHandler,
         true
       );
-      await this.initializeAuthenticatedSession();
+      await this.initializeAuthenticatedSession(requestedCampaignId);
       if (!this.authenticatedUser && !this.authError && redirectError) {
         this.authError = redirectError;
       }
     },
     async initializeAuthenticatedSession(
-      this: SevaWorkspaceContext
+      this: SevaWorkspaceContext,
+      requestedCampaignId = ''
     ): Promise<void> {
       this.authError = '';
       this.isLoadingBootstrap = true;
@@ -123,7 +196,7 @@ export function createAuthAndBootstrapMethods() {
           .trim()
           .toLowerCase();
         this.isVolunteerModalOpen = false;
-        await this.loadBootstrap();
+        await this.loadBootstrap(requestedCampaignId || undefined);
       } catch (error) {
         this.authError = toAuthErrorMessage(
           error,
@@ -136,6 +209,7 @@ export function createAuthAndBootstrapMethods() {
     async startAuthFlow(this: SevaWorkspaceContext): Promise<void> {
       this.authError = '';
       this.isLoadingBootstrap = true;
+      const requestedCampaignId = rememberRequestedCampaignId();
       try {
         const user = await window.appRuntime.signInWithGoogle();
         this.authenticatedUser = user;
@@ -143,7 +217,7 @@ export function createAuthAndBootstrapMethods() {
           .trim()
           .toLowerCase();
         this.isVolunteerModalOpen = false;
-        await this.loadBootstrap();
+        await this.loadBootstrap(requestedCampaignId || undefined);
       } catch (error) {
         this.authError = toAuthErrorMessage(
           error,
@@ -244,7 +318,11 @@ export function createAuthAndBootstrapMethods() {
             'Some changes could not be saved. Please retry before switching Seva.';
           return;
         }
-        await this.loadBootstrap(targetCampaignId);
+        const switched = await this.loadBootstrap(targetCampaignId);
+        if (switched) {
+          updateCampaignUrl(targetCampaignId);
+          clearRequestedCampaignId();
+        }
       } finally {
         this.isCampaignSwitching = false;
       }
@@ -406,6 +484,10 @@ export function createAuthAndBootstrapMethods() {
           response.campaignId ||
           campaignId ||
           (this.campaigns[0] ? this.campaigns[0].id : '');
+        if (this.selectedCampaignId) {
+          updateCampaignUrl(this.selectedCampaignId);
+          clearRequestedCampaignId();
+        }
         this.selectedCampaign =
           this.campaigns.find((item) => item.id === this.selectedCampaignId) ||
           this.campaigns[0] ||

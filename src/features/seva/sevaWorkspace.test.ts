@@ -51,8 +51,8 @@ function createCourseFixture(overrides: Partial<Course> = {}): Course {
     title: 'HP',
     whatsappTemplate: 'Hi {name}',
     isActive: true,
-    hasPamphlet: false,
-    pamphletImageUrl: '',
+    hasImage: false,
+    imageUrl: '',
     createdAt: '',
     updatedAt: '',
     createdBy: '',
@@ -278,6 +278,74 @@ describe('Seva workspace lead lifecycle', () => {
     expect(app.isCampaignSwitching).toBe(false);
   });
 
+  it('uses campaignId from the Seva URL when bootstrapping', async () => {
+    const targetCampaignId = 'cmpMembs01AbcDefGhIJK';
+    const replaceState = vi.fn();
+    const sessionStorage = new Map<string, string>();
+    const loadBootstrap = vi.fn(async (campaignId: string) => ({
+      success: true as const,
+      user: {
+        id: 'user-1',
+        email: 'volunteer@example.com'
+      },
+      campaignId,
+      config: {
+        id: 'cfgMain01AbcDefGhIJK9',
+        campaigns: [
+          {
+            id: 'cmpLeads01AbcDefGhIJk',
+            name: 'Leads Seva',
+            type: 'Leads' as const
+          },
+          {
+            id: targetCampaignId,
+            name: 'Members Seva',
+            type: 'Members' as const
+          }
+        ],
+        programs: [],
+        programDisplayOrder: [],
+        allowedUsers: []
+      },
+      leads: []
+    }));
+    vi.stubGlobal('document', { addEventListener: vi.fn() });
+    vi.stubGlobal('window', {
+      location: {
+        href: 'https://aolf.club/seva?campaignId=' + targetCampaignId
+      },
+      history: { replaceState },
+      sessionStorage: {
+        getItem: (key: string) => sessionStorage.get(key) || null,
+        setItem: (key: string, value: string) => {
+          sessionStorage.set(key, value);
+        },
+        removeItem: (key: string) => {
+          sessionStorage.delete(key);
+        }
+      },
+      appRuntime: {
+        getAuthenticatedUser: vi.fn(async () => ({
+          id: 'user-1',
+          email: 'volunteer@example.com'
+        })),
+        loadBootstrap
+      }
+    });
+    const app = sevaWorkspace();
+
+    await app.init();
+
+    expect(loadBootstrap).toHaveBeenCalledWith(targetCampaignId);
+    expect(app.selectedCampaignId).toBe(targetCampaignId);
+    expect(app.selectedCampaign?.name).toBe('Members Seva');
+    expect(replaceState).toHaveBeenLastCalledWith(
+      {},
+      '',
+      '/seva?campaignId=' + targetCampaignId
+    );
+  });
+
   it('preserves the current campaign view when a target load fails', async () => {
     const loadBootstrap = vi.fn().mockRejectedValue(new Error('Target failed'));
     vi.stubGlobal('window', { appRuntime: { loadBootstrap } });
@@ -346,8 +414,8 @@ describe('Seva workspace lead lifecycle', () => {
       whatsappTemplate:
         'Hi {name}, join {course} {dates} {registrationLink} {courseUrl}',
       isActive: true,
-      hasPamphlet: false,
-      pamphletImageUrl: '',
+      hasImage: false,
+      imageUrl: '',
       createdAt: '',
       updatedAt: '',
       createdBy: '',
@@ -358,9 +426,7 @@ describe('Seva workspace lead lifecycle', () => {
     expect(lead._phoneDigits).toBe('919876543210');
     expect(app.buildWhatsappHref(lead, course)).toContain('919876543210');
     expect(app.buildWhatsappHref(lead, course)).not.toContain('91919876543210');
-    expect(app.buildWhatsappHref(lead, course)).toContain(
-      encodeURIComponent('https://aolf.club/courses?program=hp')
-    );
+    expect(app.buildWhatsappHref(lead, course)).not.toContain('/courses');
     const hpTemplateHref = app.buildWhatsappHref(lead, {
       ...course,
       whatsappTemplate:
@@ -369,9 +435,9 @@ describe('Seva workspace lead lifecycle', () => {
     const hpMessage = decodeURIComponent(
       hpTemplateHref.split('text=')[1] || ''
     );
-    expect(
-      hpMessage.indexOf('https://aolf.club/courses?program=hp')
-    ).toBeLessThan(hpMessage.indexOf('https://aolt.in/874234'));
+    expect(hpMessage).toBe(
+      'Hi Mobile contact\nRegister: https://aolt.in/874234'
+    );
     app.dialLead(lead);
     expect(window.location.href).toBe('tel:+919876543210');
   });
@@ -410,8 +476,8 @@ describe('Seva workspace lead lifecycle', () => {
       title: 'HP',
       whatsappTemplate: 'Hi {name}',
       isActive: true,
-      hasPamphlet: false,
-      pamphletImageUrl: '',
+      hasImage: false,
+      imageUrl: '',
       createdAt: '',
       updatedAt: '',
       createdBy: '',
@@ -443,7 +509,7 @@ describe('Seva workspace lead lifecycle', () => {
     );
   });
 
-  it('uses the campaign WhatsApp message when no active course is available', async () => {
+  it('opens WhatsApp with an empty message when no active activity is available', async () => {
     const opened: string[] = [];
     vi.stubGlobal('window', {
       location: { origin: 'https://aolf.club' },
@@ -472,19 +538,46 @@ describe('Seva workspace lead lifecycle', () => {
       campaignType: 'Leads'
     });
 
-    expect(app.buildWhatsappHref(lead)).toContain(
-      'https://wa.me/919876543210?'
-    );
-    expect(decodeURIComponent(app.buildWhatsappHref(lead))).toContain(
-      'Hi Aarav, greetings from July Leads Campaign.'
-    );
+    expect(app.buildWhatsappHref(lead)).toBe('https://wa.me/919876543210');
 
     await app.openWhatsappForLead(lead);
     expect(opened).toHaveLength(1);
-    expect(decodeURIComponent(opened[0])).toContain(
-      'Hi Aarav, greetings from July Leads Campaign.'
-    );
+    expect(opened[0]).toBe('https://wa.me/919876543210');
     expect(opened[0]).not.toContain('/course/');
+  });
+
+  it('opens WhatsApp with an empty message when no activity matches the lead', async () => {
+    const opened: string[] = [];
+    vi.stubGlobal('window', {
+      location: { origin: 'https://aolf.club' },
+      open: (url: string) => {
+        opened.push(url);
+        return null;
+      },
+      appRuntime: {
+        listCourses: vi.fn().mockResolvedValue({
+          success: true,
+          courses: [createCourseFixture({ courseType: 'DSN', title: 'DSN' })],
+          templates: []
+        })
+      }
+    });
+    const app = sevaWorkspace();
+    const lead = app.normalizeLead({
+      id: 'leadNoMatch01AbcDefGh',
+      mobile: '9876543210',
+      name: 'Aarav',
+      wishlistPrograms: ['HP'],
+      campaignId: 'cmpLeads01AbcDefGhIJk',
+      campaignType: 'Leads'
+    });
+
+    await app.openWhatsappForLead(lead);
+
+    expect(opened).toEqual(['https://wa.me/919876543210']);
+    expect(app.actionMessage).toBe(
+      'No matching activity found. WhatsApp opened with an empty message.'
+    );
   });
 
   it.each([
@@ -934,18 +1027,18 @@ describe('Seva workspace course management', () => {
     vi.unstubAllGlobals();
   });
 
-  it('sends a clear pamphlet request when an existing pamphlet is removed', async () => {
+  it('sends a clear image request when an existing image is removed', async () => {
     const existingCourse = createCourseFixture({
       title: 'Weekend Happiness Program',
-      hasPamphlet: true,
-      pamphletImageUrl: '/course/crsHpNcr01AbcDefGhiJK/pamphlet'
+      hasImage: true,
+      imageUrl: '/course/crsHpNcr01AbcDefGhiJK/image'
     });
     const updateCourse = vi.fn(async (payload) => ({
       success: true as const,
       course: {
         ...existingCourse,
-        hasPamphlet: false,
-        pamphletImageUrl: '',
+        hasImage: false,
+        imageUrl: '',
         updatedAt: 'saved',
         ...payload
       }
@@ -955,23 +1048,23 @@ describe('Seva workspace course management', () => {
     const app = sevaWorkspace();
     app.courses = [existingCourse];
     app.openCourseEditor(existingCourse);
-    app.clearCoursePamphlet();
+    app.clearCourseImage();
 
-    expect(app.courseDraft.hasPamphlet).toBe(false);
-    expect(app.courseDraft.clearPamphlet).toBe(true);
-    expect(app.courseDraft.pamphletPreviewUrl).toBe('');
+    expect(app.courseDraft.hasImage).toBe(false);
+    expect(app.courseDraft.clearImage).toBe(true);
+    expect(app.courseDraft.imagePreviewUrl).toBe('');
 
     await app.saveCourse();
 
     expect(updateCourse).toHaveBeenCalledWith(
       expect.objectContaining({
         id: existingCourse.id,
-        clearPamphlet: true,
-        pamphletBase64: '',
-        pamphletMimeType: ''
+        clearImage: true,
+        imageBase64: '',
+        imageMimeType: ''
       })
     );
-    expect(app.courses[0].hasPamphlet).toBe(false);
+    expect(app.courses[0].hasImage).toBe(false);
   });
 
   it('only shows a distinct course title as the WhatsApp picker subtitle', () => {
@@ -999,14 +1092,14 @@ describe('Seva workspace course management', () => {
       courseType: 'IP',
       programCode: 'j',
       title: 'IP Junior',
-      whatsappTemplate: 'Junior {courseUrl}'
+      whatsappTemplate: 'Junior'
     });
     const senior = {
       ...junior,
       id: 'crsIpSnr01AbcDefGhiJK',
       programCode: 's',
       title: 'IP Senior',
-      whatsappTemplate: 'Senior {courseUrl}'
+      whatsappTemplate: 'Senior'
     };
     const lead = app.normalizeLead({
       id: 'leadIpTest01AbcDefGhI',
@@ -1027,12 +1120,54 @@ describe('Seva workspace course management', () => {
     expect(app.courseDisplayTitle(senior)).toBe('IP Senior');
     expect(app.coursePickerSubtitle(junior)).toBe('');
     expect(app.coursePickerSubtitle(senior)).toBe('');
-    expect(app.buildWhatsappHref(lead, junior)).toContain(
-      encodeURIComponent('https://aolf.club/courses?program=ip-j')
+    expect(decodeURIComponent(app.buildWhatsappHref(lead, junior))).toContain(
+      'Junior'
     );
-    expect(app.buildWhatsappHref(lead, senior)).toContain(
-      encodeURIComponent('https://aolf.club/courses?program=ip-s')
+    expect(
+      decodeURIComponent(app.buildWhatsappHref(lead, junior))
+    ).not.toContain('/courses');
+    expect(decodeURIComponent(app.buildWhatsappHref(lead, senior))).toContain(
+      'Senior'
     );
+    expect(
+      decodeURIComponent(app.buildWhatsappHref(lead, senior))
+    ).not.toContain('/courses');
+  });
+
+  it('opens the activity picker for image share when multiple matching images exist', async () => {
+    const listCourses = vi.fn(async () => ({
+      success: true as const,
+      courses: [
+        createCourseFixture({
+          id: 'crsHpOne01AbcDefGhiJK',
+          hasImage: true,
+          imageUrl: '/course/crsHpOne01AbcDefGhiJK/image'
+        }),
+        createCourseFixture({
+          id: 'crsHpTwo01AbcDefGhiJK',
+          hasImage: true,
+          imageUrl: '/course/crsHpTwo01AbcDefGhiJK/image'
+        })
+      ],
+      templates: []
+    }));
+    vi.stubGlobal('window', { appRuntime: { listCourses } });
+    const app = sevaWorkspace();
+    const lead = app.normalizeLead({
+      id: 'leadShare01AbcDefGhI',
+      mobile: '9876543210',
+      name: 'Image lead',
+      wishlistPrograms: ['HP'],
+      campaignId: 'cmpLeads01AbcDefGhIJk',
+      campaignType: 'Leads'
+    });
+
+    await app.openImageShareForLead(lead);
+
+    expect(app.coursePickerMode).toBe('imageShare');
+    expect(app.isCoursePickerOpen).toBe(true);
+    expect(app.coursePickerOptions()).toHaveLength(2);
+    expect(app.coursePickerTitle()).toBe('Share which image?');
   });
 
   it('shows course activities to leads and event activities to members', () => {

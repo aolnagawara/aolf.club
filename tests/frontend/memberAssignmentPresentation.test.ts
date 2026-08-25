@@ -1,12 +1,12 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
-const volunteerPageUrl = new URL('../../src/volunteer.html', import.meta.url);
+const sevaPageUrl = new URL('../../src/seva.html', import.meta.url);
 const mainModuleUrl = new URL('../../src/main.ts', import.meta.url);
 
 describe('campaign workspace actions', () => {
   it('shows refresh and members-only self-assignment controls', () => {
-    const page = readFileSync(volunteerPageUrl, 'utf8');
+    const page = readFileSync(sevaPageUrl, 'utf8');
     const mainModule = readFileSync(mainModuleUrl, 'utf8');
 
     expect(page).toContain('@click="refreshCurrentCampaign()"');

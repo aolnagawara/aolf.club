@@ -1,8 +1,8 @@
 {
   "rewrites": [
     {
-      "source": "/volunteer",
-      "destination": "/volunteer.html"
+      "source": "/seva",
+      "destination": "/seva.html"
     },
     {
       "source": "/privacy",
@@ -21,8 +21,8 @@
       "destination": "/api/public-courses"
     },
     {
-      "source": "/course/:id/pamphlet",
-      "destination": "/api/public-courses?asset=pamphlet&id=:id"
+      "source": "/course/:id/image",
+      "destination": "/api/public-courses?asset=image&id=:id"
     }
   ]
 }

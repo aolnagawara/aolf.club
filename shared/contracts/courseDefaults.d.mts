@@ -50,7 +50,7 @@ export function formatActivityTitle(activity?: {
   courseType?: string;
   programCode?: string;
 }): string;
-export function publicCoursePamphletPath(id: string): string;
+export function publicCourseImagePath(id: string): string;
 export function publicCourseProgramKey(
   courseType: string,
   programCode?: string

@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createSheetsStore } from '../../../api/_lib/sheets/store.js';
 import {
-  createMemoryPamphletStore,
-  type PamphletStore
-} from '../../../api/_lib/courses/pamphletStore.js';
+  createMemoryImageStore,
+  type ImageStore
+} from '../../../api/_lib/courses/imageStore.js';
 import { SHEET_HEADERS } from '../../../shared/contracts/sheetContract.mjs';
 import type {
   SheetsOperation,
@@ -34,8 +34,8 @@ function courseRow(overrides: Record<string, string> = {}) {
     programCode: '',
     title: 'HP',
     whatsappTemplate: 'Hi {name}',
-    pamphletFileId: '',
-    pamphletMimeType: '',
+    imageFileId: '',
+    imageMimeType: '',
     isActive: 'true',
     createdAt: '2026-08-01T12:00:00.000Z',
     updatedAt: '2026-08-01T12:00:00.000Z',
@@ -48,7 +48,7 @@ function courseRow(overrides: Record<string, string> = {}) {
 
 function createFixture(
   courseRows: string[][],
-  pamphletStore: PamphletStore = createMemoryPamphletStore()
+  imageStore: ImageStore = createMemoryImageStore()
 ) {
   let rows = [[...SHEET_HEADERS.courses], ...courseRows];
   const appendSheetRow = vi.fn(async (_t, _r, row: string[]) => {
@@ -84,7 +84,7 @@ function createFixture(
       if (range === LAYOUT.courseTemplatesRange) {
         return [
           ['courseType', 'template'],
-          ['HP', 'Hi {name} {courseUrl}']
+          ['HP', 'Hi {name}']
         ];
       }
       if (range === LAYOUT.campaignsRange) {
@@ -125,7 +125,7 @@ function createFixture(
       deleteSheetRow,
       getSheetLayout: () => LAYOUT,
       now: () => new Date('2026-08-20T08:00:00.000Z'),
-      pamphletStore
+      imageStore
     }),
     appendSheetRow,
     deleteSheetRow
@@ -186,14 +186,14 @@ describe('Sheets course store', () => {
         courseType: 'IP',
         programCode: 'j',
         title: 'IP',
-        whatsappTemplate: 'Junior {courseUrl}'
+        whatsappTemplate: 'Junior'
       }),
       courseRow({
         id: 'crsIpSnr01AbcDefGhiJK',
         courseType: 'IP',
         programCode: 's',
         title: 'IP',
-        whatsappTemplate: 'Senior {courseUrl}'
+        whatsappTemplate: 'Senior'
       })
     ]);
 
@@ -257,35 +257,33 @@ describe('Sheets course store', () => {
     });
   });
 
-  it('stores an uploaded pamphlet and serves it from the public reader', async () => {
+  it('stores an uploaded image and serves it from the public reader', async () => {
     const { store } = createFixture([]);
-    const pamphletBase64 =
+    const imageBase64 =
       'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
     const created = await store.createCourseForAuthorizedUser(USER, {
       activityType: 'Course',
       courseType: 'HP',
-      pamphletBase64,
-      pamphletMimeType: 'image/png'
+      imageBase64,
+      imageMimeType: 'image/png'
     });
     expect(created.allowed).toBe(true);
     if (!created.allowed) {
       return;
     }
-    expect(created.value.course.hasPamphlet).toBe(true);
-    expect(created.value.course.pamphletImageUrl).toBe(
-      '/course/' + created.value.course.id + '/pamphlet'
+    expect(created.value.course.hasImage).toBe(true);
+    expect(created.value.course.imageUrl).toBe(
+      '/course/' + created.value.course.id + '/image'
     );
-    const pamphlet = await store.getPublicCoursePamphlet(
-      created.value.course.id
-    );
-    expect(pamphlet?.mimeType).toBe('image/png');
-    expect(pamphlet?.bytes.length).toBeGreaterThan(0);
+    const image = await store.getPublicCourseImage(created.value.course.id);
+    expect(image?.mimeType).toBe('image/png');
+    expect(image?.bytes.length).toBeGreaterThan(0);
   });
 
-  it('exposes a Blob HTTPS url as pamphletImageUrl', async () => {
+  it('exposes a Blob HTTPS url as imageUrl', async () => {
     const blobUrl =
-      'https://store123.public.blob.vercel-storage.com/courses/x/pamphlet.png';
-    const pamphletStore: PamphletStore = {
+      'https://store123.public.blob.vercel-storage.com/courses/x/image.png';
+    const imageStore: ImageStore = {
       upload: vi.fn(async () => blobUrl),
       download: vi.fn(async () => ({
         mimeType: 'image/png',
@@ -294,38 +292,38 @@ describe('Sheets course store', () => {
       remove: vi.fn(async () => undefined),
       removeCourse: vi.fn(async () => undefined)
     };
-    const { store } = createFixture([], pamphletStore);
-    const pamphletBase64 =
+    const { store } = createFixture([], imageStore);
+    const imageBase64 =
       'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
     const created = await store.createCourseForAuthorizedUser(USER, {
       activityType: 'Course',
       courseType: 'HP',
-      pamphletBase64,
-      pamphletMimeType: 'image/png'
+      imageBase64,
+      imageMimeType: 'image/png'
     });
     expect(created.allowed).toBe(true);
     if (!created.allowed) {
       return;
     }
-    expect(created.value.course.pamphletImageUrl).toBe(blobUrl);
+    expect(created.value.course.imageUrl).toBe(blobUrl);
   });
 
-  it('rejects invalid pamphlet files without appending a row', async () => {
+  it('rejects invalid image files without appending a row', async () => {
     const { store, appendSheetRow } = createFixture([courseRow()]);
     await expect(
       store.createCourseForAuthorizedUser(USER, {
         activityType: 'Course',
         courseType: 'HP',
-        pamphletBase64: 'abc',
-        pamphletMimeType: 'image/svg+xml'
+        imageBase64: 'abc',
+        imageMimeType: 'image/svg+xml'
       })
     ).rejects.toThrow();
     expect(appendSheetRow).not.toHaveBeenCalled();
   });
 
-  it('deletes pamphlet blobs when the course row is deleted', async () => {
-    const pamphletStore: PamphletStore = {
-      upload: vi.fn(async () => 'https://blob.example/courses/x/pamphlet.png'),
+  it('deletes image blobs when the course row is deleted', async () => {
+    const imageStore: ImageStore = {
+      upload: vi.fn(async () => 'https://blob.example/courses/x/image.png'),
       download: vi.fn(async () => null),
       remove: vi.fn(async () => undefined),
       removeCourse: vi.fn(async () => undefined)
@@ -333,18 +331,18 @@ describe('Sheets course store', () => {
     const { store } = createFixture(
       [
         courseRow({
-          pamphletFileId: 'https://blob.example/courses/x/pamphlet.png'
+          imageFileId: 'https://blob.example/courses/x/image.png'
         })
       ],
-      pamphletStore
+      imageStore
     );
     const deleted = await store.deleteCourseForAuthorizedUser(USER, {
       id: COURSE_ID
     });
     expect(deleted.allowed).toBe(true);
-    expect(pamphletStore.removeCourse).toHaveBeenCalledWith(
+    expect(imageStore.removeCourse).toHaveBeenCalledWith(
       COURSE_ID,
-      'https://blob.example/courses/x/pamphlet.png'
+      'https://blob.example/courses/x/image.png'
     );
   });
 });

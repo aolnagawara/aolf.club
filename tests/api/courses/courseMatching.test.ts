@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import {
-  ensureCourseUrlInMessage,
   fillCourseWhatsappTemplate,
   findUniqueActiveCourse
 } from '../../../shared/contracts/courseMatching.js';
@@ -46,38 +45,19 @@ describe('unique active course matching', () => {
     expect(activeOnly.map((course) => course.id)).toEqual([hp.id, dsn.id]);
   });
 
-  it('appends the public course URL when the template omitted it', () => {
-    const filled = fillCourseWhatsappTemplate('Hi {name}', {
-      name: 'Aarav',
-      course: 'HP',
-      dates: 'August 2026',
-      registrationLink: '',
-      courseUrl: 'https://aolf.club/courses?program=hp'
-    });
-    expect(
-      ensureCourseUrlInMessage(filled, 'https://aolf.club/courses?program=hp')
-    ).toContain('https://aolf.club/courses?program=hp');
-  });
-
-  it('places the course URL immediately before the first other URL', () => {
-    const courseUrl = 'https://aolf.club/courses?program=hp';
+  it('fills known WhatsApp template tokens and strips the retired courseUrl token', () => {
     const filled = fillCourseWhatsappTemplate(
-      'Hi {name}\nRegister: https://aolt.in/874234\n\n{courseUrl}',
+      'Hi {name}, join {course} {dates} {registrationLink} {courseUrl}',
       {
         name: 'Aarav',
         course: 'HP',
         dates: 'August 2026',
-        registrationLink: '',
-        courseUrl
+        registrationLink: 'https://aolt.in/874234'
       }
     );
-    const message = ensureCourseUrlInMessage(filled, courseUrl);
-    expect(message.indexOf(courseUrl)).toBeGreaterThan(
-      message.indexOf('Hi Aarav')
+    expect(filled).toBe(
+      'Hi Aarav, join HP August 2026 https://aolt.in/874234 '
     );
-    expect(message.indexOf(courseUrl)).toBeLessThan(
-      message.indexOf('https://aolt.in/874234')
-    );
-    expect(message.split(courseUrl)).toHaveLength(2);
+    expect(filled).not.toContain('/courses');
   });
 });

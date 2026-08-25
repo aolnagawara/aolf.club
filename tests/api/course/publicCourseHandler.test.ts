@@ -4,7 +4,7 @@ import type { ApiResponse } from '../../../api/_lib/http/responses.js';
 const { mockStore } = vi.hoisted(() => ({
   mockStore: {
     getPublicCourses: vi.fn(),
-    getPublicCoursePamphlet: vi.fn()
+    getPublicCourseImage: vi.fn()
   }
 }));
 
@@ -52,9 +52,9 @@ describe('public course handler', () => {
     vi.clearAllMocks();
   });
 
-  it('serves pamphlet bytes when asset=pamphlet', async () => {
+  it('serves image bytes when asset=image', async () => {
     const bytes = Uint8Array.from([137, 80, 78, 71]);
-    mockStore.getPublicCoursePamphlet.mockResolvedValue({
+    mockStore.getPublicCourseImage.mockResolvedValue({
       mimeType: 'image/png',
       bytes
     });
@@ -63,7 +63,7 @@ describe('public course handler', () => {
       {
         method: 'GET',
         headers: { host: 'aolf.club' },
-        query: { id: COURSE_ID, asset: 'pamphlet' }
+        query: { id: COURSE_ID, asset: 'image' }
       },
       response
     );
@@ -72,19 +72,19 @@ describe('public course handler', () => {
     expect(state.endBody).toBe(bytes);
   });
 
-  it('returns 404 when the pamphlet is missing', async () => {
-    mockStore.getPublicCoursePamphlet.mockResolvedValue(null);
+  it('returns 404 when the image is missing', async () => {
+    mockStore.getPublicCourseImage.mockResolvedValue(null);
     const { response, state } = createResponse();
     await publicCourseHandler(
       {
         method: 'GET',
         headers: { host: 'aolf.club' },
-        query: { id: COURSE_ID, asset: 'pamphlet' }
+        query: { id: COURSE_ID, asset: 'image' }
       },
       response
     );
     expect(state.statusCode).toBe(404);
-    expect(state.endBody).toBe('Pamphlet not found.');
+    expect(state.endBody).toBe('Image not found.');
   });
 
   it('renders a selected program on the unified courses page', async () => {
@@ -95,8 +95,8 @@ describe('public course handler', () => {
       title: 'HP',
       whatsappTemplate: '*Hello*',
       isActive: true,
-      hasPamphlet: false,
-      pamphletImageUrl: ''
+      hasImage: false,
+      imageUrl: ''
     };
     mockStore.getPublicCourses.mockResolvedValue({
       selected: course,

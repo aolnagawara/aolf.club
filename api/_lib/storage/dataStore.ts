@@ -26,7 +26,7 @@ import {
 } from '../sheets/store.js';
 import type { SheetsOperation } from '../sheets/client.js';
 import type { SessionUser } from '../auth/session.js';
-import type { PamphletBytes } from '../courses/pamphletStore.js';
+import type { ImageBytes } from '../courses/imageStore.js';
 import {
   assignMembersToUser as assignMockMembersToUser,
   createCourseForUser as createMockCourseForUser,
@@ -35,7 +35,7 @@ import {
   deleteLeadForUser as deleteMockLeadForUser,
   getBootstrapForUser as getMockBootstrapForUser,
   getPublicCourses as getMockPublicCourses,
-  getPublicCoursePamphlet as getMockPublicCoursePamphlet,
+  getPublicCourseImage as getMockPublicCourseImage,
   isUserAllowed as isMockUserAllowed,
   listCoursesForUser as listMockCoursesForUser,
   listPublicHomepageOffers as listMockPublicHomepageOffers,
@@ -104,10 +104,10 @@ export type ApiDataStore = {
     courses: Course[];
     selectionMatched: boolean;
   }>;
-  getPublicCoursePamphlet: (
+  getPublicCourseImage: (
     id: string,
     operation?: SheetsOperation
-  ) => Promise<PamphletBytes | null>;
+  ) => Promise<ImageBytes | null>;
   listPublicHomepageOffers: (
     operation?: SheetsOperation
   ) => Promise<PublicHomepageOffersResponse>;
@@ -243,8 +243,8 @@ const mockStore: ApiDataStore = {
     return getMockPublicCourses(programKey);
   },
 
-  async getPublicCoursePamphlet(id) {
-    return getMockPublicCoursePamphlet(id);
+  async getPublicCourseImage(id) {
+    return getMockPublicCourseImage(id);
   },
 
   async listPublicHomepageOffers() {

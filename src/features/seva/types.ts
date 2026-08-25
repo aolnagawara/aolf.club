@@ -35,14 +35,15 @@ export interface CourseDraft {
   title: string;
   whatsappTemplate: string;
   isActive: boolean;
-  hasPamphlet: boolean;
-  clearPamphlet: boolean;
-  pamphletBase64: string;
-  pamphletMimeType: string;
-  pamphletPreviewUrl: string;
+  hasImage: boolean;
+  clearImage: boolean;
+  imageBase64: string;
+  imageMimeType: string;
+  imagePreviewUrl: string;
 }
 
 export type WorkspaceView = 'callTracker' | 'courseManagement';
+export type CoursePickerMode = 'whatsapp' | 'imageShare';
 
 export interface CreateRecordDraft {
   name: string;
@@ -164,11 +165,12 @@ export interface SevaWorkspaceState {
   isCourseEditorOpen: boolean;
   isCourseSaving: boolean;
   courseEditorError: string;
-  coursePamphletError: string;
-  coursePamphletFileName: string;
+  courseImageError: string;
+  courseImageFileName: string;
   courseDraft: CourseDraft;
   isCoursePickerOpen: boolean;
   coursePickerLead: Lead | null;
+  coursePickerMode: CoursePickerMode;
 }
 
 export interface SevaWorkspaceContext extends SevaWorkspaceState {

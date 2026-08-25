@@ -18,7 +18,7 @@ const COURSE = {
   programCode: '',
   whatsappTemplate:
     "_*HAPPINESS PROGRAM*_\n*Benefits You'll Experience:*\nRegister at https://aolt.in/874234",
-  hasPamphlet: true
+  hasImage: true
 };
 
 describe('public course HTML', () => {
@@ -36,7 +36,7 @@ describe('public course HTML', () => {
     expect(rendered.html).toContain('property="og:image"');
     expect(rendered.html).toContain('property="og:url"');
     expect(rendered.html).toContain(
-      'content="https://aolf.club/course/crsHpNcr01AbcDefGhiJK/pamphlet"'
+      'content="https://aolf.club/course/crsHpNcr01AbcDefGhiJK/image"'
     );
     expect(rendered.html).toContain(
       'content="https://aolf.club/courses?program=hp"'
@@ -82,11 +82,11 @@ describe('public course HTML', () => {
 
   it('uses the public Blob URL for og:image when one is stored', () => {
     const blobUrl =
-      'https://store123.public.blob.vercel-storage.com/courses/crsHpNcr01AbcDefGhiJK/pamphlet.png';
+      'https://store123.public.blob.vercel-storage.com/courses/crsHpNcr01AbcDefGhiJK/image.png';
     const rendered = renderPublicCourseHtml({
       selected: toPublicCourseView({
         ...COURSE,
-        pamphletImageUrl: blobUrl
+        imageUrl: blobUrl
       }),
       origin: 'https://aolf.club',
       fallbackImageUrl: 'https://aolf.club/assets/course.webp',
@@ -95,7 +95,7 @@ describe('public course HTML', () => {
 
     expect(rendered.html).toContain('content="' + blobUrl + '"');
     expect(rendered.html).not.toContain(
-      'content="https://aolf.club/course/crsHpNcr01AbcDefGhiJK/pamphlet"'
+      'content="https://aolf.club/course/crsHpNcr01AbcDefGhiJK/image"'
     );
   });
 
@@ -116,7 +116,7 @@ describe('public course HTML', () => {
     expect(rendered.html).not.toContain('volunteer@example.com');
     expect(rendered.html).not.toContain('GOOGLE_SHEETS');
     expect(rendered.html).not.toContain('whatsappTemplate');
-    expect(rendered.html).not.toContain('pamphletFileId');
+    expect(rendered.html).not.toContain('imageFileId');
   });
 
   it('returns a non-leaking 404 for a missing course', () => {
@@ -128,7 +128,7 @@ describe('public course HTML', () => {
 
     expect(rendered.status).toBe(404);
     expect(rendered.html).toContain('Course not found');
-    expect(rendered.html).not.toContain('/pamphlet');
+    expect(rendered.html).not.toContain('/image');
     expect(rendered.html).not.toContain('og:image');
   });
 
@@ -139,9 +139,9 @@ describe('public course HTML', () => {
       courseType: 'IP',
       programCode: 'j',
       whatsappTemplate: 'Junior https://aolt.in/j',
-      hasPamphlet: true,
-      pamphletImageUrl:
-        'https://store123.public.blob.vercel-storage.com/courses/j/pamphlet.png'
+      hasImage: true,
+      imageUrl:
+        'https://store123.public.blob.vercel-storage.com/courses/j/image.png'
     });
     const senior = toPublicCourseView({
       id: 'crsIpSnr01AbcDefGhiJK',
@@ -149,9 +149,9 @@ describe('public course HTML', () => {
       courseType: 'IP',
       programCode: 's',
       whatsappTemplate: 'Senior https://aolt.in/s',
-      hasPamphlet: true,
-      pamphletImageUrl:
-        'https://store123.public.blob.vercel-storage.com/courses/s/pamphlet.png'
+      hasImage: true,
+      imageUrl:
+        'https://store123.public.blob.vercel-storage.com/courses/s/image.png'
     });
     const rendered = renderPublicCourseHtml({
       selected: junior,
@@ -164,7 +164,7 @@ describe('public course HTML', () => {
       'content="https://aolf.club/courses?program=ip-j"'
     );
     expect(rendered.html).toContain(
-      'content="https://store123.public.blob.vercel-storage.com/courses/j/pamphlet.png"'
+      'content="https://store123.public.blob.vercel-storage.com/courses/j/image.png"'
     );
     expect(rendered.html).toContain('role="tablist"');
     expect(rendered.html).toContain('border-bottom: 3px solid transparent');

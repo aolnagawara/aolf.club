@@ -2,7 +2,9 @@ import Alpine from 'alpinejs';
 import { appRuntime } from './services/appRuntime';
 import {
   Calendar,
+  Download,
   FolderInput,
+  Paperclip,
   Phone,
   Plus,
   RefreshCw,
@@ -12,6 +14,7 @@ import {
   UserCheck,
   UserCog,
   UserPlus,
+  UserRoundPlus,
   Users,
   X,
   createIcons
@@ -34,7 +37,9 @@ window.Alpine = Alpine;
 createIcons({
   icons: {
     Calendar,
+    Download,
     FolderInput,
+    Paperclip,
     Phone,
     Plus,
     RefreshCw,
@@ -44,6 +49,7 @@ createIcons({
     UserCheck,
     UserCog,
     UserPlus,
+    UserRoundPlus,
     Users,
     X
   },

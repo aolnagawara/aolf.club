@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { normalizeIndianMobile } from './indianMobile.js';
-import { inspectPamphletUpload } from './pamphlet.js';
+import { inspectImageUpload } from './activityImage.js';
 
 const NanoIdSchema = z
   .string()
@@ -197,9 +197,9 @@ export const CourseWriteFieldsSchema = z
     title: z.string().trim().max(140).default(''),
     whatsappTemplate: z.string().default(''),
     isActive: z.boolean().default(true),
-    pamphletBase64: z.string().default(''),
-    pamphletMimeType: z.string().default(''),
-    clearPamphlet: z.boolean().optional()
+    imageBase64: z.string().default(''),
+    imageMimeType: z.string().default(''),
+    clearImage: z.boolean().optional()
   })
   .superRefine((data, ctx) => {
     if (data.activityType === 'Event') {
@@ -255,16 +255,16 @@ export const CourseWriteFieldsSchema = z
         path: ['programCode']
       });
     }
-    const raw = String(data.pamphletBase64 || '').trim();
+    const raw = String(data.imageBase64 || '').trim();
     if (!raw) {
       return;
     }
-    const inspected = inspectPamphletUpload(raw, data.pamphletMimeType);
+    const inspected = inspectImageUpload(raw, data.imageMimeType);
     if (!inspected.ok) {
       ctx.addIssue({
         code: 'custom',
         message: inspected.message,
-        path: ['pamphletBase64']
+        path: ['imageBase64']
       });
     }
   });
@@ -278,8 +278,8 @@ export const CourseSchema = z.object({
   title: z.string().default(''),
   whatsappTemplate: z.string().default(''),
   isActive: z.boolean().default(true),
-  hasPamphlet: z.boolean().default(false),
-  pamphletImageUrl: z.string().default(''),
+  hasImage: z.boolean().default(false),
+  imageUrl: z.string().default(''),
   createdAt: z.string().default(''),
   updatedAt: z.string().default(''),
   createdBy: z.string().default(''),

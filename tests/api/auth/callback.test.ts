@@ -76,7 +76,7 @@ describe('Google OAuth callback error distinction', () => {
     await handler(request, response);
 
     expect(state.statusCode).toBe(302);
-    expect(headers.get('Location')).toBe('/volunteer?error=forbidden');
+    expect(headers.get('Location')).toBe('/seva?error=forbidden');
   });
 
   it('redirects a Sheets timeout as an upstream timeout, not forbidden', async () => {
@@ -98,7 +98,7 @@ describe('Google OAuth callback error distinction', () => {
     await handler(request, response);
 
     expect(state.statusCode).toBe(302);
-    expect(headers.get('Location')).toBe('/volunteer?error=upstream_timeout');
+    expect(headers.get('Location')).toBe('/seva?error=upstream_timeout');
   });
 
   it('redirects a successful sign-in to the volunteer workspace', async () => {
@@ -108,7 +108,7 @@ describe('Google OAuth callback error distinction', () => {
     await handler(request, response);
 
     expect(state.statusCode).toBe(302);
-    expect(headers.get('Location')).toBe('/volunteer');
+    expect(headers.get('Location')).toBe('/seva');
     expect(mockSetSessionCookie).toHaveBeenCalledOnce();
   });
 });

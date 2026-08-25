@@ -4,7 +4,7 @@ import {
   type CreateCourseRequest,
   type UpdateCourseRequest
 } from '../../../shared/contracts/appContracts.js';
-import { isHttpsUrl } from './blobPamphlet.js';
+import { isHttpsUrl } from './blobImage.js';
 import {
   activityAudience,
   courseSlotKey,
@@ -13,7 +13,7 @@ import {
   isCourseActivity,
   normalizeProgramCode,
   normalizeActivityType,
-  publicCoursePamphletPath,
+  publicCourseImagePath,
   templateForActivity
 } from '../../../shared/contracts/courseDefaults.mjs';
 import { SHEET_HEADERS } from '../../../shared/contracts/sheetContract.mjs';
@@ -21,23 +21,20 @@ import { findHeaderIndex } from '../sheets/table.js';
 
 const COURSE_HEADERS = SHEET_HEADERS.courses;
 
-export function pamphletPublicUrl(
-  courseId: string,
-  pamphletFileId: string
-): string {
-  const stored = String(pamphletFileId || '').trim();
+export function imagePublicUrl(courseId: string, imageFileId: string): string {
+  const stored = String(imageFileId || '').trim();
   if (!stored) {
     return '';
   }
   if (isHttpsUrl(stored)) {
     return stored;
   }
-  return publicCoursePamphletPath(courseId);
+  return publicCourseImagePath(courseId);
 }
 
 export type CourseRecord = Course & {
-  pamphletFileId: string;
-  pamphletMimeType: string;
+  imageFileId: string;
+  imageMimeType: string;
 };
 
 function parseBooleanCell(raw: string | undefined, fallback = true): boolean {
@@ -68,8 +65,8 @@ export function toCourseResponse(record: CourseRecord): Course {
     title: record.title,
     whatsappTemplate: record.whatsappTemplate,
     isActive: record.isActive,
-    hasPamphlet: Boolean(record.pamphletFileId),
-    pamphletImageUrl: pamphletPublicUrl(record.id, record.pamphletFileId),
+    hasImage: Boolean(record.imageFileId),
+    imageUrl: imagePublicUrl(record.id, record.imageFileId),
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
     createdBy: record.createdBy,
@@ -84,8 +81,8 @@ export function applyCourseDefaults(
   options: {
     id: string;
     existing?: CourseRecord;
-    pamphletFileId?: string;
-    pamphletMimeType?: string;
+    imageFileId?: string;
+    imageMimeType?: string;
   }
 ): CourseRecord {
   const activityType = normalizeActivityType(input.activityType);
@@ -95,10 +92,10 @@ export function applyCourseDefaults(
     activityType === 'Course'
       ? normalizeProgramCode(courseType, input.programCode)
       : '';
-  const pamphletFileId =
-    options.pamphletFileId ?? options.existing?.pamphletFileId ?? '';
-  const pamphletMimeType =
-    options.pamphletMimeType ?? options.existing?.pamphletMimeType ?? '';
+  const imageFileId =
+    options.imageFileId ?? options.existing?.imageFileId ?? '';
+  const imageMimeType =
+    options.imageMimeType ?? options.existing?.imageMimeType ?? '';
   const record: CourseRecord = {
     id: options.id,
     activityType,
@@ -114,19 +111,19 @@ export function applyCourseDefaults(
       options.existing?.whatsappTemplate ||
       templateForActivity(activityType, courseType, programCode),
     isActive: input.isActive,
-    hasPamphlet: Boolean(pamphletFileId),
-    pamphletImageUrl: pamphletPublicUrl(options.id, pamphletFileId),
+    hasImage: Boolean(imageFileId),
+    imageUrl: imagePublicUrl(options.id, imageFileId),
     createdAt: options.existing?.createdAt || timestamp,
     updatedAt: timestamp,
     createdBy: options.existing?.createdBy || actorEmail,
     updatedBy: actorEmail,
-    pamphletFileId,
-    pamphletMimeType
+    imageFileId,
+    imageMimeType
   };
   return {
     ...toCourseResponse(record),
-    pamphletFileId,
-    pamphletMimeType
+    imageFileId,
+    imageMimeType
   };
 }
 
@@ -162,15 +159,15 @@ export function courseFromRow(
         title: record.title || '',
         whatsappTemplate: record.whatsappTemplate || '',
         isActive: parseBooleanCell(record.isActive, true),
-        pamphletBase64: '',
-        pamphletMimeType: record.pamphletMimeType || ''
+        imageBase64: '',
+        imageMimeType: record.imageMimeType || ''
       },
       record.updatedAt || record.createdAt || '',
       record.updatedBy || record.createdBy || '',
       {
         id: record.id,
-        pamphletFileId: record.pamphletFileId || '',
-        pamphletMimeType: record.pamphletMimeType || '',
+        imageFileId: record.imageFileId || '',
+        imageMimeType: record.imageMimeType || '',
         existing: {
           id: record.id,
           activityType,
@@ -182,14 +179,14 @@ export function courseFromRow(
             formatActivityTitle({ activityType, courseType, programCode }),
           whatsappTemplate: record.whatsappTemplate || '',
           isActive: parseBooleanCell(record.isActive, true),
-          hasPamphlet: Boolean(record.pamphletFileId),
-          pamphletImageUrl: '',
+          hasImage: Boolean(record.imageFileId),
+          imageUrl: '',
           createdAt: record.createdAt || '',
           updatedAt: record.updatedAt || '',
           createdBy: record.createdBy || '',
           updatedBy: record.updatedBy || '',
-          pamphletFileId: record.pamphletFileId || '',
-          pamphletMimeType: record.pamphletMimeType || ''
+          imageFileId: record.imageFileId || '',
+          imageMimeType: record.imageMimeType || ''
         }
       }
     );
@@ -206,8 +203,8 @@ export function courseToRow(headers: string[], course: CourseRecord): string[] {
     programCode: normalizeProgramCode(course.courseType, course.programCode),
     title: course.title || '',
     whatsappTemplate: course.whatsappTemplate || '',
-    pamphletFileId: course.pamphletFileId || '',
-    pamphletMimeType: course.pamphletMimeType || '',
+    imageFileId: course.imageFileId || '',
+    imageMimeType: course.imageMimeType || '',
     isActive: course.isActive ? 'true' : 'false',
     createdAt: course.createdAt || '',
     updatedAt: course.updatedAt || '',

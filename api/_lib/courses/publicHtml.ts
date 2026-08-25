@@ -9,7 +9,7 @@ import { formatWhatsappHtml } from './whatsappHtml.js';
 export const PUBLIC_COURSE_CONTENT_FIELDS = [
   'title',
   'detailsText',
-  'pamphletImageUrl'
+  'imageUrl'
 ] as const;
 
 export type PublicCourseView = {
@@ -19,8 +19,8 @@ export type PublicCourseView = {
   programCode: string;
   programLabel: string;
   detailsText: string;
-  hasPamphlet: boolean;
-  pamphletImageUrl: string;
+  hasImage: boolean;
+  imageUrl: string;
 };
 
 function escapeHtml(value: string): string {
@@ -42,13 +42,13 @@ function stripMarkupMarkers(value: string): string {
     .trim();
 }
 
-function absolutePamphletUrl(origin: string, course: PublicCourseView): string {
-  const stored = String(course.pamphletImageUrl || '').trim();
+function absoluteImageUrl(origin: string, course: PublicCourseView): string {
+  const stored = String(course.imageUrl || '').trim();
   if (/^https:\/\//i.test(stored)) {
     return stored;
   }
-  if (course.hasPamphlet || stored.startsWith('/')) {
-    return `${origin}/course/${encodeURIComponent(course.id)}/pamphlet`;
+  if (course.hasImage || stored.startsWith('/')) {
+    return `${origin}/course/${encodeURIComponent(course.id)}/image`;
   }
   return '';
 }
@@ -59,8 +59,8 @@ export function toPublicCourseView(course: {
   courseType?: string;
   programCode?: string;
   whatsappTemplate?: string;
-  hasPamphlet?: boolean;
-  pamphletImageUrl?: string;
+  hasImage?: boolean;
+  imageUrl?: string;
 }): PublicCourseView {
   const courseType = course.courseType || '';
   const programCode = course.programCode || '';
@@ -71,8 +71,7 @@ export function toPublicCourseView(course: {
       name: '',
       course: title,
       dates: '',
-      registrationLink: '',
-      courseUrl: ''
+      registrationLink: ''
     }
   ).trim();
   return {
@@ -82,8 +81,8 @@ export function toPublicCourseView(course: {
     programCode,
     programLabel: programLabelFor(courseType, programCode),
     detailsText,
-    hasPamphlet: Boolean(course.hasPamphlet || course.pamphletImageUrl),
-    pamphletImageUrl: String(course.pamphletImageUrl || '').trim()
+    hasImage: Boolean(course.hasImage || course.imageUrl),
+    imageUrl: String(course.imageUrl || '').trim()
   };
 }
 
@@ -92,14 +91,14 @@ function renderPanel(
   course: PublicCourseView,
   selected: boolean
 ): string {
-  const pamphletUrl = absolutePamphletUrl(origin, course);
-  const pamphlet = pamphletUrl
-    ? `<img src="${escapeHtml(pamphletUrl)}" alt="${escapeHtml(course.title)} pamphlet" loading="${selected ? 'eager' : 'lazy'}" />`
+  const imageUrl = absoluteImageUrl(origin, course);
+  const image = imageUrl
+    ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(course.title)} image" loading="${selected ? 'eager' : 'lazy'}" />`
     : '';
   const details = course.detailsText
     ? `<div class="details">${formatWhatsappHtml(course.detailsText)}</div>`
     : '';
-  return `${pamphlet}${details}`;
+  return `${image}${details}`;
 }
 
 const NOT_FOUND_HTML = `<!doctype html>
@@ -141,10 +140,10 @@ export function renderPublicCourseHtml(options: {
     .trim()
     .toLowerCase();
   const pageUrl = origin + publicCoursesPath(programKey);
-  const pamphletUrl = absolutePamphletUrl(origin, selected);
+  const imageUrl = absoluteImageUrl(origin, selected);
   const ogTitle = programKey ? selected.title : 'AOLF Courses';
   const ogImage = programKey
-    ? pamphletUrl || options.fallbackImageUrl
+    ? imageUrl || options.fallbackImageUrl
     : options.fallbackImageUrl;
   const ogDescription = programKey
     ? stripMarkupMarkers(selected.detailsText).slice(0, 160) || selected.title
@@ -194,7 +193,7 @@ export function renderPublicCourseHtml(options: {
     <meta property="og:title" content="${escapeHtml(ogTitle)}" />
     <meta property="og:description" content="${escapeHtml(ogDescription)}" />
     <meta property="og:image" content="${escapeHtml(ogImage)}" />
-    <meta property="og:image:alt" content="${escapeHtml(programKey ? selected.title + ' pamphlet' : 'AOLF courses')}" />
+    <meta property="og:image:alt" content="${escapeHtml(programKey ? selected.title + ' image' : 'AOLF courses')}" />
     <meta property="og:url" content="${escapeHtml(pageUrl)}" />
     <style>
       body { font-family: sans-serif; margin: 0; background: #f8fafc; color: #0f172a; }

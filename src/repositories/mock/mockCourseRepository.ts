@@ -23,7 +23,7 @@ import {
   formatActivityTitle,
   normalizeActivityType,
   normalizeProgramCode,
-  publicCoursePamphletPath,
+  publicCourseImagePath,
   templateForActivity
 } from '../../../shared/contracts/courseDefaults.mjs';
 import { mockCourses } from './mockCourses';
@@ -39,8 +39,8 @@ function toCourse(
     activityType === 'Course'
       ? normalizeProgramCode(courseType, parsed.programCode)
       : '';
-  const hasUpload = Boolean(parsed.pamphletBase64.trim());
-  const hasPamphlet = hasUpload || Boolean(options.existing?.hasPamphlet);
+  const hasUpload = Boolean(parsed.imageBase64.trim());
+  const hasImage = hasUpload || Boolean(options.existing?.hasImage);
   const activity = {
     activityType,
     title: parsed.title,
@@ -59,14 +59,14 @@ function toCourse(
       options.existing?.whatsappTemplate ||
       templateForActivity(activityType, courseType, programCode),
     isActive: parsed.isActive,
-    hasPamphlet,
-    pamphletImageUrl: hasUpload
+    hasImage,
+    imageUrl: hasUpload
       ? 'data:' +
-        (parsed.pamphletMimeType || 'image/jpeg') +
+        (parsed.imageMimeType || 'image/jpeg') +
         ';base64,' +
-        parsed.pamphletBase64
-      : options.existing?.pamphletImageUrl ||
-        (hasPamphlet ? publicCoursePamphletPath(options.id) : ''),
+        parsed.imageBase64
+      : options.existing?.imageUrl ||
+        (hasImage ? publicCourseImagePath(options.id) : ''),
     createdAt: options.existing?.createdAt || new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     createdBy: options.existing?.createdBy || 'volunteer@example.com',

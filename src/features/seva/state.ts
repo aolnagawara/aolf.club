@@ -18,11 +18,11 @@ export function createEmptyCourseDraft(courseType = 'HP') {
     title: '',
     whatsappTemplate: templateForActivity('Course', courseType),
     isActive: true,
-    hasPamphlet: false,
-    clearPamphlet: false,
-    pamphletBase64: '',
-    pamphletMimeType: '',
-    pamphletPreviewUrl: ''
+    hasImage: false,
+    clearImage: false,
+    imageBase64: '',
+    imageMimeType: '',
+    imagePreviewUrl: ''
   };
 }
 
@@ -109,10 +109,11 @@ export function createSevaWorkspaceInitialState(): SevaWorkspaceState {
     isCourseEditorOpen: false,
     isCourseSaving: false,
     courseEditorError: '',
-    coursePamphletError: '',
-    coursePamphletFileName: '',
+    courseImageError: '',
+    courseImageFileName: '',
     courseDraft: createEmptyCourseDraft(),
     isCoursePickerOpen: false,
-    coursePickerLead: null
+    coursePickerLead: null,
+    coursePickerMode: 'whatsapp'
   };
 }

@@ -55,11 +55,8 @@ import {
   toCourseResponse,
   type CourseRecord
 } from '../courses/sheetMapping.js';
-import { createBlobPamphletStore } from '../courses/blobPamphlet.js';
-import {
-  decodePamphletBase64,
-  type PamphletStore
-} from '../courses/pamphletStore.js';
+import { createBlobImageStore } from '../courses/blobImage.js';
+import { decodeImageBase64, type ImageStore } from '../courses/imageStore.js';
 import {
   getSheetLayout as defaultGetSheetLayout,
   type SheetLayout
@@ -138,7 +135,7 @@ export type SheetsStoreDependencies = {
   deleteSheetRow?: DeleteSheetRow;
   getSheetLayout?: () => SheetLayout;
   now?: () => Date;
-  pamphletStore?: PamphletStore;
+  imageStore?: ImageStore;
 };
 
 export type AuthorizedStoreResult<T> =
@@ -440,7 +437,7 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
   const deleteSheetRow = dependencies.deleteSheetRow || defaultDeleteSheetRow;
   const getSheetLayout = dependencies.getSheetLayout || defaultGetSheetLayout;
   const now = dependencies.now || (() => new Date());
-  const pamphletStore = dependencies.pamphletStore || createBlobPamphletStore();
+  const imageStore = dependencies.imageStore || createBlobImageStore();
 
   async function withStoreOperation<T>(
     operation: SheetsOperation | undefined,
@@ -1023,21 +1020,21 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
     assertUniqueCourseSlot(rows, headers, payload);
     const timestamp = now().toISOString();
     const id = nanoid();
-    let pamphletFileId = '';
-    let pamphletMimeType = '';
-    if (payload.pamphletBase64.trim()) {
-      const pamphlet = decodePamphletBase64(
-        payload.pamphletBase64,
-        payload.pamphletMimeType
+    let imageFileId = '';
+    let imageMimeType = '';
+    if (payload.imageBase64.trim()) {
+      const image = decodeImageBase64(
+        payload.imageBase64,
+        payload.imageMimeType
       );
-      pamphletFileId = await pamphletStore.upload(id, pamphlet);
-      pamphletMimeType = payload.pamphletMimeType;
+      imageFileId = await imageStore.upload(id, image);
+      imageMimeType = payload.imageMimeType;
     }
     const course = applyCourseDefaults(
       payload,
       timestamp,
       normalizeEmail(user.email),
-      { id, pamphletFileId, pamphletMimeType }
+      { id, imageFileId, imageMimeType }
     );
     await appendSheetRow(
       'data',
@@ -1071,30 +1068,30 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
     }
     assertUniqueCourseSlot(rows, headers, payload);
     const timestamp = now().toISOString();
-    let pamphletFileId = existing.pamphletFileId;
-    let pamphletMimeType = existing.pamphletMimeType;
-    if (payload.clearPamphlet && pamphletFileId) {
-      await pamphletStore.remove(pamphletFileId);
-      pamphletFileId = '';
-      pamphletMimeType = '';
+    let imageFileId = existing.imageFileId;
+    let imageMimeType = existing.imageMimeType;
+    if (payload.clearImage && imageFileId) {
+      await imageStore.remove(imageFileId);
+      imageFileId = '';
+      imageMimeType = '';
     }
-    if (payload.pamphletBase64.trim()) {
-      const pamphlet = decodePamphletBase64(
-        payload.pamphletBase64,
-        payload.pamphletMimeType
+    if (payload.imageBase64.trim()) {
+      const image = decodeImageBase64(
+        payload.imageBase64,
+        payload.imageMimeType
       );
-      const nextId = await pamphletStore.upload(payload.id, pamphlet);
-      if (pamphletFileId && pamphletFileId !== nextId) {
-        await pamphletStore.remove(pamphletFileId);
+      const nextId = await imageStore.upload(payload.id, image);
+      if (imageFileId && imageFileId !== nextId) {
+        await imageStore.remove(imageFileId);
       }
-      pamphletFileId = nextId;
-      pamphletMimeType = payload.pamphletMimeType;
+      imageFileId = nextId;
+      imageMimeType = payload.imageMimeType;
     }
     const course = applyCourseDefaults(
       payload,
       timestamp,
       normalizeEmail(user.email),
-      { id: payload.id, existing, pamphletFileId, pamphletMimeType }
+      { id: payload.id, existing, imageFileId, imageMimeType }
     );
     const rowNumber = rowIndex + 1;
     const lastColumn = columnLabel(headers.length);
@@ -1135,7 +1132,7 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
     }
     const existing = parseCourseAt(headers, rows, rowIndex);
     if (existing) {
-      await pamphletStore.removeCourse(existing.id, existing.pamphletFileId);
+      await imageStore.removeCourse(existing.id, existing.imageFileId);
     }
     await deleteSheetRow(
       'data',
@@ -1149,21 +1146,18 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
     });
   }
 
-  async function loadPublicCoursePamphlet(
-    id: string,
-    operation: SheetsOperation
-  ) {
+  async function loadPublicCourseImage(id: string, operation: SheetsOperation) {
     const course = await getCourseById(operation, id);
-    if (!course?.pamphletFileId) {
+    if (!course?.imageFileId) {
       return null;
     }
-    const pamphlet = await pamphletStore.download(course.pamphletFileId);
-    if (!pamphlet) {
+    const image = await imageStore.download(course.imageFileId);
+    if (!image) {
       return null;
     }
     return {
-      mimeType: course.pamphletMimeType || pamphlet.mimeType,
-      bytes: pamphlet.bytes
+      mimeType: course.imageMimeType || image.mimeType,
+      bytes: image.bytes
     };
   }
 
@@ -1357,9 +1351,9 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
       });
     },
 
-    async getPublicCoursePamphlet(id: string, operation?: SheetsOperation) {
+    async getPublicCourseImage(id: string, operation?: SheetsOperation) {
       return withStoreOperation(operation, async (activeOperation) =>
-        loadPublicCoursePamphlet(id, activeOperation)
+        loadPublicCourseImage(id, activeOperation)
       );
     },
 

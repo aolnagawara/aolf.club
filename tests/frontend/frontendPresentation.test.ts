@@ -2,7 +2,7 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 const publicPageUrl = new URL('../../src/index.html', import.meta.url);
-const volunteerPageUrl = new URL('../../src/volunteer.html', import.meta.url);
+const sevaPageUrl = new URL('../../src/seva.html', import.meta.url);
 const legacyLoginUrl = new URL('../../src/login.html', import.meta.url);
 const viteConfigUrl = new URL('../../vite.config.ts', import.meta.url);
 const vercelConfigUrl = new URL('../../vercel.json', import.meta.url);
@@ -20,7 +20,7 @@ describe('AOLF Connect frontend presentation', () => {
     const page = readText(publicPageUrl);
 
     expect(page).toContain('<title>AOLF Connect');
-    expect(page).toContain('href="/volunteer"');
+    expect(page).toContain('href="/seva"');
     expect(page).toContain('id="programs"');
     expect(page).toContain('id="schedule"');
     expect(page).not.toContain('sevaWorkspace()');
@@ -53,16 +53,14 @@ describe('AOLF Connect frontend presentation', () => {
     };
 
     expect(viteConfig).toContain("main: resolve(__dirname, 'src/index.html')");
-    expect(viteConfig).toContain(
-      "volunteer: resolve(__dirname, 'src/volunteer.html')"
-    );
+    expect(viteConfig).toContain("seva: resolve(__dirname, 'src/seva.html')");
     expect(viteConfig).toContain('servePublicCoursesPage');
     expect(viteConfig).not.toContain(
       "login: resolve(__dirname, 'src/login.html')"
     );
     expect(vercelConfig.rewrites).toContainEqual({
-      source: '/volunteer',
-      destination: '/volunteer.html'
+      source: '/seva',
+      destination: '/seva.html'
     });
     expect(vercelConfig.rewrites).toContainEqual({
       source: '/api/courses/:id',
@@ -73,14 +71,14 @@ describe('AOLF Connect frontend presentation', () => {
       destination: '/api/public-courses'
     });
     expect(vercelConfig.rewrites).toContainEqual({
-      source: '/course/:id/pamphlet',
-      destination: '/api/public-courses?asset=pamphlet&id=:id'
+      source: '/course/:id/image',
+      destination: '/api/public-courses?asset=image&id=:id'
     });
     expect(existsSync(legacyLoginUrl)).toBe(false);
   });
 
   it('shows Google login before exposing the Seva workspace', () => {
-    const page = readText(volunteerPageUrl);
+    const page = readText(sevaPageUrl);
 
     expect(page).toContain('<title>AOLF Connect | Seva Workspace</title>');
     expect(page).toContain('x-data="sevaWorkspace()"');
@@ -105,55 +103,61 @@ describe('AOLF Connect frontend presentation', () => {
 
   it('uses the supplied local logo across public and workspace pages', () => {
     const publicPage = readText(publicPageUrl);
-    const volunteerPage = readText(volunteerPageUrl);
+    const sevaPage = readText(sevaPageUrl);
 
     expect(publicPage).toContain('/assets/aolf-connect-logo.png');
-    expect(volunteerPage).toContain('/assets/aolf-connect-logo.png');
+    expect(sevaPage).toContain('/assets/aolf-connect-logo.png');
     expect(statSync(logoUrl).size).toBeGreaterThan(1_000_000);
   });
 
   it('uses a WhatsApp brand icon without changing the message action', () => {
-    const volunteerPage = readText(volunteerPageUrl);
+    const sevaPage = readText(sevaPageUrl);
     const mainModule = readText(mainModuleUrl);
 
-    expect(volunteerPage).toContain('@click="openWhatsappForLead(lead)"');
-    expect(volunteerPage).toContain('aria-label="Open WhatsApp"');
-    expect(volunteerPage).toContain('data-icon="whatsapp"');
-    expect(volunteerPage).not.toContain('data-lucide="message-circle"');
+    expect(sevaPage).toContain('@click="openWhatsappForLead(lead)"');
+    expect(sevaPage).toContain('@click="openImageShareForLead(lead)"');
+    expect(sevaPage).toContain('aria-label="Open WhatsApp"');
+    expect(sevaPage).toContain('aria-label="Share activity image"');
+    expect(sevaPage).toContain('data-icon="whatsapp"');
+    expect(sevaPage).toContain('data-lucide="paperclip"');
+    expect(sevaPage).not.toContain('data-lucide="message-circle"');
     expect(mainModule).not.toContain('MessageCircle');
-    expect(volunteerPage).toContain('x-show="canOpenWhatsapp(lead)"');
-    expect(volunteerPage).toContain(':disabled="!cleanPhone(lead.mobile)"');
-    expect(volunteerPage).toContain('Call Tracker');
-    expect(volunteerPage).toContain('Activity Management');
-    expect(volunteerPage).toContain('x-text="courseCardSubtitle(course)"');
-    expect(volunteerPage).toContain(
+    expect(mainModule).toContain('Paperclip');
+    expect(mainModule).toContain('Download');
+    expect(mainModule).toContain('UserRoundPlus');
+    expect(sevaPage).toContain('x-show="canOpenWhatsapp(lead)"');
+    expect(sevaPage).toContain(':disabled="!cleanPhone(lead.mobile)"');
+    expect(sevaPage).toContain('Call Tracker');
+    expect(sevaPage).toContain('Activity Management');
+    expect(sevaPage).toContain('x-text="courseCardSubtitle(course)"');
+    expect(sevaPage).toContain(
       'class="aspect-square w-full rounded-lg bg-slate-100 object-contain"'
     );
-    expect(volunteerPage).not.toContain('type="month"');
-    expect(volunteerPage).toContain('showsProgramTabs()');
-    expect(volunteerPage).toContain('type="file"');
-    expect(volunteerPage).toContain('@click="clearCoursePamphlet()"');
-    expect(volunteerPage).toContain('WhatsApp template');
-    expect(volunteerPage).not.toContain('Pamphlet image URL');
-    expect(volunteerPage).toContain('x-model="courseDraft.title"');
-    expect(volunteerPage).not.toContain('x-model="courseDraft.courseCode"');
+    expect(sevaPage).not.toContain('type="month"');
+    expect(sevaPage).toContain('showsProgramTabs()');
+    expect(sevaPage).toContain('type="file"');
+    expect(sevaPage).toContain('@click="clearCourseImage()"');
+    expect(sevaPage).toContain('@click="downloadCourseImage(course)"');
+    expect(sevaPage).toContain('WhatsApp template');
+    expect(sevaPage).toContain('x-model="courseDraft.title"');
+    expect(sevaPage).not.toContain('x-model="courseDraft.courseCode"');
   });
 
   it('does not show an inactive notification control', () => {
-    const volunteerPage = readText(volunteerPageUrl);
+    const sevaPage = readText(sevaPageUrl);
 
-    expect(volunteerPage).not.toContain('aria-label="Notifications"');
-    expect(volunteerPage).not.toContain('data-lucide="bell"');
-    expect(volunteerPage).not.toContain('aria-label="Contact via WhatsApp"');
+    expect(sevaPage).not.toContain('aria-label="Notifications"');
+    expect(sevaPage).not.toContain('data-lucide="bell"');
+    expect(sevaPage).not.toContain('aria-label="Contact via WhatsApp"');
   });
 
   it('shows action feedback as a viewport-floating status', () => {
-    const volunteerPage = readText(volunteerPageUrl);
+    const sevaPage = readText(sevaPageUrl);
 
-    expect(volunteerPage).toContain('<template x-teleport="body">');
-    expect(volunteerPage).toContain('x-show="actionMessage"');
-    expect(volunteerPage).toContain('class="fixed left-1/2 z-[100]');
-    expect(volunteerPage).toContain(
+    expect(sevaPage).toContain('<template x-teleport="body">');
+    expect(sevaPage).toContain('x-show="actionMessage"');
+    expect(sevaPage).toContain('class="fixed left-1/2 z-[100]');
+    expect(sevaPage).toContain(
       'style="bottom: calc(5.5rem + env(safe-area-inset-bottom))"'
     );
   });

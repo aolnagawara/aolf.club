@@ -94,7 +94,7 @@ describe('CreateLeadRequestSchema', () => {
 });
 
 describe('CourseWriteFieldsSchema', () => {
-  it('requires course type and rejects invalid pamphlets', async () => {
+  it('requires course type and rejects invalid images', async () => {
     const { CourseWriteFieldsSchema } =
       await import('../../shared/contracts/appContracts');
     expect(
@@ -126,8 +126,8 @@ describe('CourseWriteFieldsSchema', () => {
       CourseWriteFieldsSchema.parse({
         activityType: 'Course',
         courseType: 'HP',
-        pamphletBase64: 'abc',
-        pamphletMimeType: 'image/svg+xml'
+        imageBase64: 'abc',
+        imageMimeType: 'image/svg+xml'
       })
     ).toThrow();
   });

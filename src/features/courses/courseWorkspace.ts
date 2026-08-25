@@ -17,6 +17,7 @@ import {
   normalizeCourseType,
   normalizeProgramCode,
   programsForCourseType,
+  publicCourseImagePath,
   publicCourseProgramKey,
   publicCoursesPath,
   templateForActivity,
@@ -24,10 +25,84 @@ import {
   templateLookupKeys
 } from '../../../shared/contracts/courseDefaults.mjs';
 import {
-  inspectPamphletUpload,
-  MAX_PAMPHLET_BYTES,
-  PAMPHLET_SIZE_ERROR
-} from '../../../shared/contracts/pamphlet';
+  inspectImageUpload,
+  MAX_IMAGE_BYTES,
+  IMAGE_SIZE_ERROR
+} from '../../../shared/contracts/activityImage';
+
+type ShareNavigator = Navigator & {
+  canShare?: (data: ShareData) => boolean;
+};
+
+function matchingCoursesForLead(
+  lead: Lead | null | undefined,
+  active: readonly Course[]
+): Course[] {
+  if (lead?.campaignType === 'Members') {
+    return active.filter((course: Course) => isEventActivity(course));
+  }
+
+  const programs = (lead?.wishlistPrograms || [])
+    .map((item) =>
+      String(item || '')
+        .trim()
+        .toUpperCase()
+    )
+    .filter(Boolean);
+  if (!programs.length) {
+    return [...active];
+  }
+  return active.filter((course: Course) =>
+    programs.includes(normalizeCourseType(course.courseType).toUpperCase())
+  );
+}
+
+function imageExtension(mimeType: string): string {
+  if (mimeType === 'image/png') {
+    return 'png';
+  }
+  if (mimeType === 'image/webp') {
+    return 'webp';
+  }
+  return 'jpg';
+}
+
+function fileSafeName(value: string): string {
+  return (
+    String(value || '')
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 60) || 'activity-image'
+  );
+}
+
+async function convertImageBlobToPng(blob: Blob): Promise<Blob | null> {
+  if (blob.type === 'image/png') {
+    return blob;
+  }
+  if (typeof createImageBitmap !== 'function') {
+    return null;
+  }
+
+  const bitmap = await createImageBitmap(blob);
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = bitmap.width;
+    canvas.height = bitmap.height;
+    const context = canvas.getContext('2d');
+    if (!context) {
+      return null;
+    }
+    context.drawImage(bitmap, 0, 0);
+    return await new Promise((resolve) => {
+      canvas.toBlob((png) => resolve(png), 'image/png');
+    });
+  } finally {
+    bitmap.close();
+  }
+}
 
 function templateFromList(
   courseType: string,
@@ -56,13 +131,12 @@ function courseToDraft(course: Course): CourseDraft {
     title: course.title || '',
     whatsappTemplate: course.whatsappTemplate || '',
     isActive: course.isActive,
-    hasPamphlet: Boolean(course.hasPamphlet),
-    clearPamphlet: false,
-    pamphletBase64: '',
-    pamphletMimeType: '',
-    pamphletPreviewUrl: course.hasPamphlet
-      ? course.pamphletImageUrl ||
-        '/course/' + encodeURIComponent(course.id) + '/pamphlet'
+    hasImage: Boolean(course.hasImage),
+    clearImage: false,
+    imageBase64: '',
+    imageMimeType: '',
+    imagePreviewUrl: course.hasImage
+      ? course.imageUrl || '/course/' + encodeURIComponent(course.id) + '/image'
       : ''
   };
 }
@@ -78,23 +152,42 @@ export function createCourseWorkspaceMethods() {
     },
     pickerCourses(this: SevaWorkspaceContext, lead?: Lead | null): Course[] {
       const active = this.activeCourses(lead);
-      if (lead?.campaignType === 'Members') {
-        return active.filter((course: Course) => isEventActivity(course));
-      }
-      const programs = (lead?.wishlistPrograms || [])
-        .map((item) =>
-          String(item || '')
-            .trim()
-            .toUpperCase()
-        )
-        .filter(Boolean);
-      if (!programs.length) {
-        return active;
-      }
-      const matching = active.filter((course: Course) =>
-        programs.includes(normalizeCourseType(course.courseType).toUpperCase())
-      );
+      const matching = matchingCoursesForLead(lead, active);
       return matching.length ? matching : active;
+    },
+    coursePickerOptions(this: SevaWorkspaceContext): Course[] {
+      const options = this.pickerCourses(this.coursePickerLead);
+      return this.coursePickerMode === 'imageShare'
+        ? options.filter((course: Course) => course.hasImage)
+        : options;
+    },
+    coursePickerTitle(this: SevaWorkspaceContext): string {
+      return this.coursePickerMode === 'imageShare'
+        ? 'Share which image?'
+        : 'Select activity';
+    },
+    courseImageUrl(this: SevaWorkspaceContext, course: Course): string {
+      if (!course.id || !course.hasImage) {
+        return '';
+      }
+      return publicCourseImagePath(course.id);
+    },
+    courseImageDownloadName(
+      this: SevaWorkspaceContext,
+      course: Course
+    ): string {
+      const type = String(course.imageUrl || '').toLowerCase();
+      const mimeType = type.endsWith('.png')
+        ? 'image/png'
+        : type.endsWith('.webp')
+          ? 'image/webp'
+          : 'image/jpeg';
+      return (
+        'aolf-' +
+        fileSafeName(this.courseDisplayTitle(course)) +
+        '.' +
+        imageExtension(mimeType)
+      );
     },
     ipPrograms() {
       return programsForCourseType('IP');
@@ -193,49 +286,49 @@ export function createCourseWorkspaceMethods() {
         this.courseDraft.programCode
       );
     },
-    onPamphletSelected(this: SevaWorkspaceContext, event: Event): void {
+    onImageSelected(this: SevaWorkspaceContext, event: Event): void {
       const input = event.target as HTMLInputElement | null;
       const file = input?.files?.[0];
       if (!file) {
         return;
       }
       this.courseEditorError = '';
-      if (file.size >= MAX_PAMPHLET_BYTES) {
-        this.coursePamphletError = PAMPHLET_SIZE_ERROR;
-        this.coursePamphletFileName = '';
+      if (file.size >= MAX_IMAGE_BYTES) {
+        this.courseImageError = IMAGE_SIZE_ERROR;
+        this.courseImageFileName = '';
         input.value = '';
         return;
       }
-      this.coursePamphletError = '';
-      this.coursePamphletFileName = file.name;
+      this.courseImageError = '';
+      this.courseImageFileName = file.name;
       const reader = new FileReader();
       reader.onload = () => {
         const dataUrl = String(reader.result || '');
         const comma = dataUrl.indexOf(',');
-        this.courseDraft.pamphletPreviewUrl = dataUrl;
-        this.courseDraft.pamphletBase64 =
+        this.courseDraft.imagePreviewUrl = dataUrl;
+        this.courseDraft.imageBase64 =
           comma >= 0 ? dataUrl.slice(comma + 1) : '';
-        this.courseDraft.pamphletMimeType = file.type;
-        this.courseDraft.hasPamphlet = true;
-        this.courseDraft.clearPamphlet = false;
+        this.courseDraft.imageMimeType = file.type;
+        this.courseDraft.hasImage = true;
+        this.courseDraft.clearImage = false;
       };
       reader.onerror = () => {
-        this.coursePamphletError =
-          'Unable to read that pamphlet image. Please choose it again.';
-        this.coursePamphletFileName = '';
+        this.courseImageError =
+          'Unable to read that image. Please choose it again.';
+        this.courseImageFileName = '';
         input.value = '';
       };
       reader.readAsDataURL(file);
     },
-    clearCoursePamphlet(this: SevaWorkspaceContext): void {
+    clearCourseImage(this: SevaWorkspaceContext): void {
       this.courseEditorError = '';
-      this.coursePamphletError = '';
-      this.coursePamphletFileName = '';
-      this.courseDraft.hasPamphlet = false;
-      this.courseDraft.clearPamphlet = true;
-      this.courseDraft.pamphletBase64 = '';
-      this.courseDraft.pamphletMimeType = '';
-      this.courseDraft.pamphletPreviewUrl = '';
+      this.courseImageError = '';
+      this.courseImageFileName = '';
+      this.courseDraft.hasImage = false;
+      this.courseDraft.clearImage = true;
+      this.courseDraft.imageBase64 = '';
+      this.courseDraft.imageMimeType = '';
+      this.courseDraft.imagePreviewUrl = '';
     },
     async switchWorkspaceView(
       this: SevaWorkspaceContext,
@@ -273,8 +366,8 @@ export function createCourseWorkspaceMethods() {
     },
     openCourseEditor(this: SevaWorkspaceContext, course?: Course): void {
       this.courseEditorError = '';
-      this.coursePamphletError = '';
-      this.coursePamphletFileName = '';
+      this.courseImageError = '';
+      this.courseImageFileName = '';
       if (course) {
         this.courseDraft = courseToDraft(course);
       } else {
@@ -304,34 +397,134 @@ export function createCourseWorkspaceMethods() {
       this.isCourseEditorOpen = false;
       this.isCourseSaving = false;
       this.courseEditorError = '';
-      this.coursePamphletError = '';
-      this.coursePamphletFileName = '';
+      this.courseImageError = '';
+      this.courseImageFileName = '';
       this.courseDraft = createEmptyCourseDraft();
     },
-    previewCourse(this: SevaWorkspaceContext, course: Course): void {
+    openPublicCoursePage(this: SevaWorkspaceContext, course: Course): void {
       window.location.href = publicCoursesPath(
         publicCourseProgramKey(course.courseType, course.programCode)
       );
+    },
+    async fetchCourseImageFile(
+      this: SevaWorkspaceContext,
+      course: Course
+    ): Promise<{ blob: Blob; file: File } | null> {
+      const url = this.courseImageUrl(course);
+      if (!url) {
+        return null;
+      }
+      const response = await fetch(url);
+      if (!response.ok) {
+        return null;
+      }
+      const blob = await response.blob();
+      const mimeType = blob.type || 'image/jpeg';
+      const file = new File([blob], this.courseImageDownloadName(course), {
+        type: mimeType
+      });
+      return { blob, file };
+    },
+    async copyCourseImageToClipboard(
+      this: SevaWorkspaceContext,
+      course: Course
+    ): Promise<boolean> {
+      const clipboard = navigator.clipboard;
+      const ClipboardItemCtor = window.ClipboardItem;
+      if (!clipboard?.write || !ClipboardItemCtor || !course.hasImage) {
+        return false;
+      }
+
+      try {
+        const image = await this.fetchCourseImageFile(course);
+        if (!image) {
+          return false;
+        }
+        const png = await convertImageBlobToPng(image.blob);
+        if (!png) {
+          return false;
+        }
+        await clipboard.write([
+          new ClipboardItemCtor({
+            'image/png': png
+          })
+        ]);
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    async shareCourseImage(
+      this: SevaWorkspaceContext,
+      course: Course
+    ): Promise<boolean> {
+      this.authError = '';
+      if (!course.hasImage) {
+        this.actionMessage = 'No image is attached to this activity.';
+        return false;
+      }
+
+      try {
+        const image = await this.fetchCourseImageFile(course);
+        const shareNavigator = navigator as ShareNavigator;
+        if (!image || !shareNavigator.share) {
+          this.actionMessage =
+            'Image sharing is not supported in this browser.';
+          return false;
+        }
+        const shareData: ShareData = {
+          files: [image.file],
+          title: this.courseDisplayTitle(course)
+        };
+        if (shareNavigator.canShare && !shareNavigator.canShare(shareData)) {
+          this.actionMessage =
+            'Image sharing is not supported in this browser.';
+          return false;
+        }
+        await shareNavigator.share(shareData);
+        return true;
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') {
+          return false;
+        }
+        this.actionMessage = 'Unable to share the image from this browser.';
+        return false;
+      }
+    },
+    downloadCourseImage(this: SevaWorkspaceContext, course: Course): void {
+      const url = this.courseImageUrl(course);
+      if (!url) {
+        this.actionMessage = 'No image is attached to this activity.';
+        return;
+      }
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = this.courseImageDownloadName(course);
+      anchor.rel = 'noopener';
+      document.body.append(anchor);
+      anchor.click();
+      anchor.remove();
+      this.actionMessage = 'Image download started.';
     },
     async saveCourse(this: SevaWorkspaceContext): Promise<void> {
       if (this.isCourseSaving) {
         return;
       }
-      if (this.courseDraft.pamphletBase64.trim()) {
-        const inspected = inspectPamphletUpload(
-          this.courseDraft.pamphletBase64,
-          this.courseDraft.pamphletMimeType
+      if (this.courseDraft.imageBase64.trim()) {
+        const inspected = inspectImageUpload(
+          this.courseDraft.imageBase64,
+          this.courseDraft.imageMimeType
         );
         if (!inspected.ok) {
           this.courseEditorError = '';
-          this.coursePamphletError = inspected.message;
+          this.courseImageError = inspected.message;
           return;
         }
       }
       this.isCourseSaving = true;
       this.authError = '';
       this.courseEditorError = '';
-      this.coursePamphletError = '';
+      this.courseImageError = '';
       try {
         const payload = {
           activityType: this.courseDraft.activityType,
@@ -343,9 +536,9 @@ export function createCourseWorkspaceMethods() {
           title: this.courseDraft.title,
           whatsappTemplate: this.courseDraft.whatsappTemplate,
           isActive: this.courseDraft.isActive,
-          pamphletBase64: this.courseDraft.pamphletBase64,
-          pamphletMimeType: this.courseDraft.pamphletMimeType,
-          clearPamphlet: this.courseDraft.clearPamphlet
+          imageBase64: this.courseDraft.imageBase64,
+          imageMimeType: this.courseDraft.imageMimeType,
+          clearImage: this.courseDraft.clearImage
         };
         if (this.courseDraft.id) {
           const response = await window.appRuntime.updateCourse({
@@ -366,8 +559,8 @@ export function createCourseWorkspaceMethods() {
           error,
           'Unable to save the activity.'
         );
-        if (message === PAMPHLET_SIZE_ERROR) {
-          this.coursePamphletError = message;
+        if (message === IMAGE_SIZE_ERROR) {
+          this.courseImageError = message;
         } else {
           this.courseEditorError = message;
         }
@@ -388,8 +581,8 @@ export function createCourseWorkspaceMethods() {
           title: course.title || '',
           whatsappTemplate: course.whatsappTemplate,
           isActive: !course.isActive,
-          pamphletBase64: '',
-          pamphletMimeType: ''
+          imageBase64: '',
+          imageMimeType: ''
         });
         this.courses = this.courses.map((item) =>
           item.id === response.course.id ? response.course : item
@@ -426,6 +619,23 @@ export function createCourseWorkspaceMethods() {
     closeCoursePicker(this: SevaWorkspaceContext): void {
       this.isCoursePickerOpen = false;
       this.coursePickerLead = null;
+      this.coursePickerMode = 'whatsapp';
+    },
+    async openWhatsappWithCourse(
+      this: SevaWorkspaceContext,
+      lead: Lead,
+      course: Course | null
+    ): Promise<void> {
+      let imageCopied = false;
+      if (course?.hasImage) {
+        imageCopied = await this.copyCourseImageToClipboard(course);
+      }
+      window.open(this.buildWhatsappHref(lead, course), '_blank', 'noopener');
+      if (course?.hasImage) {
+        this.actionMessage = imageCopied
+          ? 'Image copied. Paste it in WhatsApp after sending the text.'
+          : 'WhatsApp opened. Use Share image if paste is not available.';
+      }
     },
     async openWhatsappForLead(
       this: SevaWorkspaceContext,
@@ -441,21 +651,68 @@ export function createCourseWorkspaceMethods() {
         window.open(this.buildWhatsappHref(lead), '_blank', 'noopener');
         return;
       }
-      const unique = findUniqueActiveCourse(lead.wishlistPrograms, active);
+      const matching = matchingCoursesForLead(lead, active);
+      if (!matching.length) {
+        window.open(this.buildWhatsappHref(lead), '_blank', 'noopener');
+        this.actionMessage =
+          'No matching activity found. WhatsApp opened with an empty message.';
+        return;
+      }
+      const unique =
+        matching.length === 1
+          ? matching[0]
+          : findUniqueActiveCourse(lead.wishlistPrograms, matching);
       if (unique) {
-        window.open(this.buildWhatsappHref(lead, unique), '_blank', 'noopener');
+        await this.openWhatsappWithCourse(lead, unique);
         return;
       }
       this.coursePickerLead = lead;
+      this.coursePickerMode = 'whatsapp';
       this.isCoursePickerOpen = true;
     },
-    selectCourseForWhatsapp(this: SevaWorkspaceContext, course: Course): void {
+    async openImageShareForLead(
+      this: SevaWorkspaceContext,
+      lead: Lead
+    ): Promise<void> {
+      await this.loadCourses();
+      const activeWithImages = this.activeCourses(lead).filter(
+        (course: Course) => course.hasImage
+      );
+      if (!activeWithImages.length) {
+        this.actionMessage = 'No activity image is available to share.';
+        return;
+      }
+
+      const matching = matchingCoursesForLead(lead, activeWithImages);
+      const candidates = matching.length ? matching : activeWithImages;
+      const unique =
+        candidates.length === 1
+          ? candidates[0]
+          : findUniqueActiveCourse(lead.wishlistPrograms, candidates);
+      if (unique) {
+        await this.shareCourseImage(unique);
+        return;
+      }
+
+      this.coursePickerLead = lead;
+      this.coursePickerMode = 'imageShare';
+      this.isCoursePickerOpen = true;
+    },
+    async selectCourseFromPicker(
+      this: SevaWorkspaceContext,
+      course: Course
+    ): Promise<void> {
       const lead = this.coursePickerLead;
+      const mode = this.coursePickerMode;
       this.closeCoursePicker();
       if (!lead || !course.isActive) {
         return;
       }
-      window.open(this.buildWhatsappHref(lead, course), '_blank', 'noopener');
+      if (mode === 'imageShare') {
+        await this.shareCourseImage(course);
+        return;
+      }
+      await this.openWhatsappWithCourse(lead, course);
     }
   };
 }

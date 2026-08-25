@@ -3,22 +3,21 @@ import type {
   Course,
   UpdateLeadRequest
 } from '../../../shared/contracts/appContracts';
-import {
-  DEFAULT_CAMPAIGN_MESSAGE,
-  DEFAULT_WHATSAPP_COUNTRY_CODE
-} from '../../config/campaignDefaults';
+import { DEFAULT_WHATSAPP_COUNTRY_CODE } from '../../config/campaignDefaults';
 import {
   DEFAULT_COURSE_WHATSAPP_TEMPLATE,
   DEFAULT_EVENT_WHATSAPP_TEMPLATE,
   formatActivityTitle,
-  isEventActivity,
-  publicCourseProgramKey,
-  publicCoursesPath
+  isEventActivity
 } from '../../../shared/contracts/courseDefaults.mjs';
-import {
-  ensureCourseUrlInMessage,
-  fillCourseWhatsappTemplate
-} from '../../../shared/contracts/courseMatching';
+import { fillCourseWhatsappTemplate } from '../../../shared/contracts/courseMatching';
+
+function compactMessage(message: string): string {
+  return String(message || '')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
 
 export function createCommunicationMethods() {
   return {
@@ -37,21 +36,6 @@ export function createCommunicationMethods() {
         return;
       }
       window.location.href = telHref;
-    },
-    buildCampaignMessage(this: SevaWorkspaceContext, lead: Lead): string {
-      const leadCampaign = this.campaigns.find(
-        (campaign) => campaign.id === lead.campaignId
-      );
-      const template =
-        leadCampaign?.message ||
-        this.campaignMessage ||
-        this.appConfig.defaultCampaignMessage ||
-        DEFAULT_CAMPAIGN_MESSAGE;
-      const campaignName =
-        leadCampaign?.name || this.selectedCampaign?.name || 'our center';
-      return template
-        .replaceAll('{name}', lead.name || 'Friend')
-        .replaceAll('{campaign}', campaignName);
     },
     getWhatsappDestination(this: SevaWorkspaceContext, lead: Lead): string {
       const mobile = String(lead.mobile || '').trim();
@@ -82,42 +66,37 @@ export function createCommunicationMethods() {
       if (!destination) {
         return '';
       }
-      let message = this.buildCampaignMessage(lead);
+      let message = '';
       if (course) {
         if (isEventActivity(course)) {
-          message = fillCourseWhatsappTemplate(
-            course.whatsappTemplate || DEFAULT_EVENT_WHATSAPP_TEMPLATE,
-            {
-              name: lead.name || 'Friend',
-              course: formatActivityTitle(course),
-              dates: '',
-              registrationLink: '',
-              courseUrl: ''
-            }
+          message = compactMessage(
+            fillCourseWhatsappTemplate(
+              course.whatsappTemplate || DEFAULT_EVENT_WHATSAPP_TEMPLATE,
+              {
+                name: lead.name || 'Friend',
+                course: formatActivityTitle(course),
+                dates: '',
+                registrationLink: ''
+              }
+            )
           );
         } else {
-          const courseUrl =
-            String(window.location.origin || '').replace(/\/$/, '') +
-            publicCoursesPath(
-              publicCourseProgramKey(course.courseType, course.programCode)
-            );
-          message = ensureCourseUrlInMessage(
+          message = compactMessage(
             fillCourseWhatsappTemplate(
               course.whatsappTemplate || DEFAULT_COURSE_WHATSAPP_TEMPLATE,
               {
                 name: lead.name || 'Friend',
                 course: course.title || '',
                 dates: '',
-                registrationLink: '',
-                courseUrl
+                registrationLink: ''
               }
-            ),
-            courseUrl
+            )
           );
         }
       }
+      const encoded = encodeURIComponent(message);
       return (
-        'https://wa.me/' + destination + '?text=' + encodeURIComponent(message)
+        'https://wa.me/' + destination + (encoded ? '?text=' + encoded : '')
       );
     },
     async saveLead(

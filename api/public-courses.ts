@@ -36,24 +36,24 @@ function getRequestOrigin(req: ApiRequest): string {
   return proto + '://' + host;
 }
 
-async function servePamphlet(req: ApiRequest, res: ApiResponse, id: string) {
+async function serveImage(req: ApiRequest, res: ApiResponse, id: string) {
   res.setHeader('Cache-Control', 'public, max-age=60');
   if (!id) {
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-    return res.status(404).end('Pamphlet not found.');
+    return res.status(404).end('Image not found.');
   }
 
   try {
-    const pamphlet = await getApiDataStore().getPublicCoursePamphlet(id);
-    if (!pamphlet) {
+    const image = await getApiDataStore().getPublicCourseImage(id);
+    if (!image) {
       res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-      return res.status(404).end('Pamphlet not found.');
+      return res.status(404).end('Image not found.');
     }
-    res.setHeader('Content-Type', pamphlet.mimeType || 'image/jpeg');
-    return res.status(200).end(pamphlet.bytes);
+    res.setHeader('Content-Type', image.mimeType || 'image/jpeg');
+    return res.status(200).end(image.bytes);
   } catch {
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-    return res.status(404).end('Pamphlet not found.');
+    return res.status(404).end('Image not found.');
   }
 }
 
@@ -66,8 +66,8 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     return res.status(405).end('Method not allowed.');
   }
 
-  if (firstQueryValue(req, 'asset') === 'pamphlet') {
-    return servePamphlet(req, res, firstQueryValue(req, 'id'));
+  if (firstQueryValue(req, 'asset') === 'image') {
+    return serveImage(req, res, firstQueryValue(req, 'id'));
   }
 
   const origin = getRequestOrigin(req);

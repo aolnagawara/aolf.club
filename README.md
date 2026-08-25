@@ -6,7 +6,7 @@ AOLF Connect uses:
 
 - **GitHub** for the application source code
 - **Vercel** for hosting the website and backend
-- **Vercel Blob** for course pamphlet images
+- **Vercel Blob** for course activity images
 - **Google OAuth** for volunteer sign-in
 - **Google Sheets** for application data
 - **Meta WhatsApp Cloud API** for WhatsApp lead capture
@@ -143,7 +143,7 @@ Installations need an `Activities` tab and a `CourseTemplates` tab. Run `pnpm ru
 `Activities` header:
 
 ```text
-id,activityType,courseType,programCode,title,whatsappTemplate,pamphletFileId,pamphletMimeType,isActive,createdAt,updatedAt,createdBy,updatedBy
+id,activityType,courseType,programCode,title,whatsappTemplate,imageFileId,imageMimeType,isActive,createdAt,updatedAt,createdBy,updatedBy
 ```
 
 `CourseTemplates` header:
@@ -152,9 +152,9 @@ id,activityType,courseType,programCode,title,whatsappTemplate,pamphletFileId,pam
 courseType,template
 ```
 
-Activity Management stores Course and Event activities for preformatted WhatsApp messages. Course rows use `courseType` and optional IP `programCode`; Event rows use `title` as the event name. Dates, time, venue, and registration belong in the WhatsApp template. `/courses` displays every active Course activity as a tab. Program-specific links such as `/courses?program=ip-j` open the same page with the matching tab selected and provide that program's pamphlet metadata for WhatsApp previews. The Happiness Program default template puts `{courseUrl}` just before the registration URL. Deleting a Course activity also deletes its Vercel Blob pamphlet files.
+Activity Management stores Course and Event activities for preformatted WhatsApp text messages. Course rows use `courseType` and optional IP `programCode`; Event rows use `title` as the event name. Dates, time, venue, and registration belong in the WhatsApp template. `/courses` displays every active Course activity as a tab, including the uploaded high-resolution activity image. Program-specific links such as `/courses?program=ip-j` open the same page with the matching tab selected. Deleting a Course activity also deletes its Vercel Blob image files.
 
-Pamphlets are uploaded from Activity Management (JPEG, PNG, or WebP, under 600 KB). They are stored in a **public Vercel Blob** store and WhatsApp reads `og:image` from that Blob URL for Course activities. `/course/<id>/pamphlet` still works as a same-origin fallback. WhatsApp may cache an older pamphlet after you replace the image.
+Images are uploaded from Activity Management (JPEG, PNG, or WebP, under 3 MB). They are stored in a **public Vercel Blob** store. When a Seva workspace user opens WhatsApp for a matching activity, the app sends only the text message and attempts to copy the associated image to the clipboard so it can be pasted after the text is sent. A separate image-share button is always visible next to the WhatsApp action and uses the native share sheet when available. `/course/<id>/image` serves the uploaded image as a same-origin URL for public display, copy, share, and Activity Management downloads.
 
 The `Config` tab should include `centerWhatsappNumber` in international format without `+`, such as `918884560660`. The public website uses this number for its WhatsApp links.
 
@@ -236,7 +236,7 @@ Without this sharing permission, Vercel will not be able to read or update the S
 
 ## 7. Configure Google sign-in
 
-Google OAuth is used to identify the volunteer signing in to the private `/volunteer` workspace.
+Google OAuth is used to identify the volunteer signing in to the private `/seva` workspace.
 
 AOLF Connect only needs basic identity information such as:
 
@@ -404,13 +404,13 @@ For the recommended single-spreadsheet installation, leave this unset:
 GOOGLE_SHEETS_ACCESS_SPREADSHEET_ID
 ```
 
-### Vercel Blob (course pamphlets)
+### Vercel Blob (course images)
 
 In the Vercel project:
 
 1. Open **Storage**.
 2. Create a **Blob** store.
-3. Set access to **Public** (WhatsApp must be able to fetch `og:image`).
+3. Set access to **Public** so `/courses` can display uploaded activity images.
 4. Connect the store to **Production** (and Preview if you use it).
 5. Confirm this environment variable was added:
 
@@ -418,7 +418,7 @@ In the Vercel project:
 BLOB_READ_WRITE_TOKEN=
 ```
 
-If you create a course without a pamphlet, Blob is not used. Uploading a pamphlet requires this token.
+If you create an activity without an image, Blob is not used. Uploading an image requires this token.
 
 ### WhatsApp / Meta
 
@@ -525,7 +525,7 @@ No local build or local testing is required.
 
 If Vercel reports a deployment error, open that deployment and read the build/function logs.
 
-If the log says **No more than 12 Serverless Functions can be added to a Deployment on the Hobby plan**, this repo stays at or below 12 API entry files by combining course update/delete and pamphlet serving into existing routes. Redeploy this revision. Do not add a new file under `api/` (outside `_lib`) without folding it into an existing handler.
+If the log says **No more than 12 Serverless Functions can be added to a Deployment on the Hobby plan**, this repo stays at or below 12 API entry files by combining course update/delete and image serving into existing routes. Redeploy this revision. Do not add a new file under `api/` (outside `_lib`) without folding it into an existing handler.
 
 ---
 
@@ -548,7 +548,7 @@ The public website should load normally.
 Open:
 
 ```text
-https://YOUR-DOMAIN/volunteer
+https://YOUR-DOMAIN/seva
 ```
 
 1. Click **Continue with Google**.
@@ -618,7 +618,7 @@ Check:
 - Meta webhook URL
 - webhook subscription in Meta
 
-### Course pamphlet upload fails
+### Course image upload fails
 
 Check:
 

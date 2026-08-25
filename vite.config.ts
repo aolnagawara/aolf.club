@@ -11,7 +11,7 @@ import {
   toPublicCourseView
 } from './api/_lib/courses/publicHtml';
 
-const COURSE_PAMPHLET_PATH = /^\/course\/([^/?#]+)\/pamphlet\/?$/;
+const COURSE_IMAGE_PATH = /^\/course\/([^/?#]+)\/image\/?$/;
 
 type MiddlewareRes = {
   statusCode: number;
@@ -47,26 +47,26 @@ function servePublicCourseCatalog(
   return true;
 }
 
-function servePublicCoursePamphlet(
+function servePublicCourseImage(
   url: string | undefined,
   res: MiddlewareRes
 ): boolean {
   const pathname = String(url || '').split('?')[0];
-  const match = pathname.match(COURSE_PAMPHLET_PATH);
+  const match = pathname.match(COURSE_IMAGE_PATH);
   if (!match) {
     return false;
   }
   const key = decodeURIComponent(match[1] || '');
   const course = mockCourses.find((item) => item.id === key);
-  if (!course?.hasPamphlet) {
+  if (!course?.hasImage) {
     res.statusCode = 404;
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-    res.end('Pamphlet not found.');
+    res.end('Image not found.');
     return true;
   }
   res.statusCode = 404;
   res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-  res.end('Pamphlet not found.');
+  res.end('Image not found.');
   return true;
 }
 
@@ -100,8 +100,8 @@ function servePublicCoursesPage(
   return true;
 }
 
-function volunteerRewritePlugin() {
-  const rewriteVolunteerUrl = (url?: string) => {
+function sevaRewritePlugin() {
+  const rewriteSevaUrl = (url?: string) => {
     if (!url) {
       return url;
     }
@@ -110,13 +110,13 @@ function volunteerRewritePlugin() {
     const pathname = queryIndex >= 0 ? url.slice(0, queryIndex) : url;
     const query = queryIndex >= 0 ? url.slice(queryIndex) : '';
 
-    return pathname === '/volunteer' || pathname === '/volunteer/'
-      ? `/volunteer.html${query}`
+    return pathname === '/seva' || pathname === '/seva/'
+      ? `/seva.html${query}`
       : url;
   };
 
   return {
-    name: 'aolf-volunteer-rewrite',
+    name: 'aolf-seva-rewrite',
     configureServer(server: {
       middlewares: {
         use: (
@@ -132,13 +132,13 @@ function volunteerRewritePlugin() {
         if (servePublicCourseCatalog(req.url, res)) {
           return;
         }
-        if (servePublicCoursePamphlet(req.url, res)) {
+        if (servePublicCourseImage(req.url, res)) {
           return;
         }
         if (servePublicCoursesPage(req.url, req.headers?.host, res)) {
           return;
         }
-        req.url = rewriteVolunteerUrl(req.url);
+        req.url = rewriteSevaUrl(req.url);
         next();
       });
     },
@@ -157,13 +157,13 @@ function volunteerRewritePlugin() {
         if (servePublicCourseCatalog(req.url, res)) {
           return;
         }
-        if (servePublicCoursePamphlet(req.url, res)) {
+        if (servePublicCourseImage(req.url, res)) {
           return;
         }
         if (servePublicCoursesPage(req.url, req.headers?.host, res)) {
           return;
         }
-        req.url = rewriteVolunteerUrl(req.url);
+        req.url = rewriteSevaUrl(req.url);
         next();
       });
     }
@@ -173,12 +173,12 @@ function volunteerRewritePlugin() {
 export default defineConfig({
   root: 'src',
   publicDir: resolve(__dirname, 'public'),
-  plugins: [volunteerRewritePlugin()],
+  plugins: [sevaRewritePlugin()],
   build: {
     rollupOptions: {
       input: {
         main: resolve(__dirname, 'src/index.html'),
-        volunteer: resolve(__dirname, 'src/volunteer.html'),
+        seva: resolve(__dirname, 'src/seva.html'),
         privacy: resolve(__dirname, 'src/privacy.html'),
         terms: resolve(__dirname, 'src/terms.html')
       }

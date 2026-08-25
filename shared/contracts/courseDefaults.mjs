@@ -1,5 +1,5 @@
 export const DEFAULT_COURSE_WHATSAPP_TEMPLATE =
-  'Hi {name}, you are invited to {course} ({dates}).\n\n{courseUrl}';
+  'Hi {name}, you are invited to {course}.';
 
 export const DEFAULT_EVENT_WHATSAPP_TEMPLATE =
   'Hi {name}, you are invited to {course}.\n\nPlease reply here for details.';
@@ -34,7 +34,6 @@ _📍Venue:_
 *North Bengaluru*
 
 📞 For Registration & Details:
-{courseUrl}
 https://aolt.in/874234
 
 📲 8884560660
@@ -159,8 +158,8 @@ export function defaultCourseTemplateRows() {
   return rows;
 }
 
-export function publicCoursePamphletPath(id) {
-  return '/course/' + encodeURIComponent(String(id || '')) + '/pamphlet';
+export function publicCourseImagePath(id) {
+  return '/course/' + encodeURIComponent(String(id || '')) + '/image';
 }
 
 export function formatCourseTitle(courseType, programCode) {

@@ -45,9 +45,9 @@ import {
   type CourseRecord
 } from '../courses/sheetMapping.js';
 import {
-  createMemoryPamphletStore,
-  decodePamphletBase64
-} from '../courses/pamphletStore.js';
+  createMemoryImageStore,
+  decodeImageBase64
+} from '../courses/imageStore.js';
 import { normalizeEmail } from '../http/normalization.js';
 
 type StoreState = {
@@ -55,13 +55,13 @@ type StoreState = {
   courses: CourseRecord[];
 };
 
-const pamphletStore = createMemoryPamphletStore();
+const imageStore = createMemoryImageStore();
 
 function toRecord(course: Course): CourseRecord {
   return {
     ...course,
-    pamphletFileId: '',
-    pamphletMimeType: ''
+    imageFileId: '',
+    imageMimeType: ''
   };
 }
 
@@ -301,20 +301,20 @@ export async function createCourseForUser(
   }
   const timestamp = new Date().toISOString();
   const id = nanoid();
-  let pamphletFileId = '';
-  let pamphletMimeType = '';
-  if (parsed.pamphletBase64.trim()) {
-    pamphletFileId = await pamphletStore.upload(
+  let imageFileId = '';
+  let imageMimeType = '';
+  if (parsed.imageBase64.trim()) {
+    imageFileId = await imageStore.upload(
       id,
-      decodePamphletBase64(parsed.pamphletBase64, parsed.pamphletMimeType)
+      decodeImageBase64(parsed.imageBase64, parsed.imageMimeType)
     );
-    pamphletMimeType = parsed.pamphletMimeType;
+    imageMimeType = parsed.imageMimeType;
   }
   const course = applyCourseDefaults(
     parsed,
     timestamp,
     normalizeEmail(user.email),
-    { id, pamphletFileId, pamphletMimeType }
+    { id, imageFileId, imageMimeType }
   );
   getStore().courses.push(course);
   return CreateCourseResponseSchema.parse({
@@ -343,26 +343,30 @@ export async function updateCourseForUser(
     ]);
   }
   const existing = store.courses[index];
-  let pamphletFileId = existing.pamphletFileId;
-  let pamphletMimeType = existing.pamphletMimeType;
-  if (parsed.clearPamphlet && pamphletFileId) {
-    await pamphletStore.remove(pamphletFileId);
-    pamphletFileId = '';
-    pamphletMimeType = '';
+  let imageFileId = existing.imageFileId;
+  let imageMimeType = existing.imageMimeType;
+  if (parsed.clearImage && imageFileId) {
+    await imageStore.remove(imageFileId);
+    imageFileId = '';
+    imageMimeType = '';
   }
-  if (parsed.pamphletBase64.trim()) {
-    pamphletFileId = await pamphletStore.upload(
+  if (parsed.imageBase64.trim()) {
+    const nextId = await imageStore.upload(
       parsed.id,
-      decodePamphletBase64(parsed.pamphletBase64, parsed.pamphletMimeType)
+      decodeImageBase64(parsed.imageBase64, parsed.imageMimeType)
     );
-    pamphletMimeType = parsed.pamphletMimeType;
+    if (imageFileId && imageFileId !== nextId) {
+      await imageStore.remove(imageFileId);
+    }
+    imageFileId = nextId;
+    imageMimeType = parsed.imageMimeType;
   }
   const timestamp = new Date().toISOString();
   const course = applyCourseDefaults(
     parsed,
     timestamp,
     normalizeEmail(user.email),
-    { id: parsed.id, existing, pamphletFileId, pamphletMimeType }
+    { id: parsed.id, existing, imageFileId, imageMimeType }
   );
   store.courses[index] = course;
   return UpdateCourseResponseSchema.parse({
@@ -379,7 +383,7 @@ export async function deleteCourseForUser(payload: DeleteCourseRequest) {
     throw new Error('Course not found.');
   }
   const existing = store.courses[index];
-  await pamphletStore.removeCourse(existing.id, existing.pamphletFileId);
+  await imageStore.removeCourse(existing.id, existing.imageFileId);
   store.courses.splice(index, 1);
   return DeleteCourseResponseSchema.parse({
     success: true,
@@ -396,18 +400,18 @@ export async function getPublicCourses(programKey = '') {
   };
 }
 
-export async function getPublicCoursePamphlet(id: string) {
+export async function getPublicCourseImage(id: string) {
   const course = getStore().courses.find((item) => item.id === id);
-  if (!course?.pamphletFileId) {
+  if (!course?.imageFileId) {
     return null;
   }
-  const pamphlet = await pamphletStore.download(course.pamphletFileId);
-  if (!pamphlet) {
+  const image = await imageStore.download(course.imageFileId);
+  if (!image) {
     return null;
   }
   return {
-    mimeType: course.pamphletMimeType || pamphlet.mimeType,
-    bytes: pamphlet.bytes
+    mimeType: course.imageMimeType || image.mimeType,
+    bytes: image.bytes
   };
 }
 
