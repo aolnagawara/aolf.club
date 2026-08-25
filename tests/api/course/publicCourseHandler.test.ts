@@ -115,11 +115,10 @@ describe('public course handler', () => {
     expect(mockStore.getPublicCourses).toHaveBeenCalledWith('hp');
     expect(state.statusCode).toBe(200);
     expect(String(state.endBody)).toContain(
-      'content="https://aolf.club/courses?program=hp"'
+      '<link rel="canonical" href="https://aolf.club/courses?program=hp"'
     );
-    expect(String(state.endBody)).toContain(
-      'content="https://aolf.club/assets/course.webp"'
-    );
+    expect(String(state.endBody)).not.toContain('property="og:');
+    expect(String(state.endBody)).toContain('<article class="course-layout">');
     expect(String(state.endBody)).toContain('<strong>Hello</strong>');
   });
 });

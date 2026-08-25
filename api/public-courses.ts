@@ -83,15 +83,13 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       selected,
       courses,
       origin,
-      fallbackImageUrl: origin + '/assets/course.webp',
       programKey: page.selectionMatched ? requestedProgram : ''
     });
     return res.status(rendered.status).end(rendered.html);
   } catch {
     const missing = renderPublicCourseHtml({
       selected: null,
-      origin,
-      fallbackImageUrl: origin + '/assets/course.webp'
+      origin
     });
     return res.status(missing.status).end(missing.html);
   }

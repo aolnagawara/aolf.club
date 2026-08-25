@@ -91,7 +91,6 @@ function servePublicCoursesPage(
     selected,
     courses,
     origin,
-    fallbackImageUrl: origin + '/assets/course.webp',
     programKey: page.selectionMatched ? programKey : ''
   });
   res.statusCode = rendered.status;
