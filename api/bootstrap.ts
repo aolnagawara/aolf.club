@@ -1,7 +1,19 @@
 import type { ApiRequest, ApiResponse } from './_lib/http/responses.js';
-import { readSessionUser } from './_lib/auth/session.js';
-import { getApiDataStore } from './_lib/storage/dataStore.js';
 import { sendApiError } from './_lib/http/errors.js';
+import {
+  firstQueryValue,
+  methodNotAllowed
+} from './_lib/http/request.js';
+
+async function loadSessionUser(req: ApiRequest) {
+  const { readSessionUser } = await import('./_lib/auth/session.js');
+  return readSessionUser(req);
+}
+
+async function loadDataStore() {
+  const { getApiDataStore } = await import('./_lib/storage/dataStore.js');
+  return getApiDataStore();
+}
 
 export default async function handler(req: ApiRequest, res: ApiResponse) {
   const startedAt = Date.now();
@@ -19,18 +31,11 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
   };
 
   if (req.method !== 'GET') {
-    res.setHeader('Allow', 'GET');
-    return sendApiError(res, new Error('Method not allowed.'), context, {
-      status: 405,
-      code: 'METHOD_NOT_ALLOWED',
-      message: 'Method not allowed.',
-      retryable: false,
-      category: 'method_not_allowed'
-    });
+    return methodNotAllowed(res, context, 'GET');
   }
 
   try {
-    const user = await readSessionUser(req);
+    const user = await loadSessionUser(req);
     if (!user) {
       return sendApiError(res, new Error('Authentication required.'), context, {
         status: 401,
@@ -41,11 +46,9 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       });
     }
 
-    const campaignId =
-      typeof req.query.campaignId === 'string'
-        ? req.query.campaignId
-        : undefined;
-    const result = await getApiDataStore().getBootstrapForAuthorizedUser(
+    const campaignId = firstQueryValue(req, 'campaignId') || undefined;
+    const store = await loadDataStore();
+    const result = await store.getBootstrapForAuthorizedUser(
       user,
       campaignId
     );

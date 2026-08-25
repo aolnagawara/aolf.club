@@ -4,7 +4,7 @@ import {
   REQUIRED_CONFIG_KEYS,
   SHEET_HEADERS
 } from '../shared/contracts/sheetContract.mjs';
-import { defaultCourseTemplateRows } from '../shared/contracts/courseDefaults.mjs';
+import { defaultCourseTemplateRows } from '../shared/contracts/courseTemplates.mjs';
 import {
   buildGoogleSheetsAppendUrl,
   buildGoogleSheetsValuesUrl

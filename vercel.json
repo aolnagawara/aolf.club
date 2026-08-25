@@ -43,10 +43,6 @@
     {
       "source": "/courses",
       "destination": "/api/courses?public=1"
-    },
-    {
-      "source": "/course/:id/image",
-      "destination": "/api/courses?asset=image&id=:id"
     }
   ]
 }

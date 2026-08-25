@@ -12,16 +12,15 @@ import {
   formatCourseTitle,
   isCourseActivity,
   normalizeProgramCode,
-  normalizeActivityType,
-  publicCourseImagePath,
-  templateForActivity
+  normalizeActivityType
 } from '../../../shared/contracts/courseDefaults.mjs';
+import { templateForActivity } from '../../../shared/contracts/courseTemplates.mjs';
 import { SHEET_HEADERS } from '../../../shared/contracts/sheetContract.mjs';
 import { findHeaderIndex } from '../sheets/table.js';
 
 const COURSE_HEADERS = SHEET_HEADERS.courses;
 
-export function imagePublicUrl(courseId: string, imageFileId: string): string {
+export function imagePublicUrl(_courseId: string, imageFileId: string): string {
   const stored = String(imageFileId || '').trim();
   if (!stored) {
     return '';
@@ -29,7 +28,7 @@ export function imagePublicUrl(courseId: string, imageFileId: string): string {
   if (isHttpsUrl(stored)) {
     return stored;
   }
-  return publicCourseImagePath(courseId);
+  return '';
 }
 
 export type CourseRecord = Course & {

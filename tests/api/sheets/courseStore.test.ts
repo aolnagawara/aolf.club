@@ -293,7 +293,7 @@ describe('Sheets course store', () => {
     });
   });
 
-  it('stores an uploaded image and serves it from the public reader', async () => {
+  it('keeps non-public image ids out of the public image URL', async () => {
     const { store } = createFixture([]);
     const imageBase64 =
       'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
@@ -308,12 +308,7 @@ describe('Sheets course store', () => {
       return;
     }
     expect(created.value.course.hasImage).toBe(true);
-    expect(created.value.course.imageUrl).toBe(
-      '/course/' + created.value.course.id + '/image'
-    );
-    const image = await store.getPublicCourseImage(created.value.course.id);
-    expect(image?.mimeType).toBe('image/png');
-    expect(image?.bytes.length).toBeGreaterThan(0);
+    expect(created.value.course.imageUrl).toBe('');
   });
 
   it('exposes a Blob HTTPS url as imageUrl', async () => {

@@ -19,13 +19,14 @@ import {
 } from '../../../shared/contracts/appContracts';
 import {
   activityAudience,
-  defaultCourseTemplates,
   formatActivityTitle,
   normalizeActivityType,
-  normalizeProgramCode,
-  publicCourseImagePath,
-  templateForActivity
+  normalizeProgramCode
 } from '../../../shared/contracts/courseDefaults.mjs';
+import {
+  defaultCourseTemplates,
+  templateForActivity
+} from '../../../shared/contracts/courseTemplates.mjs';
 import { mockCourses } from './mockCourses';
 
 function toCourse(
@@ -65,8 +66,7 @@ function toCourse(
         (parsed.imageMimeType || 'image/jpeg') +
         ';base64,' +
         parsed.imageBase64
-      : options.existing?.imageUrl ||
-        (hasImage ? publicCourseImagePath(options.id) : ''),
+      : options.existing?.imageUrl || '',
     createdAt: options.existing?.createdAt || new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     createdBy: options.existing?.createdBy || 'volunteer@example.com',

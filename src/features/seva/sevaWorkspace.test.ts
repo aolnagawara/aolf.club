@@ -1031,7 +1031,8 @@ describe('Seva workspace course management', () => {
     const existingCourse = createCourseFixture({
       title: 'Weekend Happiness Program',
       hasImage: true,
-      imageUrl: '/course/crsHpNcr01AbcDefGhiJK/image'
+      imageUrl:
+        'https://store123.public.blob.vercel-storage.com/courses/crsHpNcr01AbcDefGhiJK/image.jpg'
     });
     const updateCourse = vi.fn(async (payload) => ({
       success: true as const,
@@ -1153,12 +1154,14 @@ describe('Seva workspace course management', () => {
         createCourseFixture({
           id: 'crsHpOne01AbcDefGhiJK',
           hasImage: true,
-          imageUrl: '/course/crsHpOne01AbcDefGhiJK/image'
+          imageUrl:
+            'https://store123.public.blob.vercel-storage.com/courses/crsHpOne01AbcDefGhiJK/image.jpg'
         }),
         createCourseFixture({
           id: 'crsHpTwo01AbcDefGhiJK',
           hasImage: true,
-          imageUrl: '/course/crsHpTwo01AbcDefGhiJK/image'
+          imageUrl:
+            'https://store123.public.blob.vercel-storage.com/courses/crsHpTwo01AbcDefGhiJK/image.jpg'
         })
       ],
       templates: []

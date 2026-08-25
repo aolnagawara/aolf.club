@@ -1,34 +1,41 @@
 import type { SevaWorkspaceContext, CourseDraft, Lead } from '../seva/types';
-import type {
-  Course,
-  CourseTemplate
-} from '../../../shared/contracts/appContracts';
+import type { Course } from '../../../shared/contracts/appContracts';
 import { toUserErrorMessage } from '../../services/apiClient';
 import { createEmptyCourseDraft } from '../seva/state';
 import { findUniqueActiveCourse } from '../../../shared/contracts/courseMatching';
 import {
-  activityAudience,
   formatActivityTitle,
-  formatCourseTitle,
-  isCourseActivity,
-  isEventActivity,
   isIpCourseType,
   normalizeActivityType,
-  normalizeCourseType,
   normalizeProgramCode,
-  programsForCourseType,
-  publicCourseImagePath,
   publicCourseProgramKey,
-  publicCoursesPath,
-  templateForActivity,
-  templateForCourseType,
-  templateLookupKeys
+  publicCoursesPath
 } from '../../../shared/contracts/courseDefaults.mjs';
+import {
+  templateForActivity,
+  templateForCourseType
+} from '../../../shared/contracts/courseTemplates.mjs';
 import {
   inspectImageUpload,
   MAX_IMAGE_BYTES,
   IMAGE_SIZE_ERROR
 } from '../../../shared/contracts/activityImage';
+import {
+  activeCoursesForContext,
+  canOpenPublicCoursePage,
+  courseCardSubtitle,
+  courseDisplayTitle,
+  courseImageDownloadName,
+  courseImageUrl as courseImageUrlForCourse,
+  coursePickerOptionsForContext,
+  coursePickerSubtitle,
+  coursePickerTitle,
+  ipPrograms,
+  isCourseDraftEvent,
+  matchingCoursesForLead,
+  showsProgramTabs,
+  templateFromList
+} from './courseWorkspaceCore';
 
 type ShareNavigator = Navigator & {
   canShare?: (data: ShareData) => boolean;
@@ -38,50 +45,6 @@ type ClipboardItemConstructor = {
   new (items: Record<string, Blob>): ClipboardItem;
   supports?: (mimeType: string) => boolean;
 };
-
-function matchingCoursesForLead(
-  lead: Lead | null | undefined,
-  active: readonly Course[]
-): Course[] {
-  if (lead?.campaignType === 'Members') {
-    return active.filter((course: Course) => isEventActivity(course));
-  }
-
-  const programs = (lead?.wishlistPrograms || [])
-    .map((item) =>
-      String(item || '')
-        .trim()
-        .toUpperCase()
-    )
-    .filter(Boolean);
-  if (!programs.length) {
-    return [...active];
-  }
-  return active.filter((course: Course) =>
-    programs.includes(normalizeCourseType(course.courseType).toUpperCase())
-  );
-}
-
-function imageExtension(mimeType: string): string {
-  if (mimeType === 'image/png') {
-    return 'png';
-  }
-  if (mimeType === 'image/webp') {
-    return 'webp';
-  }
-  return 'jpg';
-}
-
-function fileSafeName(value: string): string {
-  return (
-    String(value || '')
-      .trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '')
-      .slice(0, 60) || 'activity-image'
-  );
-}
 
 async function convertImageBlobToPng(blob: Blob): Promise<Blob | null> {
   if (blob.type === 'image/png') {
@@ -109,24 +72,6 @@ async function convertImageBlobToPng(blob: Blob): Promise<Blob | null> {
   }
 }
 
-function templateFromList(
-  courseType: string,
-  programCode: string,
-  templates: readonly CourseTemplate[]
-): string {
-  const keys = templateLookupKeys(courseType, programCode);
-  for (const key of keys) {
-    const match = templates.find(
-      (item) =>
-        item.courseType.trim().toUpperCase() === key.trim().toUpperCase()
-    );
-    if (match?.template) {
-      return match.template;
-    }
-  }
-  return templateForCourseType(courseType, programCode);
-}
-
 function courseToDraft(course: Course): CourseDraft {
   return {
     id: course.id,
@@ -140,20 +85,14 @@ function courseToDraft(course: Course): CourseDraft {
     clearImage: false,
     imageBase64: '',
     imageMimeType: '',
-    imagePreviewUrl: course.hasImage
-      ? course.imageUrl || '/course/' + encodeURIComponent(course.id) + '/image'
-      : ''
+    imagePreviewUrl: courseImageUrlForCourse(course)
   };
 }
 
 export function createCourseWorkspaceMethods() {
   return {
     activeCourses(this: SevaWorkspaceContext, lead?: Lead | null): Course[] {
-      const audience = lead?.campaignType || this.campaignType;
-      return this.courses.filter(
-        (course) =>
-          course.isActive && activityAudience(course.activityType) === audience
-      );
+      return activeCoursesForContext(this, lead);
     },
     pickerCourses(this: SevaWorkspaceContext, lead?: Lead | null): Course[] {
       const active = this.activeCourses(lead);
@@ -161,96 +100,58 @@ export function createCourseWorkspaceMethods() {
       return matching.length ? matching : active;
     },
     coursePickerOptions(this: SevaWorkspaceContext): Course[] {
-      const options = this.pickerCourses(this.coursePickerLead);
-      return this.coursePickerMode === 'imageShare'
-        ? options.filter((course: Course) => course.hasImage)
-        : options;
+      return coursePickerOptionsForContext(this);
     },
     coursePickerTitle(this: SevaWorkspaceContext): string {
-      return this.coursePickerMode === 'imageShare'
-        ? 'Share which image?'
-        : 'Select activity';
+      return coursePickerTitle(this.coursePickerMode);
     },
     courseImageUrl(this: SevaWorkspaceContext, course: Course): string {
-      if (!course.id || !course.hasImage) {
-        return '';
-      }
-      const stored = String(course.imageUrl || '').trim();
-      if (/^https:\/\//i.test(stored)) {
-        return stored;
-      }
-      return publicCourseImagePath(course.id);
+      return courseImageUrlForCourse(course);
     },
     courseImageDownloadName(
       this: SevaWorkspaceContext,
       course: Course
     ): string {
-      const type = String(course.imageUrl || '').toLowerCase();
-      const mimeType = type.endsWith('.png')
-        ? 'image/png'
-        : type.endsWith('.webp')
-          ? 'image/webp'
-          : 'image/jpeg';
-      return (
-        'aolf-' +
-        fileSafeName(this.courseDisplayTitle(course)) +
-        '.' +
-        imageExtension(mimeType)
+      return courseImageDownloadName(
+        this.courseDisplayTitle(course),
+        course.imageUrl || ''
       );
     },
     ipPrograms() {
-      return programsForCourseType('IP');
+      return ipPrograms();
     },
     isCourseDraftEvent(this: SevaWorkspaceContext): boolean {
-      return this.courseDraft.activityType === 'Event';
+      return isCourseDraftEvent(this);
     },
     showsProgramTabs(this: SevaWorkspaceContext): boolean {
-      return (
-        this.courseDraft.activityType === 'Course' &&
-        isIpCourseType(this.courseDraft.courseType)
-      );
+      return showsProgramTabs(this);
     },
     courseDisplayTitle(this: SevaWorkspaceContext, course: Course): string {
-      if (isEventActivity(course)) {
-        return course.title || 'Event';
-      }
-      if (isIpCourseType(course.courseType)) {
-        return formatCourseTitle(course.courseType, course.programCode);
-      }
-      const programs =
-        this.appConfig.programs.length > 0
-          ? this.appConfig.programs
-          : this.defaultPrograms;
-      const label =
-        programs.find((item) => item.code === course.courseType)?.label ||
-        course.courseType;
-      return label;
+      return courseDisplayTitle(this, course);
     },
     coursePickerSubtitle(this: SevaWorkspaceContext, course: Course): string {
-      if (isEventActivity(course)) {
-        return 'Event';
-      }
-      const displayTitle = this.courseDisplayTitle(course);
-      const title = String(course.title || '').trim();
-      return title && title !== displayTitle ? title : '';
+      return coursePickerSubtitle(this, course);
     },
     courseCardSubtitle(this: SevaWorkspaceContext, course: Course): string {
-      return isEventActivity(course)
-        ? 'Event · Members'
-        : (course.courseType || 'Course') + ' · Leads';
+      return courseCardSubtitle(course);
     },
     canOpenPublicCoursePage(
       this: SevaWorkspaceContext,
       course: Course
     ): boolean {
-      return isCourseActivity(course);
+      return canOpenPublicCoursePage(course);
     },
     templateForType(
       this: SevaWorkspaceContext,
       courseType: string,
       programCode = ''
     ): string {
-      return templateFromList(courseType, programCode, this.courseTemplates);
+      return templateFromList(
+        courseType,
+        programCode,
+        this.courseTemplates,
+        templateForCourseType
+      );
     },
     onActivityTypeChange(this: SevaWorkspaceContext): void {
       const nextType = this.courseDraft.activityType;

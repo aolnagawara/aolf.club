@@ -32,10 +32,10 @@ import { nanoid } from 'nanoid';
 import { ZodError } from 'zod';
 import {
   DEFAULT_CENTER_WHATSAPP_NUMBER,
-  defaultCourseTemplates,
   homepageProgramOffers,
   selectActivePublicCourses
 } from '../../../shared/contracts/courseDefaults.mjs';
+import { defaultCourseTemplates } from '../../../shared/contracts/courseTemplates.mjs';
 import { mockBootstrapData } from '../../../src/repositories/mock/mockData.js';
 import { mockCourses } from '../../../src/repositories/mock/mockCourses.js';
 import {
@@ -397,21 +397,6 @@ export async function getPublicCourses(programKey = '') {
     selected: page.selected ? toCourseResponse(page.selected) : null,
     courses: page.courses.map((course) => toCourseResponse(course)),
     selectionMatched: page.selectionMatched
-  };
-}
-
-export async function getPublicCourseImage(id: string) {
-  const course = getStore().courses.find((item) => item.id === id);
-  if (!course?.imageFileId) {
-    return null;
-  }
-  const image = await imageStore.download(course.imageFileId);
-  if (!image) {
-    return null;
-  }
-  return {
-    mimeType: course.imageMimeType || image.mimeType,
-    bytes: image.bytes
   };
 }
 

@@ -18,7 +18,9 @@ const COURSE = {
   programCode: '',
   whatsappTemplate:
     "_*HAPPINESS PROGRAM*_\n*Benefits You'll Experience:*\nRegister at https://aolt.in/874234",
-  hasImage: true
+  hasImage: true,
+  imageUrl:
+    'https://store123.public.blob.vercel-storage.com/courses/crsHpNcr01AbcDefGhiJK/image.png'
 };
 
 describe('public course HTML', () => {
@@ -36,7 +38,7 @@ describe('public course HTML', () => {
     expect(rendered.html).toContain('<article class="course-layout">');
     expect(rendered.html).toContain('<h1>HP</h1>');
     expect(rendered.html).toContain(
-      'src="https://aolf.club/course/crsHpNcr01AbcDefGhiJK/image"'
+      'src="' + COURSE.imageUrl + '"'
     );
     expect(rendered.html).toContain(
       '<link rel="canonical" href="https://aolf.club/courses?program=hp"'

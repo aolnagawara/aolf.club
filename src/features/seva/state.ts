@@ -7,7 +7,6 @@ import {
   DEFAULT_STATUS_ICON_MAP,
   getDefaultPrograms
 } from '../../config/campaignDefaults';
-import { templateForActivity } from '../../../shared/contracts/courseDefaults.mjs';
 
 export function createEmptyCourseDraft(courseType = 'HP') {
   return {
@@ -16,7 +15,7 @@ export function createEmptyCourseDraft(courseType = 'HP') {
     courseType,
     programCode: '',
     title: '',
-    whatsappTemplate: templateForActivity('Course', courseType),
+    whatsappTemplate: '',
     isActive: true,
     hasImage: false,
     clearImage: false,

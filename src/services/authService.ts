@@ -1,26 +1,33 @@
 import { env } from '../config/env';
 import type { AuthProvider } from '../repositories/contracts';
-import { MockAuthProvider } from '../repositories/mock/mockAuthProvider';
 import { HttpAuthProvider } from '../repositories/http/httpAuthProvider';
 import { ApiClient } from './apiClient';
 
-function createProvider(): AuthProvider {
+const httpAuthProvider = new HttpAuthProvider(
+  new ApiClient(env.VITE_API_BASE_URL || '')
+);
+let mockAuthProviderPromise: Promise<AuthProvider> | null = null;
+
+async function getProvider(): Promise<AuthProvider> {
   if (env.VITE_APP_MODE === 'api') {
-    return new HttpAuthProvider(new ApiClient(env.VITE_API_BASE_URL || ''));
+    return httpAuthProvider;
   }
-  return new MockAuthProvider();
+  if (!mockAuthProviderPromise) {
+    mockAuthProviderPromise = import(
+      '../repositories/mock/mockAuthProvider'
+    ).then(({ MockAuthProvider }) => new MockAuthProvider());
+  }
+  return mockAuthProviderPromise;
 }
 
-const authProvider = createProvider();
-
 export const authService = {
-  getSessionUser() {
-    return authProvider.getSessionUser();
+  async getSessionUser() {
+    return (await getProvider()).getSessionUser();
   },
-  signIn() {
-    return authProvider.signIn();
+  async signIn() {
+    return (await getProvider()).signIn();
   },
-  signOut() {
-    return authProvider.signOut();
+  async signOut() {
+    return (await getProvider()).signOut();
   }
 };

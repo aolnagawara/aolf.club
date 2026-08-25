@@ -1,6 +1,5 @@
 import { env } from '../config/env';
 import type { LeadRepository } from '../repositories/contracts';
-import { MockLeadRepository } from '../repositories/mock/mockLeadRepository';
 import { HttpLeadRepository } from '../repositories/http/httpLeadRepository';
 import { ApiClient } from './apiClient';
 import type {
@@ -10,29 +9,37 @@ import type {
   UpdateLeadRequest
 } from '../../shared/contracts/appContracts';
 
-function createRepository(): LeadRepository {
+const httpLeadRepository = new HttpLeadRepository(
+  new ApiClient(env.VITE_API_BASE_URL || '')
+);
+let mockLeadRepositoryPromise: Promise<LeadRepository> | null = null;
+
+async function getRepository(): Promise<LeadRepository> {
   if (env.VITE_APP_MODE === 'api') {
-    return new HttpLeadRepository(new ApiClient(env.VITE_API_BASE_URL || ''));
+    return httpLeadRepository;
   }
-  return new MockLeadRepository();
+  if (!mockLeadRepositoryPromise) {
+    mockLeadRepositoryPromise = import(
+      '../repositories/mock/mockLeadRepository'
+    ).then(({ MockLeadRepository }) => new MockLeadRepository());
+  }
+  return mockLeadRepositoryPromise;
 }
 
-const leadRepository = createRepository();
-
 export const leadService = {
-  getBootstrap(campaignId?: string | null) {
-    return leadRepository.getBootstrap(campaignId);
+  async getBootstrap(campaignId?: string | null) {
+    return (await getRepository()).getBootstrap(campaignId);
   },
-  assignMembers(payload: AssignMembersRequest) {
-    return leadRepository.assignMembers(payload);
+  async assignMembers(payload: AssignMembersRequest) {
+    return (await getRepository()).assignMembers(payload);
   },
-  createLead(payload: CreateLeadRequest) {
-    return leadRepository.createLead(payload);
+  async createLead(payload: CreateLeadRequest) {
+    return (await getRepository()).createLead(payload);
   },
-  updateLead(payload: UpdateLeadRequest) {
-    return leadRepository.updateLead(payload);
+  async updateLead(payload: UpdateLeadRequest) {
+    return (await getRepository()).updateLead(payload);
   },
-  deleteLead(payload: DeleteLeadRequest) {
-    return leadRepository.deleteLead(payload);
+  async deleteLead(payload: DeleteLeadRequest) {
+    return (await getRepository()).deleteLead(payload);
   }
 };

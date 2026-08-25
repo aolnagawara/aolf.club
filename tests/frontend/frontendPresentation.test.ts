@@ -78,7 +78,7 @@ describe('AOLF Connect frontend presentation', () => {
       source: '/courses',
       destination: '/api/courses?public=1'
     });
-    expect(vercelConfig.rewrites).toContainEqual({
+    expect(vercelConfig.rewrites).not.toContainEqual({
       source: '/course/:id/image',
       destination: '/api/courses?asset=image&id=:id'
     });
@@ -132,6 +132,9 @@ describe('AOLF Connect frontend presentation', () => {
     expect(mainModule).not.toContain('MessageCircle');
     expect(mainModule).toContain('Paperclip');
     expect(mainModule).toContain('Download');
+    expect(mainModule).toContain('ExternalLink');
+    expect(mainModule).toContain('Pencil');
+    expect(mainModule).toContain('Power');
     expect(mainModule).toContain('UserRoundPlus');
     expect(sevaPage).toContain('x-show="canOpenWhatsapp(lead)"');
     expect(sevaPage).toContain(':disabled="!cleanPhone(lead.mobile)"');
@@ -141,12 +144,23 @@ describe('AOLF Connect frontend presentation', () => {
     expect(sevaPage).toContain(
       'class="mx-auto max-h-96 max-w-full rounded-lg bg-slate-100 object-contain"'
     );
+    expect(sevaPage).toContain(':src="course.imageUrl"');
+    expect(sevaPage).not.toContain("course.imageUrl || ('/course/'");
     expect(sevaPage).not.toContain('aspect-square w-full');
     expect(sevaPage).not.toContain('type="month"');
     expect(sevaPage).toContain('showsProgramTabs()');
     expect(sevaPage).toContain('type="file"');
     expect(sevaPage).toContain('@click="clearCourseImage()"');
     expect(sevaPage).toContain('@click="downloadCourseImage(course)"');
+    expect(sevaPage).toContain('aria-label="Edit activity"');
+    expect(sevaPage).toContain('data-lucide="pencil"');
+    expect(sevaPage).toContain('aria-label="Open public page"');
+    expect(sevaPage).toContain('data-lucide="external-link"');
+    expect(sevaPage).toContain('aria-label="Download image"');
+    expect(sevaPage).toContain('data-lucide="download"');
+    expect(sevaPage).toContain('data-lucide="power"');
+    expect(sevaPage).toContain('aria-label="Delete activity"');
+    expect(sevaPage).toContain('data-lucide="trash-2"');
     expect(sevaPage).toContain('WhatsApp template');
     expect(sevaPage).toContain('x-model="courseDraft.title"');
     expect(sevaPage).not.toContain('x-model="courseDraft.courseCode"');

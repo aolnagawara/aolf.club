@@ -1,6 +1,5 @@
 import { env } from '../config/env';
 import type { CourseRepository } from '../repositories/contracts';
-import { MockCourseRepository } from '../repositories/mock/mockCourseRepository';
 import { HttpCourseRepository } from '../repositories/http/httpCourseRepository';
 import { ApiClient } from './apiClient';
 import type {
@@ -9,26 +8,34 @@ import type {
   UpdateCourseRequest
 } from '../../shared/contracts/appContracts';
 
-function createRepository(): CourseRepository {
+const httpCourseRepository = new HttpCourseRepository(
+  new ApiClient(env.VITE_API_BASE_URL || '')
+);
+let mockCourseRepositoryPromise: Promise<CourseRepository> | null = null;
+
+async function getRepository(): Promise<CourseRepository> {
   if (env.VITE_APP_MODE === 'api') {
-    return new HttpCourseRepository(new ApiClient(env.VITE_API_BASE_URL || ''));
+    return httpCourseRepository;
   }
-  return new MockCourseRepository();
+  if (!mockCourseRepositoryPromise) {
+    mockCourseRepositoryPromise = import(
+      '../repositories/mock/mockCourseRepository'
+    ).then(({ MockCourseRepository }) => new MockCourseRepository());
+  }
+  return mockCourseRepositoryPromise;
 }
 
-const courseRepository = createRepository();
-
 export const courseService = {
-  listCourses() {
-    return courseRepository.listCourses();
+  async listCourses() {
+    return (await getRepository()).listCourses();
   },
-  createCourse(payload: CreateCourseRequest) {
-    return courseRepository.createCourse(payload);
+  async createCourse(payload: CreateCourseRequest) {
+    return (await getRepository()).createCourse(payload);
   },
-  updateCourse(payload: UpdateCourseRequest) {
-    return courseRepository.updateCourse(payload);
+  async updateCourse(payload: UpdateCourseRequest) {
+    return (await getRepository()).updateCourse(payload);
   },
-  deleteCourse(payload: DeleteCourseRequest) {
-    return courseRepository.deleteCourse(payload);
+  async deleteCourse(payload: DeleteCourseRequest) {
+    return (await getRepository()).deleteCourse(payload);
   }
 };

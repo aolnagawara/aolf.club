@@ -3,8 +3,7 @@ import type { ApiResponse } from '../../../api/_lib/http/responses.js';
 
 const { mockStore } = vi.hoisted(() => ({
   mockStore: {
-    getPublicCourses: vi.fn(),
-    getPublicCourseImage: vi.fn()
+    getPublicCourses: vi.fn()
   }
 }));
 
@@ -50,41 +49,6 @@ function createResponse() {
 describe('public course handler', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-  });
-
-  it('serves image bytes when asset=image', async () => {
-    const bytes = Uint8Array.from([137, 80, 78, 71]);
-    mockStore.getPublicCourseImage.mockResolvedValue({
-      mimeType: 'image/png',
-      bytes
-    });
-    const { response, state } = createResponse();
-    await publicCourseHandler(
-      {
-        method: 'GET',
-        headers: { host: 'aolf.club' },
-        query: { id: COURSE_ID, asset: 'image' }
-      },
-      response
-    );
-    expect(state.statusCode).toBe(200);
-    expect(state.headers['content-type']).toBe('image/png');
-    expect(state.endBody).toBe(bytes);
-  });
-
-  it('returns 404 when the image is missing', async () => {
-    mockStore.getPublicCourseImage.mockResolvedValue(null);
-    const { response, state } = createResponse();
-    await publicCourseHandler(
-      {
-        method: 'GET',
-        headers: { host: 'aolf.club' },
-        query: { id: COURSE_ID, asset: 'image' }
-      },
-      response
-    );
-    expect(state.statusCode).toBe(404);
-    expect(state.endBody).toBe('Image not found.');
   });
 
   it('renders a selected program on the unified courses page', async () => {

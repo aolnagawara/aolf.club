@@ -1,8 +1,4 @@
-export const DEFAULT_COURSE_WHATSAPP_TEMPLATE: string;
-export const DEFAULT_EVENT_WHATSAPP_TEMPLATE: string;
 export const DEFAULT_CENTER_WHATSAPP_NUMBER: string;
-export const DEFAULT_HP_WHATSAPP_TEMPLATE: string;
-export const DEFAULT_COURSE_TEMPLATE_TYPES: readonly string[];
 export const IP_COURSE_PROGRAMS: readonly {
   readonly code: string;
   readonly label: string;
@@ -26,20 +22,6 @@ export function programLabelFor(
   programCode?: string
 ): string;
 export function courseSlotKey(courseType: string, programCode?: string): string;
-export function templateLookupKeys(
-  courseType: string,
-  programCode?: string
-): string[];
-export function templateForCourseType(
-  courseType: string,
-  programCode?: string
-): string;
-export function templateForActivity(
-  activityType: string,
-  courseType?: string,
-  programCode?: string
-): string;
-export function defaultCourseTemplateRows(): string[][];
 export function formatCourseTitle(
   courseType: string,
   programCode?: string
@@ -50,7 +32,6 @@ export function formatActivityTitle(activity?: {
   courseType?: string;
   programCode?: string;
 }): string;
-export function publicCourseImagePath(id: string): string;
 export function publicCourseProgramKey(
   courseType: string,
   programCode?: string
@@ -67,10 +48,6 @@ export function selectActivePublicCourses<
   courses: T[],
   programKey?: string
 ): { selected: T | null; courses: T[]; selectionMatched: boolean };
-export function defaultCourseTemplates(): Array<{
-  courseType: string;
-  template: string;
-}>;
 export const HOMEPAGE_PROGRAM_OFFERS: readonly {
   readonly code: string;
   readonly label: string;

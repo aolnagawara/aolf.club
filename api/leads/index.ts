@@ -1,5 +1,9 @@
 import type { ApiRequest, ApiResponse } from '../_lib/http/responses.js';
 import { sendApiError } from '../_lib/http/errors.js';
+import {
+  firstQueryValue,
+  methodNotAllowed
+} from '../_lib/http/request.js';
 
 async function loadSessionUser(req: ApiRequest) {
   const { readSessionUser } = await import('../_lib/auth/session.js');
@@ -11,33 +15,10 @@ async function loadDataStore() {
   return getApiDataStore();
 }
 
-function firstQueryValue(req: ApiRequest, name: string): string {
-  const value = req.query[name];
-  if (Array.isArray(value)) {
-    return String(value[0] || '');
-  }
-  return String(value || '');
-}
-
 function requestBody(req: ApiRequest): Record<string, unknown> {
   return typeof req.body === 'object' && req.body && !Array.isArray(req.body)
     ? (req.body as Record<string, unknown>)
     : {};
-}
-
-function methodNotAllowed(
-  res: ApiResponse,
-  context: Parameters<typeof sendApiError>[2],
-  allow: string
-) {
-  res.setHeader('Allow', allow);
-  return sendApiError(res, new Error('Method not allowed.'), context, {
-    status: 405,
-    code: 'METHOD_NOT_ALLOWED',
-    message: 'Method not allowed.',
-    retryable: false,
-    category: 'method_not_allowed'
-  });
 }
 
 function contextFor(req: ApiRequest, action: string) {

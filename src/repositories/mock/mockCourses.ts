@@ -1,10 +1,10 @@
 import type { Course } from '../../../shared/contracts/appContracts.js';
+import { formatCourseTitle } from '../../../shared/contracts/courseDefaults.mjs';
 import {
   DEFAULT_EVENT_WHATSAPP_TEMPLATE,
   DEFAULT_HP_WHATSAPP_TEMPLATE,
-  DEFAULT_COURSE_WHATSAPP_TEMPLATE,
-  formatCourseTitle
-} from '../../../shared/contracts/courseDefaults.mjs';
+  DEFAULT_COURSE_WHATSAPP_TEMPLATE
+} from '../../../shared/contracts/courseTemplates.mjs';
 
 export const mockCourses: Course[] = [
   {

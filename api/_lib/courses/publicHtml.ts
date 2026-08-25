@@ -33,12 +33,10 @@ function escapeHtml(value: string): string {
 }
 
 function absoluteImageUrl(origin: string, course: PublicCourseView): string {
+  void origin;
   const stored = String(course.imageUrl || '').trim();
   if (/^https:\/\//i.test(stored)) {
     return stored;
-  }
-  if (course.hasImage || stored.startsWith('/')) {
-    return `${origin}/course/${encodeURIComponent(course.id)}/image`;
   }
   return '';
 }

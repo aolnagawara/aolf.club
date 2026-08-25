@@ -9,6 +9,7 @@ import { getTabName } from '../_lib/sheets/table.js';
 import type { AuthorizationDiagnostics } from '../_lib/sheets/store.js';
 import type { SessionUser } from '../_lib/auth/session.js';
 import { sendApiError } from '../_lib/http/errors.js';
+import { methodNotAllowed } from '../_lib/http/request.js';
 
 const MAX_HEALTH_DATA_ROWS = 200;
 
@@ -219,14 +220,7 @@ export function createSheetsHealthHandler(
     };
 
     if (req.method !== 'GET') {
-      res.setHeader('Allow', 'GET');
-      return sendApiError(res, new Error('Method not allowed.'), context, {
-        status: 405,
-        code: 'METHOD_NOT_ALLOWED',
-        message: 'Method not allowed.',
-        retryable: false,
-        category: 'method_not_allowed'
-      });
+      return methodNotAllowed(res, context, 'GET');
     }
 
     let operation: SheetsOperation | null = null;

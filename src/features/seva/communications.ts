@@ -5,12 +5,15 @@ import type {
 } from '../../../shared/contracts/appContracts';
 import { DEFAULT_WHATSAPP_COUNTRY_CODE } from '../../config/campaignDefaults';
 import {
-  DEFAULT_COURSE_WHATSAPP_TEMPLATE,
-  DEFAULT_EVENT_WHATSAPP_TEMPLATE,
   formatActivityTitle,
   isEventActivity
 } from '../../../shared/contracts/courseDefaults.mjs';
 import { fillCourseWhatsappTemplate } from '../../../shared/contracts/courseMatching';
+
+const FALLBACK_COURSE_WHATSAPP_TEMPLATE =
+  'Hi {name}, you are invited to {course}.';
+const FALLBACK_EVENT_WHATSAPP_TEMPLATE =
+  'Hi {name}, you are invited to {course}.\n\nPlease reply here for details.';
 
 function compactMessage(message: string): string {
   return String(message || '')
@@ -71,7 +74,7 @@ export function createCommunicationMethods() {
         if (isEventActivity(course)) {
           message = compactMessage(
             fillCourseWhatsappTemplate(
-              course.whatsappTemplate || DEFAULT_EVENT_WHATSAPP_TEMPLATE,
+              course.whatsappTemplate || FALLBACK_EVENT_WHATSAPP_TEMPLATE,
               {
                 name: lead.name || 'Friend',
                 course: formatActivityTitle(course),
@@ -83,7 +86,7 @@ export function createCommunicationMethods() {
         } else {
           message = compactMessage(
             fillCourseWhatsappTemplate(
-              course.whatsappTemplate || DEFAULT_COURSE_WHATSAPP_TEMPLATE,
+              course.whatsappTemplate || FALLBACK_COURSE_WHATSAPP_TEMPLATE,
               {
                 name: lead.name || 'Friend',
                 course: course.title || '',

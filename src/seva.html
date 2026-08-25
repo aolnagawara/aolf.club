@@ -717,7 +717,7 @@
                 </div>
                 <img
                   x-show="course.hasImage"
-                  :src="course.imageUrl || ('/course/' + course.id + '/image')"
+                  :src="course.imageUrl"
                   alt=""
                   class="mx-auto max-h-96 max-w-full rounded-lg bg-slate-100 object-contain"
                 />
@@ -725,39 +725,50 @@
                   <button
                     type="button"
                     @click="openCourseEditor(course)"
-                    class="rounded-lg border border-slate-200 px-2 py-1 text-[11px] text-slate-700"
+                    class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-700"
+                    aria-label="Edit activity"
+                    title="Edit activity"
                   >
-                    Edit
+                    <i data-lucide="pencil" class="h-3.5 w-3.5"></i>
                   </button>
                   <button
                     type="button"
                     x-show="canOpenPublicCoursePage(course)"
                     @click="openPublicCoursePage(course)"
-                    class="rounded-lg border border-slate-200 px-2 py-1 text-[11px] text-slate-700"
+                    class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-700"
+                    aria-label="Open public page"
+                    title="Open public page"
                   >
-                    Open public page
+                    <i data-lucide="external-link" class="h-3.5 w-3.5"></i>
                   </button>
                   <button
                     type="button"
                     x-show="course.hasImage"
                     @click="downloadCourseImage(course)"
-                    class="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-[11px] text-slate-700"
+                    class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-700"
+                    aria-label="Download image"
+                    title="Download image"
                   >
-                    <i data-lucide="download" class="w-3.5 h-3.5"></i>
-                    Download image
+                    <i data-lucide="download" class="h-3.5 w-3.5"></i>
                   </button>
                   <button
                     type="button"
                     @click="toggleCourseActive(course)"
-                    class="rounded-lg border border-slate-200 px-2 py-1 text-[11px] text-slate-700"
-                    x-text="course.isActive ? 'Deactivate' : 'Activate'"
-                  ></button>
+                    class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200"
+                    :class="course.isActive ? 'text-amber-700' : 'text-emerald-700'"
+                    :aria-label="course.isActive ? 'Deactivate activity' : 'Activate activity'"
+                    :title="course.isActive ? 'Deactivate activity' : 'Activate activity'"
+                  >
+                    <i data-lucide="power" class="h-3.5 w-3.5"></i>
+                  </button>
                   <button
                     type="button"
                     @click="deleteCourse(course)"
-                    class="rounded-lg border border-rose-200 px-2 py-1 text-[11px] text-rose-700"
+                    class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-rose-200 text-rose-700"
+                    aria-label="Delete activity"
+                    title="Delete activity"
                   >
-                    Delete
+                    <i data-lucide="trash-2" class="h-3.5 w-3.5"></i>
                   </button>
                 </div>
               </article>

@@ -1,5 +1,10 @@
 import type { ApiRequest, ApiResponse } from '../_lib/http/responses.js';
 import { sendApiError } from '../_lib/http/errors.js';
+import {
+  firstQueryValue,
+  headerValue,
+  methodNotAllowed
+} from '../_lib/http/request.js';
 
 async function loadDataStore() {
   const { getApiDataStore } = await import('../_lib/storage/dataStore.js');
@@ -9,22 +14,6 @@ async function loadDataStore() {
 async function loadSessionUser(req: ApiRequest) {
   const { readSessionUser } = await import('../_lib/auth/session.js');
   return readSessionUser(req);
-}
-
-function firstQueryValue(req: ApiRequest, name: string): string {
-  const value = req.query[name];
-  if (Array.isArray(value)) {
-    return String(value[0] || '');
-  }
-  return String(value || '');
-}
-
-function headerValue(headers: ApiRequest['headers'], name: string): string {
-  const value = headers[name] ?? headers[name.toLowerCase()];
-  if (Array.isArray(value)) {
-    return String(value[0] || '');
-  }
-  return String(value || '');
 }
 
 function getRequestOrigin(req: ApiRequest): string {
@@ -42,48 +31,6 @@ function getRequestOrigin(req: ApiRequest): string {
   return proto + '://' + host;
 }
 
-async function servePublicCourseImage(
-  req: ApiRequest,
-  res: ApiResponse,
-  id: string
-) {
-  const context = {
-    route: 'GET /api/courses?asset=image',
-    action: 'serve_public_course_image',
-    startedAt: Date.now(),
-    messages: { internal: 'Image not found.' }
-  };
-  res.setHeader('Cache-Control', 'public, max-age=60');
-  if (req.method && req.method !== 'GET' && req.method !== 'HEAD') {
-    res.setHeader('Allow', 'GET, HEAD');
-    return sendApiError(res, new Error('Method not allowed.'), context, {
-      status: 405,
-      code: 'METHOD_NOT_ALLOWED',
-      message: 'Method not allowed.',
-      retryable: false,
-      category: 'method_not_allowed'
-    });
-  }
-  if (!id) {
-    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-    return res.status(404).end('Image not found.');
-  }
-
-  try {
-    const store = await loadDataStore();
-    const image = await store.getPublicCourseImage(id);
-    if (!image) {
-      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-      return res.status(404).end('Image not found.');
-    }
-    res.setHeader('Content-Type', image.mimeType || 'image/jpeg');
-    return res.status(200).end(image.bytes);
-  } catch {
-    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-    return res.status(404).end('Image not found.');
-  }
-}
-
 async function servePublicCoursesPage(req: ApiRequest, res: ApiResponse) {
   const context = {
     route: 'GET /api/courses?public=1',
@@ -92,14 +39,7 @@ async function servePublicCoursesPage(req: ApiRequest, res: ApiResponse) {
     messages: { internal: 'Unable to load courses.' }
   };
   if (req.method && req.method !== 'GET' && req.method !== 'HEAD') {
-    res.setHeader('Allow', 'GET, HEAD');
-    return sendApiError(res, new Error('Method not allowed.'), context, {
-      status: 405,
-      code: 'METHOD_NOT_ALLOWED',
-      message: 'Method not allowed.',
-      retryable: false,
-      category: 'method_not_allowed'
-    });
+    return methodNotAllowed(res, context, 'GET, HEAD');
   }
 
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
@@ -140,11 +80,7 @@ async function servePublicCoursesPage(req: ApiRequest, res: ApiResponse) {
 export default async function handler(req: ApiRequest, res: ApiResponse) {
   const id = firstQueryValue(req, 'id');
   const catalog = firstQueryValue(req, 'catalog');
-  const asset = firstQueryValue(req, 'asset');
   const isPublicPage = firstQueryValue(req, 'public') === '1';
-  if (asset === 'image') {
-    return servePublicCourseImage(req, res, id);
-  }
   if (isPublicPage) {
     return servePublicCoursesPage(req, res);
   }
@@ -183,24 +119,10 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
 
   if (isMutate) {
     if (!id) {
-      res.setHeader('Allow', 'GET, POST, PUT, DELETE');
-      return sendApiError(res, new Error('Method not allowed.'), context, {
-        status: 405,
-        code: 'METHOD_NOT_ALLOWED',
-        message: 'Method not allowed.',
-        retryable: false,
-        category: 'method_not_allowed'
-      });
+      return methodNotAllowed(res, context, 'GET, POST, PUT, DELETE');
     }
   } else if (req.method !== 'GET' && req.method !== 'POST') {
-    res.setHeader('Allow', 'GET, POST, PUT, DELETE');
-    return sendApiError(res, new Error('Method not allowed.'), context, {
-      status: 405,
-      code: 'METHOD_NOT_ALLOWED',
-      message: 'Method not allowed.',
-      retryable: false,
-      category: 'method_not_allowed'
-    });
+    return methodNotAllowed(res, context, 'GET, POST, PUT, DELETE');
   }
 
   try {

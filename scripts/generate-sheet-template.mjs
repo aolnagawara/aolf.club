@@ -5,9 +5,9 @@ import { SHEET_HEADERS } from '../shared/contracts/sheetContract.mjs';
 import {
   DEFAULT_EVENT_WHATSAPP_TEMPLATE,
   defaultCourseTemplateRows,
-  DEFAULT_HP_WHATSAPP_TEMPLATE,
-  formatCourseTitle
-} from '../shared/contracts/courseDefaults.mjs';
+  DEFAULT_HP_WHATSAPP_TEMPLATE
+} from '../shared/contracts/courseTemplates.mjs';
+import { formatCourseTitle } from '../shared/contracts/courseDefaults.mjs';
 
 const outputPath = resolve(
   process.cwd(),

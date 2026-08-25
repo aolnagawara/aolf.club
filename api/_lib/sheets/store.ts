@@ -40,10 +40,10 @@ import { nanoid } from 'nanoid';
 import { ZodError } from 'zod';
 import {
   DEFAULT_CENTER_WHATSAPP_NUMBER,
-  defaultCourseTemplates,
   homepageProgramOffers,
   selectActivePublicCourses
 } from '../../../shared/contracts/courseDefaults.mjs';
+import { defaultCourseTemplates } from '../../../shared/contracts/courseTemplates.mjs';
 import { normalizeEmail } from '../http/normalization.js';
 import {
   applyCourseDefaults,
@@ -991,18 +991,6 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
     return selectActivePublicCourses(courses, programKey);
   }
 
-  async function getCourseById(
-    operation: SheetsOperation,
-    id: string
-  ): Promise<CourseRecord | null> {
-    const { headers, rows } = await readCourseRows(operation);
-    const courses = rows
-      .slice(1)
-      .map((row, index) => parseCourseAt(headers, rows, index + 1))
-      .filter((course): course is CourseRecord => Boolean(course));
-    return courses.find((course) => course.id === id) || null;
-  }
-
   function assertUniqueCourseSlot(
     rows: string[][],
     headers: string[],
@@ -1162,21 +1150,6 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
       success: true,
       course: { id: payload.id }
     });
-  }
-
-  async function loadPublicCourseImage(id: string, operation: SheetsOperation) {
-    const course = await getCourseById(operation, id);
-    if (!course?.imageFileId) {
-      return null;
-    }
-    const image = await imageStore.download(course.imageFileId);
-    if (!image) {
-      return null;
-    }
-    return {
-      mimeType: course.imageMimeType || image.mimeType,
-      bytes: image.bytes
-    };
   }
 
   return {
@@ -1367,12 +1340,6 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
           selectionMatched: page.selectionMatched
         };
       });
-    },
-
-    async getPublicCourseImage(id: string, operation?: SheetsOperation) {
-      return withStoreOperation(operation, async (activeOperation) =>
-        loadPublicCourseImage(id, activeOperation)
-      );
     },
 
     async listPublicHomepageOffers(operation?: SheetsOperation) {
