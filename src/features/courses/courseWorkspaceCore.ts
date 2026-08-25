@@ -52,10 +52,10 @@ export function coursePickerOptionsForContext(
 ): Course[] {
   const active = activeCoursesForContext(context, context.coursePickerLead);
   const matching = matchingCoursesForLead(context.coursePickerLead, active);
-  const options = matching.length ? matching : active;
-  return context.coursePickerMode === 'imageShare'
-    ? options.filter((course: Course) => course.hasImage)
-    : options;
+  if (context.coursePickerMode === 'imageShare') {
+    return matching.filter((course: Course) => course.hasImage);
+  }
+  return matching.length ? matching : active;
 }
 
 export function coursePickerTitle(mode: string): string {

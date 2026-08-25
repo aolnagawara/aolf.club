@@ -580,6 +580,46 @@ describe('Seva workspace lead lifecycle', () => {
     );
   });
 
+  it('does not share an image when no activity image matches the lead', async () => {
+    vi.stubGlobal('window', {
+      appRuntime: {
+        listCourses: vi.fn().mockResolvedValue({
+          success: true,
+          courses: [
+            createCourseFixture({
+              courseType: 'DSN',
+              title: 'DSN',
+              hasImage: true,
+              imageUrl:
+                'https://store123.public.blob.vercel-storage.com/courses/crsDsn01AbcDefGhiJK/image.jpg'
+            })
+          ],
+          templates: []
+        })
+      }
+    });
+    const app = sevaWorkspace();
+    const shareCourseImage = vi
+      .spyOn(app, 'shareCourseImage')
+      .mockResolvedValue(true);
+    const lead = app.normalizeLead({
+      id: 'leadNoImageMatch01Ab',
+      mobile: '9876543210',
+      name: 'Aarav',
+      wishlistPrograms: ['HP'],
+      campaignId: 'cmpLeads01AbcDefGhIJk',
+      campaignType: 'Leads'
+    });
+
+    await app.openImageShareForLead(lead);
+
+    expect(shareCourseImage).not.toHaveBeenCalled();
+    expect(app.isCoursePickerOpen).toBe(false);
+    expect(app.actionMessage).toBe(
+      'No matching activity image is available to share.'
+    );
+  });
+
   it.each([
     {
       campaignType: 'Leads' as const,

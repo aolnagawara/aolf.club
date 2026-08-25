@@ -602,11 +602,15 @@ export function createCourseWorkspaceMethods() {
       }
 
       const matching = matchingCoursesForLead(lead, activeWithImages);
-      const candidates = matching.length ? matching : activeWithImages;
+      if (!matching.length) {
+        this.actionMessage =
+          'No matching activity image is available to share.';
+        return;
+      }
       const unique =
-        candidates.length === 1
-          ? candidates[0]
-          : findUniqueActiveCourse(lead.wishlistPrograms, candidates);
+        matching.length === 1
+          ? matching[0]
+          : findUniqueActiveCourse(lead.wishlistPrograms, matching);
       if (unique) {
         await this.shareCourseImage(unique);
         return;
