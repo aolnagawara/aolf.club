@@ -7,7 +7,7 @@ import {
   it,
   vi
 } from 'vitest';
-import handler from '../../../api/auth/signout.js';
+import handler from '../../../api/auth/index.js';
 import type {
   ApiRequest,
   ApiResponse
@@ -73,7 +73,11 @@ describe('auth sign-out endpoint', () => {
   });
 
   it('clears the session cookie for POST requests', async () => {
-    const request: ApiRequest = { method: 'POST', headers: {}, query: {} };
+    const request: ApiRequest = {
+      method: 'POST',
+      headers: {},
+      query: { action: 'signout' }
+    };
     const { response, state, headers } = createResponse();
 
     await handler(request, response);
@@ -86,7 +90,11 @@ describe('auth sign-out endpoint', () => {
 
   it('rejects other methods without clearing the cookie', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
-    const request: ApiRequest = { method: 'GET', headers: {}, query: {} };
+    const request: ApiRequest = {
+      method: 'GET',
+      headers: {},
+      query: { action: 'signout' }
+    };
     const { response, state, headers } = createResponse();
 
     await handler(request, response);

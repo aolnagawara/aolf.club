@@ -13,7 +13,7 @@ describe('auth provider sign-out', () => {
 
     await provider.signOut();
 
-    expect(post).toHaveBeenCalledWith('/api/auth/signout', {});
+    expect(post).toHaveBeenCalledWith('/api/auth?action=signout', {});
   });
 
   it('clears and can restore the mock session', async () => {

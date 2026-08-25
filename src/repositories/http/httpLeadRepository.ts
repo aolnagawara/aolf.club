@@ -39,7 +39,7 @@ export class HttpLeadRepository implements LeadRepository {
   ): Promise<AssignMembersResponse> {
     const parsed = AssignMembersRequestSchema.parse(payload);
     const response = await this.apiClient.post<unknown>(
-      '/api/leads/assign',
+      '/api/leads?action=assign',
       parsed
     );
     return AssignMembersResponseSchema.parse(response);
@@ -48,7 +48,7 @@ export class HttpLeadRepository implements LeadRepository {
   async updateLead(payload: UpdateLeadRequest): Promise<UpdateLeadResponse> {
     const parsed = UpdateLeadRequestSchema.parse(payload);
     const response = await this.apiClient.put<unknown>(
-      '/api/leads/' + encodeURIComponent(parsed.id),
+      '/api/leads?id=' + encodeURIComponent(parsed.id),
       parsed
     );
     return UpdateLeadResponseSchema.parse(response);
@@ -63,7 +63,7 @@ export class HttpLeadRepository implements LeadRepository {
   async deleteLead(payload: DeleteLeadRequest): Promise<DeleteLeadResponse> {
     const parsed = DeleteLeadRequestSchema.parse(payload);
     const response = await this.apiClient.delete<unknown>(
-      '/api/leads/' + encodeURIComponent(parsed.id),
+      '/api/leads?id=' + encodeURIComponent(parsed.id),
       parsed
     );
     return DeleteLeadResponseSchema.parse(response);

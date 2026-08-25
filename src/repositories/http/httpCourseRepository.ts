@@ -38,7 +38,7 @@ export class HttpCourseRepository implements CourseRepository {
   ): Promise<UpdateCourseResponse> {
     const parsed = UpdateCourseRequestSchema.parse(payload);
     const response = await this.apiClient.put<unknown>(
-      '/api/courses/' + encodeURIComponent(parsed.id),
+      '/api/courses?id=' + encodeURIComponent(parsed.id),
       parsed
     );
     return UpdateCourseResponseSchema.parse(response);
@@ -49,7 +49,7 @@ export class HttpCourseRepository implements CourseRepository {
   ): Promise<DeleteCourseResponse> {
     const parsed = DeleteCourseRequestSchema.parse(payload);
     const response = await this.apiClient.delete<unknown>(
-      '/api/courses/' + encodeURIComponent(parsed.id),
+      '/api/courses?id=' + encodeURIComponent(parsed.id),
       parsed
     );
     return DeleteCourseResponseSchema.parse(response);

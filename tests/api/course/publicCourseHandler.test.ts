@@ -12,7 +12,7 @@ vi.mock('../../../api/_lib/storage/dataStore.js', () => ({
   getApiDataStore: () => mockStore
 }));
 
-import publicCourseHandler from '../../../api/public-courses.js';
+import publicCourseHandler from '../../../api/courses/index.js';
 
 const COURSE_ID = 'crsHpNcr01AbcDefGhiJK';
 
@@ -108,7 +108,7 @@ describe('public course handler', () => {
       {
         method: 'GET',
         headers: { host: 'aolf.club' },
-        query: { program: 'hp' }
+        query: { public: '1', program: 'hp' }
       },
       response
     );

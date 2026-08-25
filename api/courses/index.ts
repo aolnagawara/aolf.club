@@ -2,6 +2,10 @@ import type { ApiRequest, ApiResponse } from '../_lib/http/responses.js';
 import { readSessionUser } from '../_lib/auth/session.js';
 import { getApiDataStore } from '../_lib/storage/dataStore.js';
 import { sendApiError } from '../_lib/http/errors.js';
+import {
+  renderPublicCourseHtml,
+  toPublicCourseView
+} from '../_lib/courses/publicHtml.js';
 
 function firstQueryValue(req: ApiRequest, name: string): string {
   const value = req.query[name];
@@ -11,9 +15,127 @@ function firstQueryValue(req: ApiRequest, name: string): string {
   return String(value || '');
 }
 
+function headerValue(headers: ApiRequest['headers'], name: string): string {
+  const value = headers[name] ?? headers[name.toLowerCase()];
+  if (Array.isArray(value)) {
+    return String(value[0] || '');
+  }
+  return String(value || '');
+}
+
+function getRequestOrigin(req: ApiRequest): string {
+  const forwardedHost = headerValue(req.headers, 'x-forwarded-host')
+    .split(',')[0]
+    .trim();
+  const host = (
+    forwardedHost ||
+    headerValue(req.headers, 'host').split(',')[0].trim() ||
+    'aolf.club'
+  ).replace(/\/$/, '');
+  const proto =
+    headerValue(req.headers, 'x-forwarded-proto').split(',')[0].trim() ||
+    'https';
+  return proto + '://' + host;
+}
+
+async function servePublicCourseImage(
+  req: ApiRequest,
+  res: ApiResponse,
+  id: string
+) {
+  const context = {
+    route: 'GET /api/courses?asset=image',
+    action: 'serve_public_course_image',
+    startedAt: Date.now(),
+    messages: { internal: 'Image not found.' }
+  };
+  res.setHeader('Cache-Control', 'public, max-age=60');
+  if (req.method && req.method !== 'GET' && req.method !== 'HEAD') {
+    res.setHeader('Allow', 'GET, HEAD');
+    return sendApiError(res, new Error('Method not allowed.'), context, {
+      status: 405,
+      code: 'METHOD_NOT_ALLOWED',
+      message: 'Method not allowed.',
+      retryable: false,
+      category: 'method_not_allowed'
+    });
+  }
+  if (!id) {
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    return res.status(404).end('Image not found.');
+  }
+
+  try {
+    const image = await getApiDataStore().getPublicCourseImage(id);
+    if (!image) {
+      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+      return res.status(404).end('Image not found.');
+    }
+    res.setHeader('Content-Type', image.mimeType || 'image/jpeg');
+    return res.status(200).end(image.bytes);
+  } catch {
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    return res.status(404).end('Image not found.');
+  }
+}
+
+async function servePublicCoursesPage(req: ApiRequest, res: ApiResponse) {
+  const context = {
+    route: 'GET /api/courses?public=1',
+    action: 'serve_public_courses_page',
+    startedAt: Date.now(),
+    messages: { internal: 'Unable to load courses.' }
+  };
+  if (req.method && req.method !== 'GET' && req.method !== 'HEAD') {
+    res.setHeader('Allow', 'GET, HEAD');
+    return sendApiError(res, new Error('Method not allowed.'), context, {
+      status: 405,
+      code: 'METHOD_NOT_ALLOWED',
+      message: 'Method not allowed.',
+      retryable: false,
+      category: 'method_not_allowed'
+    });
+  }
+
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.setHeader('Cache-Control', 'public, max-age=60');
+  const origin = getRequestOrigin(req);
+  const requestedProgram = firstQueryValue(req, 'program').trim().toLowerCase();
+
+  try {
+    const page = await getApiDataStore().getPublicCourses(requestedProgram);
+    const courses = page.courses.map(toPublicCourseView);
+    const selected = page.selected
+      ? toPublicCourseView(page.selected)
+      : courses[0] || null;
+    const rendered = renderPublicCourseHtml({
+      selected,
+      courses,
+      origin,
+      programKey: page.selectionMatched ? requestedProgram : ''
+    });
+    return res.status(rendered.status).end(rendered.html);
+  } catch {
+    const missing = renderPublicCourseHtml({
+      selected: null,
+      origin
+    });
+    return res.status(missing.status).end(missing.html);
+  }
+}
+
 export default async function handler(req: ApiRequest, res: ApiResponse) {
   const id = firstQueryValue(req, 'id');
   const catalog = firstQueryValue(req, 'catalog');
+  const asset = firstQueryValue(req, 'asset');
+  const isPublicPage = firstQueryValue(req, 'public') === '1';
+  if (asset === 'image') {
+    return servePublicCourseImage(req, res, id);
+  }
+  if (isPublicPage) {
+    return servePublicCoursesPage(req, res);
+  }
+
   const isCatalog = req.method === 'GET' && catalog === '1';
   const isMutate = req.method === 'PUT' || req.method === 'DELETE';
   const isCreate = req.method === 'POST';

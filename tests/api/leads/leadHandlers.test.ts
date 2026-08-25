@@ -22,8 +22,7 @@ vi.mock('../../../api/_lib/storage/dataStore.js', () => ({
   getApiDataStore: () => mockStore
 }));
 
-import createLeadHandler from '../../../api/leads/index.js';
-import mutateLeadHandler from '../../../api/leads/[id].js';
+import leadHandler from '../../../api/leads/index.js';
 
 function createResponse() {
   const state: { statusCode: number; body: unknown } = {
@@ -68,7 +67,7 @@ describe('lead API error classification', () => {
     mockStore.createLeadForAuthorizedUser.mockRejectedValue(validationError);
     const { response, state } = createResponse();
 
-    await createLeadHandler(
+    await leadHandler(
       { method: 'POST', headers: {}, query: {}, body: {} },
       response
     );
@@ -94,7 +93,7 @@ describe('lead API error classification', () => {
     );
     const { response, state } = createResponse();
 
-    await createLeadHandler(
+    await leadHandler(
       { method: 'POST', headers: {}, query: {}, body: {} },
       response
     );
@@ -124,7 +123,7 @@ describe('lead API error classification', () => {
     };
     const { response, state } = createResponse();
 
-    await mutateLeadHandler(request, response);
+    await leadHandler(request, response);
 
     expect(state.statusCode).toBe(500);
     expect(state.body).toMatchObject({

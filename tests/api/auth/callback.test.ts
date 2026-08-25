@@ -14,10 +14,14 @@ const { mockGetUserFromAuthCode, mockSetSessionCookie, mockStore } = vi.hoisted(
 );
 
 vi.mock('../../../api/_lib/auth/oauth.js', () => ({
+  buildGoogleAuthUrl: vi.fn(),
+  createOAuthState: vi.fn(),
   getUserFromAuthCode: mockGetUserFromAuthCode
 }));
 
 vi.mock('../../../api/_lib/auth/session.js', () => ({
+  clearSessionCookie: vi.fn(),
+  readSessionUser: vi.fn(),
   setSessionCookie: mockSetSessionCookie
 }));
 
@@ -25,7 +29,7 @@ vi.mock('../../../api/_lib/storage/dataStore.js', () => ({
   getApiDataStore: () => mockStore
 }));
 
-import handler from '../../../api/auth/callback.js';
+import handler from '../../../api/auth/index.js';
 
 function createResponse() {
   const state: { statusCode: number; body: unknown } = {
@@ -56,7 +60,7 @@ function createResponse() {
 const request: ApiRequest = {
   method: 'GET',
   headers: { cookie: 'aolf_oauth_state=expected-state' },
-  query: { code: 'auth-code', state: 'expected-state' }
+  query: { action: 'callback', code: 'auth-code', state: 'expected-state' }
 };
 
 describe('Google OAuth callback error distinction', () => {

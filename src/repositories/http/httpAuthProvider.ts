@@ -10,7 +10,7 @@ export class HttpAuthProvider implements AuthProvider {
 
   async getSessionUser(): Promise<AuthenticatedUser | null> {
     const response = await this.apiClient.get<{ user?: unknown }>(
-      '/api/auth/session'
+      '/api/auth?action=session'
     );
     if (!response.user) {
       return null;
@@ -20,7 +20,7 @@ export class HttpAuthProvider implements AuthProvider {
 
   async signIn(): Promise<AuthenticatedUser> {
     if (typeof window !== 'undefined') {
-      window.location.assign('/api/auth/signin');
+      window.location.assign('/api/auth?action=signin');
     }
 
     return new Promise<AuthenticatedUser>(() => {
@@ -29,6 +29,6 @@ export class HttpAuthProvider implements AuthProvider {
   }
 
   async signOut(): Promise<void> {
-    await this.apiClient.post('/api/auth/signout', {});
+    await this.apiClient.post('/api/auth?action=signout', {});
   }
 }

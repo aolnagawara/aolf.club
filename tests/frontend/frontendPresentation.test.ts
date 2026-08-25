@@ -67,12 +67,20 @@ describe('AOLF Connect frontend presentation', () => {
       destination: '/api/courses?id=:id'
     });
     expect(vercelConfig.rewrites).toContainEqual({
+      source: '/api/auth/callback',
+      destination: '/api/auth?action=callback'
+    });
+    expect(vercelConfig.rewrites).toContainEqual({
+      source: '/api/leads/assign',
+      destination: '/api/leads?action=assign'
+    });
+    expect(vercelConfig.rewrites).toContainEqual({
       source: '/courses',
-      destination: '/api/public-courses'
+      destination: '/api/courses?public=1'
     });
     expect(vercelConfig.rewrites).toContainEqual({
       source: '/course/:id/image',
-      destination: '/api/public-courses?asset=image&id=:id'
+      destination: '/api/courses?asset=image&id=:id'
     });
     expect(existsSync(legacyLoginUrl)).toBe(false);
   });

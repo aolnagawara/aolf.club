@@ -12,11 +12,14 @@ vi.mock('../../../api/_lib/auth/session.js', () => ({
 
 vi.mock('../../../api/_lib/storage/dataStore.js', () => ({
   getApiDataStore: () => ({
+    createLeadForAuthorizedUser: vi.fn(),
+    updateLeadForAuthorizedUser: vi.fn(),
+    deleteLeadForAuthorizedUser: vi.fn(),
     assignMembersForAuthorizedUser: mockAssignMembers
   })
 }));
 
-import assignMembersHandler from '../../../api/leads/assign.js';
+import leadHandler from '../../../api/leads/index.js';
 
 function createResponse() {
   const state: { statusCode: number; body: unknown; allow: string } = {
@@ -72,8 +75,8 @@ describe('assign members API', () => {
     mockAssignMembers.mockResolvedValue({ allowed: true, value });
     const { response, state } = createResponse();
 
-    await assignMembersHandler(
-      { method: 'POST', headers: {}, query: {}, body },
+    await leadHandler(
+      { method: 'POST', headers: {}, query: { action: 'assign' }, body },
       response
     );
 
@@ -87,8 +90,13 @@ describe('assign members API', () => {
   it('rejects unauthenticated and non-POST requests', async () => {
     mockReadSessionUser.mockResolvedValue(null);
     const unauthenticated = createResponse();
-    await assignMembersHandler(
-      { method: 'POST', headers: {}, query: {}, body: {} },
+    await leadHandler(
+      {
+        method: 'POST',
+        headers: {},
+        query: { action: 'assign' },
+        body: {}
+      },
       unauthenticated.response
     );
     expect(unauthenticated.state).toMatchObject({
@@ -97,8 +105,13 @@ describe('assign members API', () => {
     });
 
     const wrongMethod = createResponse();
-    await assignMembersHandler(
-      { method: 'GET', headers: {}, query: {}, body: {} },
+    await leadHandler(
+      {
+        method: 'GET',
+        headers: {},
+        query: { action: 'assign' },
+        body: {}
+      },
       wrongMethod.response
     );
     expect(wrongMethod.state.statusCode).toBe(405);
