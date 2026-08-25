@@ -626,16 +626,10 @@ export function createCourseWorkspaceMethods() {
       lead: Lead,
       course: Course | null
     ): Promise<void> {
-      let imageCopied = false;
       if (course?.hasImage) {
-        imageCopied = await this.copyCourseImageToClipboard(course);
+        await this.copyCourseImageToClipboard(course);
       }
       window.open(this.buildWhatsappHref(lead, course), '_blank', 'noopener');
-      if (course?.hasImage) {
-        this.actionMessage = imageCopied
-          ? 'Image copied. Paste it in WhatsApp after sending the text.'
-          : 'WhatsApp opened. Use Share image if paste is not available.';
-      }
     },
     async openWhatsappForLead(
       this: SevaWorkspaceContext,
