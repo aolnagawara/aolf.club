@@ -131,8 +131,9 @@ describe('AOLF Connect frontend presentation', () => {
     expect(sevaPage).toContain('Activity Management');
     expect(sevaPage).toContain('x-text="courseCardSubtitle(course)"');
     expect(sevaPage).toContain(
-      'class="aspect-square w-full rounded-lg bg-slate-100 object-contain"'
+      'class="mx-auto max-h-96 max-w-full rounded-lg bg-slate-100 object-contain"'
     );
+    expect(sevaPage).not.toContain('aspect-square w-full');
     expect(sevaPage).not.toContain('type="month"');
     expect(sevaPage).toContain('showsProgramTabs()');
     expect(sevaPage).toContain('type="file"');

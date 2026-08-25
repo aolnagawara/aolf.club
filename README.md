@@ -146,6 +146,12 @@ Installations need an `Activities` tab and a `CourseTemplates` tab. Run `pnpm ru
 id,activityType,courseType,programCode,title,whatsappTemplate,imageFileId,imageMimeType,isActive,createdAt,updatedAt,createdBy,updatedBy
 ```
 
+For existing installations, update the `Activities` header from the old `pamphletFileId,pamphletMimeType` columns to `imageFileId,imageMimeType`. You can do this manually in Google Sheets or run:
+
+```bash
+pnpm run sheets:doctor:fix
+```
+
 `CourseTemplates` header:
 
 ```text
