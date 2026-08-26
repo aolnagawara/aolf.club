@@ -3,11 +3,29 @@ import type {
   Lead,
   OptionItem,
   QualityMeta,
-  StatusMeta
+  StatusMeta,
+  TextSize
 } from './types';
+
+const TEXT_SIZE_SCALE: Record<TextSize, string> = {
+  normal: '1',
+  large: '1.125',
+  extraLarge: '1.25'
+};
 
 export function createUiMethods() {
   return {
+    applyTextSizePreference(this: SevaWorkspaceContext): void {
+      const scale = TEXT_SIZE_SCALE[this.textSize] || TEXT_SIZE_SCALE.normal;
+      if (!document.documentElement) {
+        return;
+      }
+      document.documentElement.style.setProperty('--aolf-font-scale', scale);
+    },
+    setTextSize(this: SevaWorkspaceContext, size: TextSize): void {
+      this.textSize = size;
+      this.applyTextSizePreference();
+    },
     getQualityMeta(this: SevaWorkspaceContext, quality: string): QualityMeta {
       return this.qualityMetaMap[quality] || this.defaultQualityMeta;
     },

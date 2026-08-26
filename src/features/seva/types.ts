@@ -44,6 +44,7 @@ export interface CourseDraft {
 
 export type WorkspaceView = 'callTracker' | 'courseManagement';
 export type CoursePickerMode = 'whatsapp' | 'imageShare';
+export type TextSize = 'normal' | 'large' | 'extraLarge';
 
 export interface CreateRecordDraft {
   name: string;
@@ -171,6 +172,7 @@ export interface SevaWorkspaceState {
   isCoursePickerOpen: boolean;
   coursePickerLead: Lead | null;
   coursePickerMode: CoursePickerMode;
+  textSize: TextSize;
 }
 
 export interface SevaWorkspaceContext extends SevaWorkspaceState {

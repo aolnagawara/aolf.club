@@ -166,6 +166,7 @@ export function createAuthAndBootstrapMethods() {
     async init(this: SevaWorkspaceContext): Promise<void> {
       const redirectError = consumeAuthRedirectError();
       const requestedCampaignId = rememberRequestedCampaignId();
+      this.applyTextSizePreference();
       this.globalPointerDownHandler = (event: PointerEvent) =>
         this.handleGlobalPointerDown(event);
       document.addEventListener(

@@ -1,3 +1,13 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  :root {
+    --aolf-font-scale: 1;
+  }
+
+  html {
+    font-size: calc(16px * var(--aolf-font-scale));
+  }
+}

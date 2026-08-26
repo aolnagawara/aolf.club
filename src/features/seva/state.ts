@@ -113,6 +113,7 @@ export function createSevaWorkspaceInitialState(): SevaWorkspaceState {
     courseDraft: createEmptyCourseDraft(),
     isCoursePickerOpen: false,
     coursePickerLead: null,
-    coursePickerMode: 'whatsapp'
+    coursePickerMode: 'whatsapp',
+    textSize: 'normal'
   };
 }
