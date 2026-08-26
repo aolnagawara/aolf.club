@@ -1,11 +1,4 @@
 import {
-  AssignMembersRequestSchema,
-  CreateCourseRequestSchema,
-  CreateLeadRequestSchema,
-  DeleteCourseRequestSchema,
-  DeleteLeadRequestSchema,
-  UpdateCourseRequestSchema,
-  UpdateLeadRequestSchema,
   type AssignMembersResponse,
   type BootstrapResponse,
   type Course,
@@ -26,20 +19,6 @@ import {
 } from '../sheets/store.js';
 import type { SheetsOperation } from '../sheets/client.js';
 import type { SessionUser } from '../auth/session.js';
-import {
-  assignMembersToUser as assignMockMembersToUser,
-  createCourseForUser as createMockCourseForUser,
-  createLeadForUser as createMockLeadForUser,
-  deleteCourseForUser as deleteMockCourseForUser,
-  deleteLeadForUser as deleteMockLeadForUser,
-  getBootstrapForUser as getMockBootstrapForUser,
-  getPublicCourses as getMockPublicCourses,
-  isUserAllowed as isMockUserAllowed,
-  listCoursesForUser as listMockCoursesForUser,
-  listPublicHomepageOffers as listMockPublicHomepageOffers,
-  updateCourseForUser as updateMockCourseForUser,
-  updateLeadForUser as updateMockLeadForUser
-} from './mockStore.js';
 
 export type ApiDataStore = {
   authorizeUser: (
@@ -108,6 +87,7 @@ export type ApiDataStore = {
 };
 
 let sheetsStore: ApiDataStore | null = null;
+let mockStorePromise: Promise<ApiDataStore> | null = null;
 
 function getSheetsStore(): ApiDataStore {
   if (!sheetsStore) {
@@ -117,132 +97,17 @@ function getSheetsStore(): ApiDataStore {
   return sheetsStore;
 }
 
-const mockStore: ApiDataStore = {
-  async authorizeUser(user) {
-    return { allowed: isMockUserAllowed(user.email) };
-  },
-
-  async isUserAllowed(user) {
-    return isMockUserAllowed(user.email);
-  },
-
-  async getBootstrapForAuthorizedUser(user, campaignId) {
-    if (!isMockUserAllowed(user.email)) {
-      return { allowed: false };
-    }
-    return {
-      allowed: true,
-      value: await getMockBootstrapForUser(user, campaignId)
-    };
-  },
-
-  async assignMembersForAuthorizedUser(user, payload) {
-    if (!isMockUserAllowed(user.email)) {
-      return { allowed: false };
-    }
-    return {
-      allowed: true,
-      value: await assignMockMembersToUser(
-        user,
-        AssignMembersRequestSchema.parse(payload)
-      )
-    };
-  },
-
-  async createLeadForAuthorizedUser(user, payload) {
-    if (!isMockUserAllowed(user.email)) {
-      return { allowed: false };
-    }
-    return {
-      allowed: true,
-      value: await createMockLeadForUser(
-        user,
-        CreateLeadRequestSchema.parse(payload)
-      )
-    };
-  },
-
-  async updateLeadForAuthorizedUser(user, payload) {
-    if (!isMockUserAllowed(user.email)) {
-      return { allowed: false };
-    }
-    return {
-      allowed: true,
-      value: await updateMockLeadForUser(
-        user,
-        UpdateLeadRequestSchema.parse(payload)
-      )
-    };
-  },
-
-  async deleteLeadForAuthorizedUser(user, payload) {
-    if (!isMockUserAllowed(user.email)) {
-      return { allowed: false };
-    }
-    return {
-      allowed: true,
-      value: await deleteMockLeadForUser(
-        user,
-        DeleteLeadRequestSchema.parse(payload)
-      )
-    };
-  },
-
-  async listCoursesForAuthorizedUser(user) {
-    if (!isMockUserAllowed(user.email)) {
-      return { allowed: false };
-    }
-    return { allowed: true, value: await listMockCoursesForUser() };
-  },
-
-  async createCourseForAuthorizedUser(user, payload) {
-    if (!isMockUserAllowed(user.email)) {
-      return { allowed: false };
-    }
-    return {
-      allowed: true,
-      value: await createMockCourseForUser(
-        user,
-        CreateCourseRequestSchema.parse(payload)
-      )
-    };
-  },
-
-  async updateCourseForAuthorizedUser(user, payload) {
-    if (!isMockUserAllowed(user.email)) {
-      return { allowed: false };
-    }
-    return {
-      allowed: true,
-      value: await updateMockCourseForUser(
-        user,
-        UpdateCourseRequestSchema.parse(payload)
-      )
-    };
-  },
-
-  async deleteCourseForAuthorizedUser(user, payload) {
-    if (!isMockUserAllowed(user.email)) {
-      return { allowed: false };
-    }
-    return {
-      allowed: true,
-      value: await deleteMockCourseForUser(
-        DeleteCourseRequestSchema.parse(payload)
-      )
-    };
-  },
-
-  async getPublicCourses(programKey) {
-    return getMockPublicCourses(programKey);
-  },
-
-  async listPublicHomepageOffers() {
-    return listMockPublicHomepageOffers();
+async function getMockStore(): Promise<ApiDataStore> {
+  if (!mockStorePromise) {
+    mockStorePromise = import('./mockDataStore.js').then(
+      ({ mockDataStore }) => mockDataStore
+    );
   }
-};
 
-export function getApiDataStore(): ApiDataStore {
+  return mockStorePromise;
+}
+
+export async function getApiDataStore(): Promise<ApiDataStore> {
   const env = getServerEnv();
-  return env.APP_DATA_MODE === 'sheets' ? getSheetsStore() : mockStore;
+  return env.APP_DATA_MODE === 'sheets' ? getSheetsStore() : getMockStore();
 }

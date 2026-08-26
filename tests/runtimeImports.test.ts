@@ -43,4 +43,15 @@ describe('runtime imports', () => {
 
     expect(offenders).toEqual([]);
   });
+
+  it('keeps the server mock store out of the default data-store import path', () => {
+    const dataStoreSource = readFileSync(
+      join(REPO_ROOT, 'api/_lib/storage/dataStore.ts'),
+      'utf8'
+    );
+
+    expect(dataStoreSource).not.toMatch(/from\s+['"].\/mockStore\.js['"]/);
+    expect(dataStoreSource).not.toMatch(/from\s+['"].\/mockDataStore\.js['"]/);
+    expect(dataStoreSource).toContain("import('./mockDataStore.js')");
+  });
 });
