@@ -41,6 +41,14 @@
       "destination": "/api/courses?id=:id"
     },
     {
+      "source": "/go",
+      "destination": "/api/courses?go="
+    },
+    {
+      "source": "/go/:slug*",
+      "destination": "/api/courses?go=:slug*"
+    },
+    {
       "source": "/courses",
       "destination": "/api/courses?public=1"
     }

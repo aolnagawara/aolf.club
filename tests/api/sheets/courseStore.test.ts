@@ -22,6 +22,7 @@ const LAYOUT = {
   membersRange: 'Members!A:Z',
   coursesRange: 'Activities!A:Z',
   courseTemplatesRange: 'CourseTemplates!A:B',
+  shortUrlsRange: 'ShortUrls!A:C',
   configRange: 'Config!A:B',
   allowedUsersRange: 'AllowedUsers!A:Z'
 };
@@ -48,7 +49,13 @@ function courseRow(overrides: Record<string, string> = {}) {
 
 function createFixture(
   courseRows: string[][],
-  imageStore: ImageStore = createMemoryImageStore()
+  imageStore: ImageStore = createMemoryImageStore(),
+  shortUrlRows: string[][] = [
+    [...SHEET_HEADERS.shortUrls],
+    ['tu/rp', 'https://example.com/full-registration-link?utm=short', 'true'],
+    ['inactive', 'https://example.com/inactive', 'false'],
+    ['unsafe', 'javascript:alert(1)', 'true']
+  ]
 ) {
   let rows = [[...SHEET_HEADERS.courses], ...courseRows];
   const appendSheetRow = vi.fn(async (_t, _r, row: string[]) => {
@@ -86,6 +93,9 @@ function createFixture(
           ['courseType', 'template'],
           ['HP', 'Hi {name}']
         ];
+      }
+      if (range === LAYOUT.shortUrlsRange) {
+        return shortUrlRows;
       }
       if (range === LAYOUT.campaignsRange) {
         return [
@@ -259,6 +269,22 @@ describe('Sheets course store', () => {
       success: true,
       whatsappNumber: '919876543210'
     });
+  });
+
+  it('resolves active ShortUrls rows to safe redirect destinations', async () => {
+    const { store, readSheetValues } = createFixture([]);
+
+    await expect(store.getShortUrlDestination('/TU/RP/')).resolves.toBe(
+      'https://example.com/full-registration-link?utm=short'
+    );
+    await expect(store.getShortUrlDestination('inactive')).resolves.toBeNull();
+    await expect(store.getShortUrlDestination('unsafe')).resolves.toBeNull();
+    await expect(store.getShortUrlDestination('missing')).resolves.toBeNull();
+    expect(readSheetValues).toHaveBeenCalledWith(
+      'data',
+      LAYOUT.shortUrlsRange,
+      expect.anything()
+    );
   });
 
   it('stores event activities without exposing them as public courses', async () => {

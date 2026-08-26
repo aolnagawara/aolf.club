@@ -16,6 +16,18 @@ async function loadSessionUser(req: ApiRequest) {
   return readSessionUser(req);
 }
 
+function hasQueryValue(req: ApiRequest, name: string): boolean {
+  return Object.prototype.hasOwnProperty.call(req.query, name);
+}
+
+function normalizeShortUrlSlug(raw: string): string {
+  return String(raw || '')
+    .trim()
+    .replace(/^\/+|\/+$/g, '')
+    .replace(/\/{2,}/g, '/')
+    .toLowerCase();
+}
+
 function getRequestOrigin(req: ApiRequest): string {
   const forwardedHost = headerValue(req.headers, 'x-forwarded-host')
     .split(',')[0]
@@ -77,9 +89,48 @@ async function servePublicCoursesPage(req: ApiRequest, res: ApiResponse) {
   }
 }
 
+async function serveShortUrlRedirect(req: ApiRequest, res: ApiResponse) {
+  const context = {
+    route: 'GET /go/:slug*',
+    action: 'resolve_short_url',
+    startedAt: Date.now(),
+    messages: { internal: 'Unable to resolve that short link.' }
+  };
+  if (req.method && req.method !== 'GET' && req.method !== 'HEAD') {
+    return methodNotAllowed(res, context, 'GET, HEAD');
+  }
+
+  const slug = normalizeShortUrlSlug(firstQueryValue(req, 'go'));
+  if (!slug) {
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-store');
+    return res.status(404).end('Short link not found.');
+  }
+
+  try {
+    const store = await loadDataStore();
+    const destination = await store.getShortUrlDestination(slug);
+    if (!destination) {
+      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+      res.setHeader('Cache-Control', 'no-store');
+      return res.status(404).end('Short link not found.');
+    }
+
+    res.setHeader('Location', destination);
+    res.setHeader('Cache-Control', 'no-store');
+    return res.status(302).end();
+  } catch (error) {
+    return sendApiError(res, error, context);
+  }
+}
+
 export default async function handler(req: ApiRequest, res: ApiResponse) {
   const id = firstQueryValue(req, 'id');
   const catalog = firstQueryValue(req, 'catalog');
+  if (hasQueryValue(req, 'go')) {
+    return serveShortUrlRedirect(req, res);
+  }
+
   const isPublicPage = firstQueryValue(req, 'public') === '1';
   if (isPublicPage) {
     return servePublicCoursesPage(req, res);

@@ -20,6 +20,7 @@ const LAYOUT = {
   membersRange: 'Members!A:Z',
   coursesRange: 'Activities!A:Z',
   courseTemplatesRange: 'CourseTemplates!A:B',
+  shortUrlsRange: 'ShortUrls!A:C',
   configRange: 'Config!A:B',
   allowedUsersRange: 'AllowedUsers!A:Z'
 };

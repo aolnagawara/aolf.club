@@ -4,6 +4,7 @@ export const DEFAULT_SHEET_LAYOUT = Object.freeze({
   membersRange: 'Members!A:Z',
   coursesRange: 'Activities!A:Z',
   courseTemplatesRange: 'CourseTemplates!A:B',
+  shortUrlsRange: 'ShortUrls!A:C',
   configRange: 'Config!A:B',
   allowedUsersRange: 'AllowedUsers!A:Z'
 });
@@ -50,6 +51,7 @@ export const SHEET_HEADERS = Object.freeze({
     'updatedBy'
   ]),
   courseTemplates: Object.freeze(['courseType', 'template']),
+  shortUrls: Object.freeze(['slug', 'destinationUrl', 'isActive']),
   config: Object.freeze(['key', 'value']),
   allowedUsers: Object.freeze(['email', 'name', 'mobile'])
 });

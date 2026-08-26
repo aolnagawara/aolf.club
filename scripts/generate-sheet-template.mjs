@@ -138,6 +138,12 @@ const courseTemplatesRows = [
   ...defaultCourseTemplateRows()
 ];
 
+const shortUrlsRows = [
+  [...SHEET_HEADERS.shortUrls],
+  ['sample', 'https://www.artofliving.org/in-en', 'true'],
+  ['tu/rp', 'https://www.artofliving.org/in-en/programs', 'true']
+];
+
 XLSX.utils.book_append_sheet(
   workbook,
   XLSX.utils.aoa_to_sheet(leadsRows),
@@ -167,6 +173,11 @@ XLSX.utils.book_append_sheet(
   workbook,
   XLSX.utils.aoa_to_sheet(courseTemplatesRows),
   'CourseTemplates'
+);
+XLSX.utils.book_append_sheet(
+  workbook,
+  XLSX.utils.aoa_to_sheet(shortUrlsRows),
+  'ShortUrls'
 );
 XLSX.utils.book_append_sheet(
   workbook,

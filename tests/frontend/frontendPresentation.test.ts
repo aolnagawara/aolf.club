@@ -78,6 +78,14 @@ describe('AOLF Connect frontend presentation', () => {
       source: '/courses',
       destination: '/api/courses?public=1'
     });
+    expect(vercelConfig.rewrites).toContainEqual({
+      source: '/go',
+      destination: '/api/courses?go='
+    });
+    expect(vercelConfig.rewrites).toContainEqual({
+      source: '/go/:slug*',
+      destination: '/api/courses?go=:slug*'
+    });
     expect(vercelConfig.rewrites).not.toContainEqual({
       source: '/course/:id/image',
       destination: '/api/courses?asset=image&id=:id'

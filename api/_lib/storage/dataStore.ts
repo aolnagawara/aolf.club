@@ -81,6 +81,10 @@ export type ApiDataStore = {
     courses: Course[];
     selectionMatched: boolean;
   }>;
+  getShortUrlDestination: (
+    slug: string,
+    operation?: SheetsOperation
+  ) => Promise<string | null>;
   listPublicHomepageOffers: (
     operation?: SheetsOperation
   ) => Promise<PublicHomepageOffersResponse>;

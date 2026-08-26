@@ -9,6 +9,7 @@ const { mockReadSessionUser, mockStore } = vi.hoisted(() => ({
     createCourseForAuthorizedUser: vi.fn(),
     updateCourseForAuthorizedUser: vi.fn(),
     deleteCourseForAuthorizedUser: vi.fn(),
+    getShortUrlDestination: vi.fn(),
     listPublicHomepageOffers: vi.fn()
   }
 }));
@@ -24,9 +25,16 @@ vi.mock('../../../api/_lib/storage/dataStore.js', () => ({
 import createCourseHandler from '../../../api/courses/index.js';
 
 function createResponse() {
-  const state: { statusCode: number; body: unknown } = {
+  const state: {
+    statusCode: number;
+    body: unknown;
+    endBody: unknown;
+    headers: Record<string, number | string | string[]>;
+  } = {
     statusCode: 0,
-    body: undefined
+    body: undefined,
+    endBody: undefined,
+    headers: {}
   };
   const response: ApiResponse = {
     status(code) {
@@ -37,11 +45,15 @@ function createResponse() {
       state.body = body;
       return response;
     },
-    setHeader() {},
-    getHeader() {
-      return undefined;
+    setHeader(name, value) {
+      state.headers[name.toLowerCase()] = value;
     },
-    end() {}
+    getHeader(name) {
+      return state.headers[name.toLowerCase()];
+    },
+    end(body) {
+      state.endBody = body;
+    }
   };
   return { response, state };
 }
@@ -93,6 +105,41 @@ describe('course API handlers', () => {
     });
     expect(mockReadSessionUser).not.toHaveBeenCalled();
     expect(mockStore.listCoursesForAuthorizedUser).not.toHaveBeenCalled();
+  });
+
+  it('redirects a public short URL without a session', async () => {
+    mockReadSessionUser.mockResolvedValue(null);
+    mockStore.getShortUrlDestination.mockResolvedValue(
+      'https://example.com/full-registration-link?utm=short'
+    );
+    const { response, state } = createResponse();
+
+    await createCourseHandler(
+      { method: 'GET', headers: {}, query: { go: 'tu/rp' } },
+      response
+    );
+
+    expect(state.statusCode).toBe(302);
+    expect(state.headers.location).toBe(
+      'https://example.com/full-registration-link?utm=short'
+    );
+    expect(state.headers['cache-control']).toBe('no-store');
+    expect(mockStore.getShortUrlDestination).toHaveBeenCalledWith('tu/rp');
+    expect(mockReadSessionUser).not.toHaveBeenCalled();
+  });
+
+  it('returns a plain 404 for an unknown short URL', async () => {
+    mockStore.getShortUrlDestination.mockResolvedValue(null);
+    const { response, state } = createResponse();
+
+    await createCourseHandler(
+      { method: 'GET', headers: {}, query: { go: 'missing' } },
+      response
+    );
+
+    expect(state.statusCode).toBe(404);
+    expect(state.headers['content-type']).toBe('text/plain; charset=utf-8');
+    expect(state.endBody).toBe('Short link not found.');
   });
 
   it('rejects forbidden list requests', async () => {

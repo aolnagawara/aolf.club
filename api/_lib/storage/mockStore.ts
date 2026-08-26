@@ -55,6 +55,14 @@ type StoreState = {
   courses: CourseRecord[];
 };
 
+const mockShortUrls = [
+  {
+    slug: 'sample',
+    destinationUrl: 'https://www.artofliving.org/in-en',
+    isActive: true
+  }
+] as const;
+
 const imageStore = createMemoryImageStore();
 
 function toRecord(course: Course): CourseRecord {
@@ -398,6 +406,22 @@ export async function getPublicCourses(programKey = '') {
     courses: page.courses.map((course) => toCourseResponse(course)),
     selectionMatched: page.selectionMatched
   };
+}
+
+function normalizeShortUrlSlug(raw: string): string {
+  return String(raw || '')
+    .trim()
+    .replace(/^\/+|\/+$/g, '')
+    .replace(/\/{2,}/g, '/')
+    .toLowerCase();
+}
+
+export async function getShortUrlDestination(slug: string) {
+  const normalized = normalizeShortUrlSlug(slug);
+  const match = mockShortUrls.find(
+    (item) => item.isActive && normalizeShortUrlSlug(item.slug) === normalized
+  );
+  return match?.destinationUrl || null;
 }
 
 export async function listPublicHomepageOffers() {

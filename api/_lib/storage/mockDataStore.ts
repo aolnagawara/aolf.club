@@ -15,6 +15,7 @@ import {
   deleteLeadForUser as deleteMockLeadForUser,
   getBootstrapForUser as getMockBootstrapForUser,
   getPublicCourses as getMockPublicCourses,
+  getShortUrlDestination as getMockShortUrlDestination,
   isUserAllowed as isMockUserAllowed,
   listCoursesForUser as listMockCoursesForUser,
   listPublicHomepageOffers as listMockPublicHomepageOffers,
@@ -141,6 +142,10 @@ export const mockDataStore: ApiDataStore = {
 
   async getPublicCourses(programKey) {
     return getMockPublicCourses(programKey);
+  },
+
+  async getShortUrlDestination(slug) {
+    return getMockShortUrlDestination(slug);
   },
 
   async listPublicHomepageOffers() {

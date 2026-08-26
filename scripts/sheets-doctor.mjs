@@ -396,6 +396,7 @@ async function run() {
     getTabName(layout.membersRange),
     getTabName(layout.coursesRange),
     getTabName(layout.courseTemplatesRange),
+    getTabName(layout.shortUrlsRange),
     getTabName(layout.configRange)
   ];
   const requiredAccessTabs = [getTabName(layout.allowedUsersRange)];
@@ -452,6 +453,12 @@ async function run() {
       client,
       dataSpreadsheetId,
       getTabName(layout.courseTemplatesRange)
+    ),
+    ensureHeader(
+      client,
+      dataSpreadsheetId,
+      getTabName(layout.shortUrlsRange),
+      SHEET_HEADERS.shortUrls
     ),
     ensureHeader(
       client,

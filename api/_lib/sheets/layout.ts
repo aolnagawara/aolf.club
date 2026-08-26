@@ -14,6 +14,10 @@ const SheetLayoutSchema = z.object({
     .string()
     .min(1)
     .default(DEFAULT_SHEET_LAYOUT.courseTemplatesRange),
+  shortUrlsRange: z
+    .string()
+    .min(1)
+    .default(DEFAULT_SHEET_LAYOUT.shortUrlsRange),
   configRange: z.string().min(1).default(DEFAULT_SHEET_LAYOUT.configRange),
   allowedUsersRange: z
     .string()

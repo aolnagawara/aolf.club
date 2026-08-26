@@ -54,7 +54,7 @@ flowchart TD
     W[WhatsApp Volunteer]
     V[Vercel<br/>AOLF Connect Website + API]
     G[Google OAuth<br/>Volunteer Sign-in]
-    S[Google Sheets<br/>Campaigns / Leads / Members / Activities / CourseTemplates / Config / AllowedUsers]
+    S[Google Sheets<br/>Campaigns / Leads / Members / Activities / CourseTemplates / ShortUrls / Config / AllowedUsers]
     M[Meta WhatsApp Cloud API]
 
     U -->|Open website / Seva workspace| V
@@ -119,6 +119,7 @@ The spreadsheet should contain these tabs:
 - `Members`
 - `Activities`
 - `CourseTemplates`
+- `ShortUrls`
 - `Config`
 - `AllowedUsers`
 
@@ -138,7 +139,7 @@ At minimum, enter the volunteer's email address.
 
 ### Activities tab
 
-Installations need an `Activities` tab and a `CourseTemplates` tab. Run `pnpm run sheets:doctor:fix` or add them by hand.
+Installations need `Activities`, `CourseTemplates`, and `ShortUrls` tabs. Run `pnpm run sheets:doctor:fix` or add them by hand.
 
 `Activities` header:
 
@@ -158,9 +159,32 @@ pnpm run sheets:doctor:fix
 courseType,template
 ```
 
+### ShortUrls tab
+
+The `ShortUrls` tab powers links like:
+
+```text
+https://aolf.club/go/tu/rp
+```
+
+`ShortUrls` header:
+
+```text
+slug,destinationUrl,isActive
+```
+
+Example rows:
+
+```text
+tu/rp,https://example.com/full-registration-link,true
+hp,https://example.com/happiness-program,true
+```
+
+The `slug` is the part after `/go/`. It may include `/`, such as `tu/rp`. `destinationUrl` must start with `http://` or `https://`. Set `isActive` to `false` to disable a short link without deleting the row.
+
 Activity Management stores Course and Event activities for preformatted WhatsApp text messages. Course rows use `courseType` and optional IP `programCode`; Event rows use `title` as the event name. Dates, time, venue, and registration belong in the WhatsApp template. `/courses` displays every active Course activity as a tab, including the uploaded high-resolution activity image. Program-specific links such as `/courses?program=ip-j` open the same page with the matching tab selected. Deleting a Course activity also deletes its Vercel Blob image files.
 
-Images are uploaded from Activity Management (JPEG, PNG, or WebP, under 3 MB). They are stored in a **public Vercel Blob** store. When a Seva workspace user opens WhatsApp for a matching activity, the app sends only the text message and attempts to copy the associated image to the clipboard so it can be pasted after the text is sent. A separate image-share button is always visible next to the WhatsApp action and uses the native share sheet when available. `/course/<id>/image` serves the uploaded image as a same-origin URL for public display, copy, share, and Activity Management downloads.
+Images are uploaded from Activity Management (JPEG, PNG, or WebP, under 3 MB). They are stored in a **public Vercel Blob** store. When a Seva workspace user opens WhatsApp for a matching activity, the app sends only the text message and attempts to copy the associated image to the clipboard so it can be pasted after the text is sent. A separate image-share button is always visible next to the WhatsApp action and uses the native share sheet when available.
 
 The `Config` tab should include `centerWhatsappNumber` in international format without `+`, such as `918884560660`. The public website uses this number for its WhatsApp links.
 

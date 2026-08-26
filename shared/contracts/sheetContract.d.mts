@@ -4,6 +4,7 @@ export type SheetLayoutContract = {
   membersRange: string;
   coursesRange: string;
   courseTemplatesRange: string;
+  shortUrlsRange: string;
   configRange: string;
   allowedUsersRange: string;
 };
@@ -15,6 +16,7 @@ export const SHEET_HEADERS: Readonly<{
   members: readonly string[];
   courses: readonly string[];
   courseTemplates: readonly string[];
+  shortUrls: readonly string[];
   config: readonly string[];
   allowedUsers: readonly string[];
 }>;

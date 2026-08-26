@@ -16,6 +16,7 @@ const LAYOUT = {
   membersRange: 'Members!A:Z',
   coursesRange: 'Activities!A:Z',
   courseTemplatesRange: 'CourseTemplates!A:B',
+  shortUrlsRange: 'ShortUrls!A:C',
   configRange: 'Config!A:B',
   allowedUsersRange: 'AllowedUsers!A:Z'
 };
@@ -107,9 +108,11 @@ describe('Sheets health endpoint access and diagnostics', () => {
           [['id', 'name']],
           [['id', 'name']],
           [['id', 'title']],
+          [['slug', 'destinationUrl', 'isActive']],
           [['id'], ['lead-a'], ['lead-b']],
           [['id'], ['member-a']],
           [['id'], ['course-a']],
+          [['slug'], ['tu/rp']],
           [['key'], ['campaignId'], ['programs'], ['allowedUsers']]
         ];
       }
@@ -140,6 +143,7 @@ describe('Sheets health endpoint access and diagnostics', () => {
           leadRows: 2,
           memberRows: 1,
           courseRows: 1,
+          shortUrlRows: 1,
           configRows: 3,
           allowedUserRows: 2
         }

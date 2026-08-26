@@ -44,6 +44,7 @@ import {
   selectActivePublicCourses
 } from '../../../shared/contracts/courseDefaults.mjs';
 import { defaultCourseTemplates } from '../../../shared/contracts/courseTemplates.mjs';
+import { SHEET_HEADERS } from '../../../shared/contracts/sheetContract.mjs';
 import { normalizeEmail } from '../http/normalization.js';
 import {
   applyCourseDefaults,
@@ -179,6 +180,12 @@ type LeadColumnMap = {
   donePrograms: number;
 };
 
+type ShortUrlColumnMap = {
+  slug: number;
+  destinationUrl: number;
+  isActive: number;
+};
+
 function parseEmailCell(raw: string | undefined): string[] {
   if (!raw) {
     return [];
@@ -221,6 +228,50 @@ function parseOptionalBoolean(raw: string | undefined): boolean | undefined {
     return false;
   }
   return undefined;
+}
+
+function parseActiveCell(raw: string | undefined, fallback = true): boolean {
+  const value = String(raw || '')
+    .trim()
+    .toLowerCase();
+  if (value === 'true') {
+    return true;
+  }
+  if (value === 'false') {
+    return false;
+  }
+  return fallback;
+}
+
+function normalizeShortUrlSlug(raw: string): string {
+  return String(raw || '')
+    .trim()
+    .replace(/^\/+|\/+$/g, '')
+    .replace(/\/{2,}/g, '/')
+    .toLowerCase();
+}
+
+function normalizeRedirectUrl(raw: string): string {
+  const value = String(raw || '').trim();
+  if (!value) {
+    return '';
+  }
+  try {
+    const url = new URL(value);
+    return url.protocol === 'http:' || url.protocol === 'https:'
+      ? url.toString()
+      : '';
+  } catch {
+    return '';
+  }
+}
+
+function resolveShortUrlColumns(headers: string[]): ShortUrlColumnMap {
+  return {
+    slug: findHeaderIndex(headers, ['slug']),
+    destinationUrl: findHeaderIndex(headers, ['destinationUrl', 'url']),
+    isActive: findHeaderIndex(headers, ['isActive', 'active'])
+  };
 }
 
 function resolveLeadColumns(headers: string[]): LeadColumnMap {
@@ -428,6 +479,40 @@ function mapRowToLead(
     wishlistPrograms: toCsv(getCell(row, columns.wishlistPrograms)),
     donePrograms: toCsv(getCell(row, columns.donePrograms))
   });
+}
+
+function shortUrlDestinationFromRows(
+  headers: string[],
+  rows: string[][],
+  requestedSlug: string
+): string | null {
+  const normalizedSlug = normalizeShortUrlSlug(requestedSlug);
+  if (!normalizedSlug) {
+    return null;
+  }
+  const columns = resolveShortUrlColumns(headers);
+  if (columns.slug < 0 || columns.destinationUrl < 0) {
+    return null;
+  }
+
+  for (let rowIndex = 1; rowIndex < rows.length; rowIndex += 1) {
+    const row = rows[rowIndex] || [];
+    const rowSlug = normalizeShortUrlSlug(getCell(row, columns.slug));
+    if (rowSlug !== normalizedSlug) {
+      continue;
+    }
+    if (!parseActiveCell(getCell(row, columns.isActive), true)) {
+      continue;
+    }
+    const destination = normalizeRedirectUrl(
+      getCell(row, columns.destinationUrl)
+    );
+    if (destination) {
+      return destination;
+    }
+  }
+
+  return null;
 }
 
 export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
@@ -991,6 +1076,21 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
     return selectActivePublicCourses(courses, programKey);
   }
 
+  async function loadShortUrlDestination(
+    operation: SheetsOperation,
+    slug: string
+  ): Promise<string | null> {
+    const rows = await readSheetValues(
+      'data',
+      getSheetLayout().shortUrlsRange,
+      operation
+    );
+    const headers = (rows[0] || SHEET_HEADERS.shortUrls).map((value) =>
+      String(value || '').trim()
+    );
+    return shortUrlDestinationFromRows(headers, rows, slug);
+  }
+
   function assertUniqueCourseSlot(
     rows: string[][],
     headers: string[],
@@ -1322,6 +1422,15 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
           value: await deleteCourse(activeOperation, payload)
         };
       });
+    },
+
+    async getShortUrlDestination(
+      slug: string,
+      operation?: SheetsOperation
+    ): Promise<string | null> {
+      return withStoreOperation(operation, async (activeOperation) =>
+        loadShortUrlDestination(activeOperation, slug)
+      );
     },
 
     async getPublicCourses(

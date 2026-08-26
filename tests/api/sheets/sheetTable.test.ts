@@ -52,5 +52,10 @@ describe('shared sheet primitives', () => {
       'createdBy',
       'updatedBy'
     ]);
+    expect(SHEET_HEADERS.shortUrls).toEqual([
+      'slug',
+      'destinationUrl',
+      'isActive'
+    ]);
   });
 });
