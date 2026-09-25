@@ -2,7 +2,9 @@ import {
   AssignMembersRequestSchema,
   AssignMembersResponseSchema,
   AppConfigSchema,
+  ALL_LEADS_SCOPE_ID,
   BootstrapResponseSchema,
+  isAllLeadsScope,
   CreateCourseRequestSchema,
   CreateCourseResponseSchema,
   CreateLeadRequestSchema,
@@ -444,6 +446,30 @@ function resolveUpdateCampaign(
   return campaign;
 }
 
+function toBootstrapResponse(
+  user: SessionUser,
+  snapshot: MetadataSnapshot,
+  campaignId: string,
+  leads: Lead[]
+): BootstrapResponse {
+  return BootstrapResponseSchema.parse({
+    success: true,
+    user: {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      picture: user.picture
+    },
+    campaignId,
+    config: {
+      ...snapshot.config,
+      allowedUsers: [...snapshot.allowedUsers],
+      volunteers: snapshot.volunteers
+    },
+    leads
+  });
+}
+
 function rowMatchesCampaign(
   row: string[],
   columns: LeadColumnMap,
@@ -594,11 +620,50 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
     };
   }
 
-  function isUserAllowed(
-    snapshot: AccessSnapshot,
-    user: SessionUser
-  ): boolean {
+  function isUserAllowed(snapshot: AccessSnapshot, user: SessionUser): boolean {
     return snapshot.allowedUsers.has(normalizeEmail(user.email));
+  }
+
+  async function getAllAssignedLeads(
+    user: SessionUser,
+    snapshot: MetadataSnapshot,
+    operation: SheetsOperation
+  ): Promise<BootstrapResponse> {
+    const leadsCampaigns = snapshot.config.campaigns.filter(
+      (campaign) => campaign.type === 'Leads'
+    );
+    const leadsCampaignById = new Map(
+      leadsCampaigns.map((campaign) => [campaign.id, campaign])
+    );
+    const layout = getSheetLayout();
+    const rows = await readSheetValues('data', layout.leadsRange, operation);
+    const headers = (rows[0] || []).map((value) => String(value || '').trim());
+    const leadColumns = resolveLeadColumns(headers);
+    const requestedEmail = normalizeEmail(user.email);
+    const leads: Lead[] = [];
+
+    for (let rowIndex = 1; rowIndex < rows.length; rowIndex += 1) {
+      const row = rows[rowIndex] || [];
+      const campaign = leadsCampaignById.get(
+        getCell(row, leadColumns.campaignId)
+      );
+      if (!campaign) {
+        continue;
+      }
+      const recordCampaignType = getCell(row, leadColumns.campaignType);
+      if (recordCampaignType && recordCampaignType !== 'Leads') {
+        continue;
+      }
+      const assignedEmail = normalizeEmail(
+        getCell(row, leadColumns.assignedVolunteerEmail)
+      );
+      if (assignedEmail !== requestedEmail) {
+        continue;
+      }
+      leads.push(mapRowToLead(row, leadColumns, campaign));
+    }
+
+    return toBootstrapResponse(user, snapshot, ALL_LEADS_SCOPE_ID, leads);
   }
 
   async function getBootstrap(
@@ -607,6 +672,10 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
     operation: SheetsOperation,
     campaignId?: string | null
   ): Promise<BootstrapResponse> {
+    if (isAllLeadsScope(campaignId)) {
+      return getAllAssignedLeads(user, snapshot, operation);
+    }
+
     const selectedCampaign = selectCampaign(snapshot, campaignId);
     const layout = getSheetLayout();
     const range =
@@ -633,22 +702,7 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
       leads.push(mapRowToLead(row, leadColumns, selectedCampaign));
     }
 
-    return BootstrapResponseSchema.parse({
-      success: true,
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        picture: user.picture
-      },
-      campaignId: selectedCampaign.id,
-      config: {
-        ...snapshot.config,
-        allowedUsers: [...snapshot.allowedUsers],
-        volunteers: snapshot.volunteers
-      },
-      leads
-    });
+    return toBootstrapResponse(user, snapshot, selectedCampaign.id, leads);
   }
 
   async function assignMembers(

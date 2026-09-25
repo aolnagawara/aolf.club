@@ -209,6 +209,74 @@ describe('Sheets store campaign and access scoping', () => {
     expect(new Set(operationArguments).size).toBe(1);
   });
 
+  it('returns every assigned lead across months when the scope is all', async () => {
+    const fixture = createFixture([
+      [
+        'lead-august',
+        'August lead',
+        'Hot',
+        'Tomorrow',
+        'Yesterday',
+        'Connected',
+        '',
+        CAMPAIGN_A,
+        'Leads',
+        USER.email
+      ],
+      [
+        'lead-september',
+        'September lead',
+        'Warm',
+        'Tomorrow',
+        'Yesterday',
+        'Connected',
+        '',
+        CAMPAIGN_B,
+        'Leads',
+        USER.email
+      ],
+      [
+        'lead-other',
+        'Another volunteer',
+        'Hot',
+        '',
+        '',
+        '',
+        '',
+        CAMPAIGN_A,
+        'Leads',
+        OTHER_VOLUNTEER_EMAIL
+      ],
+      [
+        'member-row',
+        'Member in the leads sheet',
+        '',
+        '',
+        '',
+        '',
+        '',
+        MEMBERS_CAMPAIGN,
+        'Members',
+        USER.email
+      ]
+    ]);
+
+    const result = await fixture.store.getBootstrapForAuthorizedUser(
+      USER,
+      'all'
+    );
+
+    expect(result.allowed).toBe(true);
+    if (!result.allowed) {
+      throw new Error('Expected user to be authorized.');
+    }
+    expect(result.value.campaignId).toBe('all');
+    expect(result.value.leads.map((lead) => lead.name)).toEqual([
+      'August lead',
+      'September lead'
+    ]);
+  });
+
   it('assigns matching members in Sheet order without sorting candidates', async () => {
     const fixture = createFixture([], LEAD_HEADERS, undefined, [
       [

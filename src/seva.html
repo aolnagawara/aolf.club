@@ -629,6 +629,11 @@
                         class="w-full border rounded px-1 text-sm outline-none focus:ring-1 focus:ring-indigo-500"
                       />
                       <div
+                        x-show="isAllLeadsView() && getLeadCampaignName(lead)"
+                        class="mt-0.5 text-[11px] font-medium text-indigo-600 truncate max-w-[220px]"
+                        x-text="getLeadCampaignName(lead)"
+                      ></div>
+                      <div
                         x-show="shouldShowProgramEditor()"
                         @click="openProgramEditor(lead)"
                         class="mt-0.5 text-[11px] leading-snug font-medium text-slate-500 truncate max-w-[220px] cursor-pointer"

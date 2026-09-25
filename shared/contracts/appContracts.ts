@@ -6,6 +6,20 @@ const NanoIdSchema = z
   .string()
   .regex(/^[A-Za-z0-9_-]{21}$/, 'Expected a Nano ID (21 chars).');
 
+/** Workspace scope that loads every Leads campaign instead of one month. */
+export const ALL_LEADS_SCOPE_ID = 'all';
+
+export function isAllLeadsScope(
+  campaignId: string | null | undefined
+): boolean {
+  return String(campaignId || '').trim() === ALL_LEADS_SCOPE_ID;
+}
+
+const BootstrapCampaignIdSchema = z.union([
+  z.literal(ALL_LEADS_SCOPE_ID),
+  NanoIdSchema
+]);
+
 export const AuthenticatedUserSchema = z.object({
   id: z.string().min(1),
   email: z.email(),
@@ -84,7 +98,7 @@ export const LeadSchema = z.object({
 export const BootstrapResponseSchema = z.object({
   success: z.literal(true),
   user: AuthenticatedUserSchema,
-  campaignId: NanoIdSchema,
+  campaignId: BootstrapCampaignIdSchema,
   config: AppConfigSchema,
   leads: z.array(LeadSchema)
 });

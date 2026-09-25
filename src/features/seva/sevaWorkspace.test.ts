@@ -346,6 +346,176 @@ describe('Seva workspace lead lifecycle', () => {
     );
   });
 
+  it('opens all leads on the first login and restores a saved month later', async () => {
+    const augustId = 'cmpLeads01AbcDefGhIJk';
+    const septemberId = 'cmpLeads02AbcDefGhIJk';
+    const campaigns = [
+      { id: augustId, name: 'August', type: 'Leads' as const },
+      { id: septemberId, name: 'September', type: 'Leads' as const }
+    ];
+    const storage = new Map<string, string>();
+    const loadBootstrap = vi.fn(async (campaignId: string) => ({
+      success: true as const,
+      user: {
+        id: 'user-1',
+        email: 'volunteer@example.com',
+        name: 'Volunteer'
+      },
+      campaignId,
+      config: {
+        id: 'cfgMain01AbcDefGhIJK9',
+        campaigns,
+        programs: [],
+        programDisplayOrder: [],
+        allowedUsers: []
+      },
+      leads:
+        campaignId === 'all'
+          ? [
+              {
+                id: 'lead-august',
+                name: 'August lead',
+                campaignId: augustId,
+                campaignType: 'Leads'
+              },
+              {
+                id: 'lead-september',
+                name: 'September lead',
+                campaignId: septemberId,
+                campaignType: 'Leads'
+              }
+            ]
+          : []
+    }));
+    const installWindow = (href: string) => {
+      vi.stubGlobal('document', { addEventListener: vi.fn() });
+      vi.stubGlobal('window', {
+        location: { href },
+        history: { replaceState: vi.fn() },
+        sessionStorage: {
+          getItem: () => null,
+          setItem: vi.fn(),
+          removeItem: vi.fn()
+        },
+        localStorage: {
+          getItem: (key: string) => storage.get(key) || null,
+          setItem: (key: string, value: string) => {
+            storage.set(key, value);
+          },
+          removeItem: (key: string) => {
+            storage.delete(key);
+          }
+        },
+        appRuntime: {
+          getAuthenticatedUser: vi.fn(async () => ({
+            id: 'user-1',
+            email: 'volunteer@example.com',
+            name: 'Volunteer'
+          })),
+          loadBootstrap
+        }
+      });
+    };
+
+    installWindow('https://aolf.club/seva');
+    const firstLogin = sevaWorkspace();
+    await firstLogin.init();
+
+    expect(loadBootstrap).toHaveBeenCalledWith('all');
+    expect(firstLogin.selectedCampaignId).toBe('all');
+    expect(firstLogin.getSelectedCampaignName()).toBe('All');
+    expect(firstLogin.leads.map((lead) => lead.name)).toEqual([
+      'September lead',
+      'August lead'
+    ]);
+    expect(firstLogin.getLeadCampaignName(firstLogin.leads[0])).toBe(
+      'September'
+    );
+    expect(storage.get('aolf.leadScopeByUser')).toBe(
+      JSON.stringify({ 'volunteer@example.com': 'all' })
+    );
+
+    storage.set(
+      'aolf.leadScopeByUser',
+      JSON.stringify({ 'volunteer@example.com': septemberId })
+    );
+    loadBootstrap.mockClear();
+    installWindow('https://aolf.club/seva');
+    const nextLogin = sevaWorkspace();
+    await nextLogin.init();
+
+    expect(loadBootstrap).toHaveBeenCalledWith(septemberId);
+    expect(nextLogin.selectedCampaignId).toBe(septemberId);
+    expect(nextLogin.getSelectedCampaignName()).toBe('September');
+  });
+
+  it('offers All in the Seva switcher and remembers the chosen month', async () => {
+    const augustId = 'cmpLeads01AbcDefGhIJk';
+    const septemberId = 'cmpLeads02AbcDefGhIJk';
+    const storage = new Map<string, string>();
+    vi.stubGlobal('window', {
+      location: { href: 'https://aolf.club/seva' },
+      history: { replaceState: vi.fn() },
+      localStorage: {
+        getItem: (key: string) => storage.get(key) || null,
+        setItem: (key: string, value: string) => {
+          storage.set(key, value);
+        },
+        removeItem: (key: string) => {
+          storage.delete(key);
+        }
+      },
+      appRuntime: {
+        loadBootstrap: vi.fn(async (campaignId: string) => ({
+          success: true as const,
+          user: {
+            id: 'user-1',
+            email: 'volunteer@example.com'
+          },
+          campaignId,
+          config: {
+            id: 'cfgMain01AbcDefGhIJK9',
+            campaigns: [
+              { id: augustId, name: 'August', type: 'Leads' as const },
+              { id: septemberId, name: 'September', type: 'Leads' as const }
+            ],
+            programs: [],
+            programDisplayOrder: [],
+            allowedUsers: []
+          },
+          leads: []
+        }))
+      }
+    });
+    const app = sevaWorkspace();
+    app.volunteerEmail = 'volunteer@example.com';
+    app.campaigns = [
+      { id: augustId, name: 'August', type: 'Leads' },
+      { id: septemberId, name: 'September', type: 'Leads' }
+    ];
+    app.selectedCampaignId = 'all';
+
+    app.openCampaignSheet();
+
+    expect(app.optionSheetOptions[0]).toEqual({
+      value: 'all',
+      label: 'All',
+      icon: '📋'
+    });
+    expect(app.optionSheetOptions.map((option) => option.label)).toEqual([
+      'All',
+      'August',
+      'September'
+    ]);
+
+    await app.onCampaignChange(septemberId);
+
+    expect(app.selectedCampaignId).toBe(septemberId);
+    expect(storage.get('aolf.leadScopeByUser')).toBe(
+      JSON.stringify({ 'volunteer@example.com': septemberId })
+    );
+  });
+
   it('preserves the current campaign view when a target load fails', async () => {
     const loadBootstrap = vi.fn().mockRejectedValue(new Error('Target failed'));
     vi.stubGlobal('window', { appRuntime: { loadBootstrap } });
@@ -675,6 +845,12 @@ describe('mock lead repository identity', () => {
     const leads = await repository.getBootstrap('cmpLeads01AbcDefGhIJk');
     const members = await repository.getBootstrap('cmpMembs01AbcDefGhIJK');
 
+    const allLeads = await repository.getBootstrap('all');
+    expect(allLeads.campaignId).toBe('all');
+    expect(allLeads.leads.map((lead) => lead.name)).toEqual([
+      'Aarav Sharma',
+      'Nisha Verma'
+    ]);
     expect(
       leads.leads.every((lead) => lead.campaignId === leads.campaignId)
     ).toBe(true);
@@ -791,6 +967,37 @@ describe('Seva workspace selection and bulk actions', () => {
     ]);
     expect(updateLead.mock.calls[0][0].campaignId).toBe(app.campaigns[1].id);
     expect(app.leads).toEqual([]);
+    expect(app.selectedCount()).toBe(0);
+  });
+
+  it('keeps a moved lead visible when every month is open', async () => {
+    const updateLead = vi.fn(async (payload) => ({
+      success: true as const,
+      lead: { id: payload.id, lastUpdated: 'moved' }
+    }));
+    vi.stubGlobal('window', { appRuntime: { updateLead } });
+    const app = sevaWorkspace();
+    const august = {
+      id: 'cmpLeads01AbcDefGhIJk',
+      name: 'August',
+      type: 'Leads' as const
+    };
+    const september = {
+      id: 'cmpLeads02AbcDefGhIJk',
+      name: 'September',
+      type: 'Leads' as const
+    };
+    const lead = createLead(app, august.id, 'Leads', 'stable-all-move-id');
+    app.leads = [lead];
+    app.campaigns = [august, september];
+    app.selectedCampaignId = 'all';
+    app.campaignType = 'Leads';
+    app.toggleLeadSelection(lead);
+
+    await app.moveSelectedRecords(september.id);
+
+    expect(app.leads).toEqual([lead]);
+    expect(lead.campaignId).toBe(september.id);
     expect(app.selectedCount()).toBe(0);
   });
 
@@ -1036,6 +1243,48 @@ describe('Seva workspace selection and bulk actions', () => {
       name: 'New lead'
     });
     expect(app.isCreateRecordModalOpen).toBe(false);
+  });
+
+  it('adds a new lead to the all-months view', async () => {
+    const campaign = {
+      id: 'cmpLeads01AbcDefGhIJk',
+      name: 'August',
+      type: 'Leads' as const
+    };
+    const createLead = vi.fn(async (payload) => ({
+      success: true as const,
+      lead: {
+        id: 'newStableLeadId12345x',
+        mobile: payload.mobile,
+        name: payload.name,
+        quality: 'Quality',
+        followUp: 'Follow-up',
+        lastUpdated: 'Just now',
+        status: 'Response',
+        notes: payload.notes || '',
+        campaignId: payload.campaignId,
+        campaignType: payload.campaignType,
+        assignedVolunteerEmail: 'volunteer@example.com',
+        wishlistPrograms: '',
+        donePrograms: ''
+      }
+    }));
+    vi.stubGlobal('window', { appRuntime: { createLead } });
+    const app = sevaWorkspace();
+    app.campaigns = [campaign];
+    app.selectedCampaignId = 'all';
+    app.campaignType = 'Leads';
+    app.openCreateRecord('Leads');
+    app.createRecordDraft.name = 'New lead';
+    app.createRecordDraft.mobile = '9876543210';
+
+    await app.saveCreatedRecord();
+
+    expect(app.leads[0]).toMatchObject({
+      id: 'newStableLeadId12345x',
+      name: 'New lead',
+      campaignId: campaign.id
+    });
   });
 
   it('rejects an invalid mobile number before creating a record', async () => {

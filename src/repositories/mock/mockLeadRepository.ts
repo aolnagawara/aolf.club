@@ -1,7 +1,9 @@
 import type { LeadRepository } from '../contracts';
 import { nanoid } from 'nanoid';
 import {
+  ALL_LEADS_SCOPE_ID,
   AssignMembersRequestSchema,
+  isAllLeadsScope,
   AssignMembersResponseSchema,
   BootstrapResponseSchema,
   CreateLeadRequestSchema,
@@ -29,6 +31,25 @@ export class MockLeadRepository implements LeadRepository {
   private leads: Lead[] = structuredClone(mockBootstrapData.leads);
 
   async getBootstrap(campaignId?: string | null): Promise<BootstrapResponse> {
+    if (isAllLeadsScope(campaignId)) {
+      const leadCampaignIds = new Set(
+        mockBootstrapData.config.campaigns
+          .filter((campaign) => campaign.type === 'Leads')
+          .map((campaign) => campaign.id)
+      );
+      return BootstrapResponseSchema.parse({
+        ...mockBootstrapData,
+        campaignId: ALL_LEADS_SCOPE_ID,
+        leads: this.leads
+          .filter(
+            (lead) =>
+              lead.campaignType === 'Leads' &&
+              leadCampaignIds.has(String(lead.campaignId || ''))
+          )
+          .map((lead) => ({ ...lead }))
+      });
+    }
+
     const selectedCampaignId = campaignId || mockBootstrapData.campaignId;
     const selectedCampaign = mockBootstrapData.config.campaigns.find(
       (campaign) => campaign.id === selectedCampaignId

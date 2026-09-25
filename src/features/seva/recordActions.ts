@@ -1,4 +1,5 @@
 import {
+  isAllLeadsScope,
   MAX_MEMBERS_PER_VOLUNTEER,
   type UpdateLeadRequest
 } from '../../../shared/contracts/appContracts';
@@ -94,7 +95,24 @@ function toUpdateRequest(
   };
 }
 
-function getMoveCampaignDestinations(context: SevaWorkspaceContext): Campaign[] {
+function campaignForRecord(
+  context: SevaWorkspaceContext,
+  lead: Lead
+): Campaign | undefined {
+  const fromLead = context.campaigns.find(
+    (campaign) => campaign.id === lead.campaignId
+  );
+  if (fromLead) {
+    return fromLead;
+  }
+  return context.campaigns.find(
+    (campaign) => campaign.id === context.selectedCampaignId
+  );
+}
+
+function getMoveCampaignDestinations(
+  context: SevaWorkspaceContext
+): Campaign[] {
   if (context.campaignType === 'Members') {
     return context.campaigns.filter((campaign) => campaign.type === 'Leads');
   }
@@ -308,9 +326,18 @@ export function createRecordActionMethods() {
             .map((lead) => lead.id)
         );
         if (this.campaignType !== 'Members') {
-          this.leads = this.leads.filter((lead) => !movedIds.has(lead.id));
-          if (movedIds.has(this.activeCardId)) {
-            this.activeCardId = '';
+          if (isAllLeadsScope(this.selectedCampaignId)) {
+            records.forEach((lead) => {
+              if (movedIds.has(lead.id)) {
+                lead.campaignId = campaign.id;
+                lead.campaignType = campaign.type;
+              }
+            });
+          } else {
+            this.leads = this.leads.filter((lead) => !movedIds.has(lead.id));
+            if (movedIds.has(this.activeCardId)) {
+              this.activeCardId = '';
+            }
           }
         }
         this.selectedIds = new Set(
@@ -415,12 +442,9 @@ export function createRecordActionMethods() {
         .trim()
         .toLowerCase();
       const records = getSelectedRecords(this);
-      const campaign = this.campaigns.find(
-        (item) => item.id === this.selectedCampaignId
-      );
       if (
         !records.length ||
-        !campaign ||
+        records.some((lead) => !campaignForRecord(this, lead)) ||
         !getAllowedVolunteers(this).some(
           (volunteer) => volunteer.email === normalizedEmail
         )
@@ -438,12 +462,16 @@ export function createRecordActionMethods() {
             'Save pending edits before reassigning these records.';
           return;
         }
-        const results = await runSequentialLeadRequests(records, (lead) =>
-          window.appRuntime.updateLead({
+        const results = await runSequentialLeadRequests(records, (lead) => {
+          const campaign = campaignForRecord(this, lead);
+          if (!campaign) {
+            return Promise.reject(new Error('Campaign not found.'));
+          }
+          return window.appRuntime.updateLead({
             ...toUpdateRequest(this, lead, campaign),
             assignedVolunteerEmail: normalizedEmail
-          })
-        );
+          });
+        });
         const reassignedIds = new Set(
           records
             .filter((_, index) => results[index].status === 'fulfilled')
@@ -678,7 +706,11 @@ export function createRecordActionMethods() {
           campaignId: this.createRecordDraft.campaignId,
           campaignType: this.createRecordType
         });
-        if (response.lead.campaignId === this.selectedCampaignId) {
+        if (
+          response.lead.campaignId === this.selectedCampaignId ||
+          (isAllLeadsScope(this.selectedCampaignId) &&
+            response.lead.campaignType === 'Leads')
+        ) {
           this.leads = [this.normalizeLead(response.lead), ...this.leads];
         }
         this.isCreateRecordModalOpen = false;

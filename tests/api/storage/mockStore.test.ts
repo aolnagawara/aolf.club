@@ -15,6 +15,19 @@ describe('mock store campaign selection', () => {
       )
     ).rejects.toThrow('CAMPAIGN_NOT_FOUND');
   });
+
+  it('returns assigned leads from every leads campaign for the all scope', async () => {
+    const result = await getBootstrapForUser(
+      { id: 'user-1', email: 'volunteer@example.com' },
+      'all'
+    );
+
+    expect(result.campaignId).toBe('all');
+    expect(result.leads.map((lead) => lead.name)).toEqual(['Aarav Sharma']);
+    expect(result.leads.every((lead) => lead.campaignType === 'Leads')).toBe(
+      true
+    );
+  });
 });
 
 describe('mock store courses', () => {
