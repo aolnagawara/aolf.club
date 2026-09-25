@@ -1663,4 +1663,25 @@ describe('Seva workspace program editor', () => {
     expect(app.getProgramSummary(lead)).toBe('✏️ Program');
     expect(lead.isDirty).toBe(false);
   });
+
+  it('places the month short form next to the target course in All', () => {
+    const app = sevaWorkspace();
+    const campaignId = 'cmpLeads01AbcDefGhIJk';
+    app.campaigns = [{ id: campaignId, name: 'July Leads Campaign', type: 'Leads' }];
+    app.appConfig.showDonePrograms = true;
+    const lead = createLead(app, campaignId);
+    app.selectedCampaignId = 'all';
+    lead.wishlistPrograms = ['HP', 'DSN'];
+    lead.donePrograms = ['VTP'];
+    app.refreshLeadProgramSummary(lead);
+
+    expect(app.getLeadProgramCourse(lead)).toBe('🎯DSN·HP');
+    expect(app.getLeadProgramMonth(lead)).toBe('Jul');
+    expect(app.getLeadProgramAfter(lead)).toBe(' | ✅VTP');
+
+    app.selectedCampaignId = campaignId;
+    expect(app.getLeadProgramCourse(lead)).toBe(lead.programSummary);
+    expect(app.getLeadProgramMonth(lead)).toBe('');
+    expect(app.getLeadProgramAfter(lead)).toBe('');
+  });
 });
