@@ -112,6 +112,17 @@ function createFixture(
       void rowValues;
     }
   );
+  const appendSheetRows = vi.fn(
+    async (
+      target: SpreadsheetTarget,
+      range: string,
+      rows: string[][]
+    ): Promise<void> => {
+      void target;
+      void range;
+      void rows;
+    }
+  );
   const deleteSheetRow = vi.fn(
     async (
       target: SpreadsheetTarget,
@@ -125,6 +136,7 @@ function createFixture(
   );
   const store = createSheetsStore({
     appendSheetRow,
+    appendSheetRows,
     deleteSheetRow,
     readSheetValues,
     readSheetValuesBatch,
@@ -135,6 +147,7 @@ function createFixture(
 
   return {
     appendSheetRow,
+    appendSheetRows,
     deleteSheetRow,
     readSheetValues,
     readSheetValuesBatch,
@@ -749,5 +762,108 @@ describe('Sheets store campaign and access scoping', () => {
       2,
       expect.anything()
     );
+  });
+});
+
+describe('Sheets store lead import', () => {
+  const headers = [...LEAD_HEADERS, 'mobile'];
+
+  function existingLead(mobile: string): string[] {
+    return [
+      'existingLeadId0000001',
+      'Aarav Sharma',
+      'Quality',
+      'Follow-up',
+      '2026-08-01T00:00:00.000Z',
+      'Response',
+      '',
+      CAMPAIGN_A,
+      'Leads',
+      USER.email,
+      '',
+      '',
+      mobile
+    ];
+  }
+
+  it('assigns imported leads to the signed-in user and skips known mobiles', async () => {
+    const fixture = createFixture([existingLead('9876543210')], headers);
+    const result = await fixture.store.importLeadsForAuthorizedUser(USER, {
+      campaignId: CAMPAIGN_A,
+      rows: [
+        ['Full Name', 'Phone Number', 'Location', 'Assigned To'],
+        ['Anita Rao', '9876543210', 'Hebbal', 'someone@else.com'],
+        ['Ravi Kumar', '+91 91234 56789', 'Indiranagar', 'someone@else.com'],
+        ['', '9988776655', 'JP Nagar', ''],
+        ['Meera Iyer', 'not-a-phone', 'Whitefield', '']
+      ]
+    });
+
+    expect(result.allowed).toBe(true);
+    if (!result.allowed) {
+      return;
+    }
+    expect(result.value).toMatchObject({
+      outcome: 'imported',
+      importedCount: 1,
+      skippedCount: 1,
+      invalidCount: 2
+    });
+    expect(result.value.leads).toEqual([
+      expect.objectContaining({
+        name: 'Ravi Kumar',
+        mobile: '9123456789',
+        assignedVolunteerEmail: 'volunteer@example.com',
+        campaignId: CAMPAIGN_A,
+        campaignType: 'Leads',
+        notes: 'Location: Indiranagar\nAssigned To: someone@else.com'
+      })
+    ]);
+    expect(fixture.appendSheetRows).toHaveBeenCalledOnce();
+    const appended = fixture.appendSheetRows.mock.calls[0][2] as string[][];
+    expect(appended).toHaveLength(1);
+    expect(appended[0][headers.indexOf('assignedVolunteerEmail')]).toBe(
+      'volunteer@example.com'
+    );
+    expect(appended[0][headers.indexOf('notes')]).toBe(
+      'Location: Indiranagar\nAssigned To: someone@else.com'
+    );
+  });
+
+  it('does not write rows when name or mobile cannot be identified', async () => {
+    const fixture = createFixture([], headers);
+    const result = await fixture.store.importLeadsForAuthorizedUser(USER, {
+      campaignId: CAMPAIGN_A,
+      rows: [
+        ['Person', 'Place', 'Detail'],
+        ['Anita Rao', 'Hebbal', 'Morning'],
+        ['Ravi Kumar', 'Indiranagar', 'Evening']
+      ]
+    });
+
+    expect(result).toMatchObject({
+      allowed: true,
+      value: {
+        outcome: 'needs_columns',
+        missingColumns: ['Name', 'Mobile'],
+        importedCount: 0,
+        leads: []
+      }
+    });
+    expect(fixture.appendSheetRows).not.toHaveBeenCalled();
+  });
+
+  it('rejects a members campaign', async () => {
+    const fixture = createFixture([], headers);
+    await expect(
+      fixture.store.importLeadsForAuthorizedUser(USER, {
+        campaignId: MEMBERS_CAMPAIGN,
+        rows: [
+          ['Name', 'Mobile'],
+          ['Ravi Kumar', '9123456789']
+        ]
+      })
+    ).rejects.toThrow('CAMPAIGN_TYPE_MISMATCH');
+    expect(fixture.appendSheetRows).not.toHaveBeenCalled();
   });
 });

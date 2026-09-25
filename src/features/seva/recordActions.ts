@@ -12,6 +12,12 @@ import type {
 } from './types';
 import { toUserErrorMessage } from '../../services/apiClient';
 import { normalizeIndianMobile } from '../../../shared/contracts/indianMobile';
+import {
+  CHOOSE_MONTH_MESSAGE,
+  formatImportResult,
+  parseGoogleSheetUrl,
+  PASTE_SHEET_LINK_MESSAGE
+} from '../../../shared/contracts/leadImport';
 
 const CARD_LONG_PRESS_MS = 500;
 const CARD_MOVE_TOLERANCE_PX = 10;
@@ -724,6 +730,62 @@ export function createRecordActionMethods() {
         );
       } finally {
         this.isCreateRecordSaving = false;
+      }
+    },
+    openImportLeads(this: SevaWorkspaceContext): void {
+      this.isFabOpen = false;
+      this.importSheetUrl = '';
+      this.importLeadsMessage = '';
+      this.importLeadsNeedsRetry = false;
+      this.isImportLeadsModalOpen = true;
+    },
+    closeImportLeads(this: SevaWorkspaceContext): void {
+      if (!this.isImportingLeads) {
+        this.isImportLeadsModalOpen = false;
+      }
+    },
+    async submitLeadImport(this: SevaWorkspaceContext): Promise<void> {
+      if (this.isImportingLeads) {
+        return;
+      }
+      if (this.campaignType === 'Members' || this.isAllLeadsView()) {
+        this.importLeadsMessage = CHOOSE_MONTH_MESSAGE;
+        this.importLeadsNeedsRetry = false;
+        return;
+      }
+      const sheetUrl = String(this.importSheetUrl || '').trim();
+      if (!parseGoogleSheetUrl(sheetUrl)) {
+        this.importLeadsMessage = PASTE_SHEET_LINK_MESSAGE;
+        this.importLeadsNeedsRetry = true;
+        return;
+      }
+
+      this.isImportingLeads = true;
+      this.importLeadsMessage = '';
+      this.importLeadsNeedsRetry = false;
+      try {
+        const response = await window.appRuntime.importLeads({
+          sheetUrl,
+          campaignId: this.selectedCampaignId
+        });
+        const formatted = formatImportResult(response);
+        this.importLeadsMessage = formatted.message;
+        this.importLeadsNeedsRetry = formatted.needsRetry;
+        if (response.outcome === 'imported' && response.leads.length) {
+          this.leads = [
+            ...response.leads.map((lead) => this.normalizeLead(lead)),
+            ...this.leads
+          ];
+        }
+      } catch (error) {
+        const fallback =
+          error instanceof Error && error.message
+            ? error.message
+            : 'Unable to import leads. Please try again.';
+        this.importLeadsMessage = toUserErrorMessage(error, fallback);
+        this.importLeadsNeedsRetry = true;
+      } finally {
+        this.isImportingLeads = false;
       }
     }
   };

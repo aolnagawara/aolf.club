@@ -9,6 +9,7 @@ import {
   CreateCourseResponseSchema,
   CreateLeadRequestSchema,
   CreateLeadResponseSchema,
+  ImportLeadsResponseSchema,
   DeleteCourseRequestSchema,
   DeleteCourseResponseSchema,
   DeleteLeadRequestSchema,
@@ -28,6 +29,7 @@ import {
   type Course,
   type CreateCourseResponse,
   type CreateLeadResponse,
+  type ImportLeadsResponse,
   type DeleteCourseResponse,
   type DeleteLeadResponse,
   type Lead,
@@ -47,7 +49,16 @@ import {
 } from '../../../shared/contracts/courseDefaults.mjs';
 import { defaultCourseTemplates } from '../../../shared/contracts/courseTemplates.mjs';
 import { SHEET_HEADERS } from '../../../shared/contracts/sheetContract.mjs';
-import { normalizeEmail } from '../http/normalization.js';
+import {
+  normalizeEmail,
+  normalizeIndianMobile
+} from '../http/normalization.js';
+import {
+  LeadImportError,
+  MAX_IMPORT_ROWS,
+  planLeadImport,
+  sheetTooLargeMessage
+} from '../../../shared/contracts/leadImport.js';
 import {
   applyCourseDefaults,
   courseFromRow,
@@ -74,6 +85,7 @@ import {
 } from './table.js';
 import {
   appendSheetRow as defaultAppendSheetRow,
+  appendSheetRows as defaultAppendSheetRows,
   createSheetsOperation,
   deleteSheetRow as defaultDeleteSheetRow,
   readSheetValues as defaultReadSheetValues,
@@ -123,6 +135,12 @@ type AppendSheetRow = (
   rowValues: string[],
   operation?: SheetsOperation
 ) => Promise<void>;
+type AppendSheetRows = (
+  target: SpreadsheetTarget,
+  range: string,
+  rows: string[][],
+  operation?: SheetsOperation
+) => Promise<void>;
 type DeleteSheetRow = (
   target: SpreadsheetTarget,
   sheetName: string,
@@ -135,6 +153,7 @@ export type SheetsStoreDependencies = {
   readSheetValuesBatch?: ReadSheetValuesBatch;
   updateSheetValuesBatch?: UpdateSheetValuesBatch;
   appendSheetRow?: AppendSheetRow;
+  appendSheetRows?: AppendSheetRows;
   deleteSheetRow?: DeleteSheetRow;
   getSheetLayout?: () => SheetLayout;
   now?: () => Date;
@@ -549,6 +568,8 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
   const updateSheetValuesBatch =
     dependencies.updateSheetValuesBatch || defaultUpdateSheetValuesBatch;
   const appendSheetRow = dependencies.appendSheetRow || defaultAppendSheetRow;
+  const appendSheetRows =
+    dependencies.appendSheetRows || defaultAppendSheetRows;
   const deleteSheetRow = dependencies.deleteSheetRow || defaultDeleteSheetRow;
   const getSheetLayout = dependencies.getSheetLayout || defaultGetSheetLayout;
   const now = dependencies.now || (() => new Date());
@@ -987,6 +1008,146 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
     return CreateLeadResponseSchema.parse({ success: true, lead });
   }
 
+  function readImportBatch(payload: unknown): {
+    campaignId: string;
+    rows: string[][];
+  } {
+    const record =
+      typeof payload === 'object' && payload !== null
+        ? (payload as Record<string, unknown>)
+        : {};
+    const campaignId =
+      typeof record.campaignId === 'string' ? record.campaignId.trim() : '';
+    const rows = Array.isArray(record.rows)
+      ? record.rows.map((row) =>
+          Array.isArray(row)
+            ? row.map((cell) => (cell == null ? '' : String(cell)))
+            : []
+        )
+      : [];
+    return { campaignId, rows };
+  }
+
+  async function importLeads(
+    user: SessionUser,
+    snapshot: MetadataSnapshot,
+    operation: SheetsOperation,
+    rawPayload: unknown
+  ): Promise<ImportLeadsResponse> {
+    const payload = readImportBatch(rawPayload);
+    if (payload.rows.length > MAX_IMPORT_ROWS + 1) {
+      throw new LeadImportError('SHEET_TOO_LARGE', sheetTooLargeMessage());
+    }
+    const campaign = snapshot.config.campaigns.find(
+      (item) => item.id === payload.campaignId
+    );
+    if (!campaign) {
+      throw new Error('CAMPAIGN_NOT_FOUND');
+    }
+    if (campaign.type !== 'Leads') {
+      throw new Error('CAMPAIGN_TYPE_MISMATCH');
+    }
+
+    const layout = getSheetLayout();
+    const sheetRows = await readSheetValues(
+      'data',
+      layout.leadsRange,
+      operation
+    );
+    const headers = (sheetRows[0] || []).map((value) =>
+      String(value || '').trim()
+    );
+    if (!headers.length) {
+      throw new Error('Lead sheet is missing header row.');
+    }
+    const columns = resolveLeadColumns(headers);
+    if (columns.id < 0 || columns.campaignId < 0 || columns.mobile < 0) {
+      throw new Error(
+        'Lead sheet must contain id, mobile, and campaignId columns.'
+      );
+    }
+
+    const existingMobiles = new Set<string>();
+    for (let index = 1; index < sheetRows.length; index += 1) {
+      const mobile = normalizeIndianMobile(
+        getCell(sheetRows[index], columns.mobile)
+      );
+      if (mobile) {
+        existingMobiles.add(mobile);
+      }
+    }
+
+    const plan = planLeadImport(payload.rows, existingMobiles);
+    if (plan.outcome === 'needs_columns') {
+      return ImportLeadsResponseSchema.parse({
+        success: true,
+        outcome: 'needs_columns',
+        importedCount: 0,
+        skippedCount: 0,
+        invalidCount: 0,
+        missingColumns: plan.missingColumns,
+        leads: []
+      });
+    }
+
+    const timestamp = now().toISOString();
+    const assignee = normalizeEmail(user.email);
+    const leads: Lead[] = [];
+    const appendedRows: string[][] = [];
+    plan.leads.forEach((item) => {
+      const id = nanoid();
+      const row = Array<string>(headers.length).fill('');
+      const setCell = (columnIndex: number, value: string) => {
+        if (columnIndex >= 0) {
+          row[columnIndex] = value;
+        }
+      };
+      setCell(columns.id, id);
+      setCell(columns.mobile, item.mobile);
+      setCell(columns.name, item.name);
+      setCell(columns.quality, 'Quality');
+      setCell(columns.followUp, 'Follow-up');
+      setCell(columns.lastUpdated, timestamp);
+      setCell(columns.status, 'Response');
+      setCell(columns.notes, item.notes);
+      setCell(columns.campaignId, campaign.id);
+      setCell(columns.campaignType, 'Leads');
+      setCell(columns.assignedVolunteerEmail, assignee);
+      appendedRows.push(row);
+      leads.push(
+        LeadSchema.parse({
+          id,
+          mobile: item.mobile,
+          name: item.name,
+          quality: 'Quality',
+          followUp: 'Follow-up',
+          lastUpdated: timestamp,
+          status: 'Response',
+          notes: item.notes,
+          campaignId: campaign.id,
+          campaignType: 'Leads',
+          assignedVolunteerEmail: assignee,
+          wishlistPrograms: '',
+          donePrograms: ''
+        })
+      );
+    });
+
+    if (appendedRows.length) {
+      await appendSheetRows('data', layout.leadsRange, appendedRows, operation);
+    }
+
+    return ImportLeadsResponseSchema.parse({
+      success: true,
+      outcome: 'imported',
+      importedCount: leads.length,
+      skippedCount: plan.skippedCount,
+      invalidCount: plan.invalidCount,
+      missingColumns: [],
+      leads
+    });
+  }
+
   async function deleteLead(
     user: SessionUser,
     operation: SheetsOperation,
@@ -1390,6 +1551,23 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
         return {
           allowed: true,
           value: await createLead(user, snapshot, activeOperation, payload)
+        };
+      });
+    },
+
+    async importLeadsForAuthorizedUser(
+      user: SessionUser,
+      payload: unknown,
+      operation?: SheetsOperation
+    ): Promise<AuthorizedStoreResult<ImportLeadsResponse>> {
+      return withStoreOperation(operation, async (activeOperation) => {
+        const snapshot = await loadMetadataSnapshot(activeOperation);
+        if (!isUserAllowed(snapshot, user)) {
+          return { allowed: false };
+        }
+        return {
+          allowed: true,
+          value: await importLeads(user, snapshot, activeOperation, payload)
         };
       });
     },

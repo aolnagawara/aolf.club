@@ -5,14 +5,18 @@ import type {
   ApiResponse
 } from '../../../api/_lib/http/responses.js';
 
-const { mockReadSessionUser, mockStore } = vi.hoisted(() => ({
-  mockReadSessionUser: vi.fn(),
-  mockStore: {
-    createLeadForAuthorizedUser: vi.fn(),
-    updateLeadForAuthorizedUser: vi.fn(),
-    deleteLeadForAuthorizedUser: vi.fn()
-  }
-}));
+const { mockReadSessionUser, mockStore, mockLoadImportSheetRows } = vi.hoisted(
+  () => ({
+    mockReadSessionUser: vi.fn(),
+    mockLoadImportSheetRows: vi.fn(),
+    mockStore: {
+      createLeadForAuthorizedUser: vi.fn(),
+      updateLeadForAuthorizedUser: vi.fn(),
+      deleteLeadForAuthorizedUser: vi.fn(),
+      importLeadsForAuthorizedUser: vi.fn()
+    }
+  })
+);
 
 vi.mock('../../../api/_lib/auth/session.js', () => ({
   readSessionUser: mockReadSessionUser
@@ -22,7 +26,15 @@ vi.mock('../../../api/_lib/storage/dataStore.js', () => ({
   getApiDataStore: () => mockStore
 }));
 
+vi.mock('../../../api/_lib/leads/importSheet.js', () => ({
+  loadImportSheetRows: mockLoadImportSheetRows
+}));
+
 import leadHandler from '../../../api/leads/index.js';
+import {
+  LeadImportError,
+  SHEET_SHARE_MESSAGE
+} from '../../../shared/contracts/leadImport.js';
 
 function createResponse() {
   const state: { statusCode: number; body: unknown } = {
@@ -136,5 +148,132 @@ describe('lead API error classification', () => {
       }
     });
     expect(console.error).toHaveBeenCalledOnce();
+  });
+});
+
+describe('lead import API', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockReadSessionUser.mockResolvedValue({
+      id: 'user-1',
+      email: 'volunteer@example.com'
+    });
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+  });
+
+  it('imports rows from the sheet and returns the signed-in assignee', async () => {
+    mockLoadImportSheetRows.mockResolvedValue([
+      ['Name', 'Mobile', 'Assigned To'],
+      ['Ravi Kumar', '9123456789', 'someone@else.com']
+    ]);
+    mockStore.importLeadsForAuthorizedUser.mockResolvedValue({
+      allowed: true,
+      value: {
+        success: true,
+        outcome: 'imported',
+        importedCount: 1,
+        skippedCount: 0,
+        invalidCount: 0,
+        missingColumns: [],
+        leads: [
+          {
+            id: 'importedLeadId0000001',
+            name: 'Ravi Kumar',
+            mobile: '9123456789',
+            assignedVolunteerEmail: 'volunteer@example.com',
+            notes: 'Assigned To: someone@else.com',
+            campaignId: 'cmpLeads01AbcDefGhIJk',
+            campaignType: 'Leads'
+          }
+        ]
+      }
+    });
+    const { response, state } = createResponse();
+
+    await leadHandler(
+      {
+        method: 'POST',
+        headers: {},
+        query: { action: 'import' },
+        body: {
+          sheetUrl:
+            'https://docs.google.com/spreadsheets/d/1AbCdEfGhIjKlMnOpQrStUvWxYz0123456789abc/edit',
+          campaignId: 'cmpLeads01AbcDefGhIJk'
+        }
+      },
+      response
+    );
+
+    expect(mockLoadImportSheetRows).toHaveBeenCalledOnce();
+    expect(mockStore.importLeadsForAuthorizedUser).toHaveBeenCalledWith(
+      { id: 'user-1', email: 'volunteer@example.com' },
+      {
+        campaignId: 'cmpLeads01AbcDefGhIJk',
+        rows: [
+          ['Name', 'Mobile', 'Assigned To'],
+          ['Ravi Kumar', '9123456789', 'someone@else.com']
+        ]
+      }
+    );
+    expect(state.statusCode).toBe(200);
+    expect(state.body).toMatchObject({
+      importedCount: 1,
+      leads: [
+        expect.objectContaining({
+          assignedVolunteerEmail: 'volunteer@example.com'
+        })
+      ]
+    });
+  });
+
+  it('rejects a link that is not a Google Sheet', async () => {
+    const { response, state } = createResponse();
+
+    await leadHandler(
+      {
+        method: 'POST',
+        headers: {},
+        query: { action: 'import' },
+        body: {
+          sheetUrl: 'https://example.com/sheet',
+          campaignId: 'cmpLeads01AbcDefGhIJk'
+        }
+      },
+      response
+    );
+
+    expect(mockLoadImportSheetRows).not.toHaveBeenCalled();
+    expect(state.statusCode).toBe(400);
+    expect(state.body).toMatchObject({
+      success: false,
+      error: { message: 'Paste a Google Sheets link.' }
+    });
+  });
+
+  it('returns the share message when the sheet cannot be read', async () => {
+    mockLoadImportSheetRows.mockRejectedValue(
+      new LeadImportError('SHEET_NOT_READABLE', SHEET_SHARE_MESSAGE)
+    );
+    const { response, state } = createResponse();
+
+    await leadHandler(
+      {
+        method: 'POST',
+        headers: {},
+        query: { action: 'import' },
+        body: {
+          sheetUrl:
+            'https://docs.google.com/spreadsheets/d/1AbCdEfGhIjKlMnOpQrStUvWxYz0123456789abc/edit',
+          campaignId: 'cmpLeads01AbcDefGhIJk'
+        }
+      },
+      response
+    );
+
+    expect(state.statusCode).toBe(400);
+    expect(state.body).toMatchObject({
+      success: false,
+      error: { message: SHEET_SHARE_MESSAGE }
+    });
   });
 });

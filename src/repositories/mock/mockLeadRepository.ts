@@ -8,6 +8,8 @@ import {
   BootstrapResponseSchema,
   CreateLeadRequestSchema,
   CreateLeadResponseSchema,
+  ImportLeadsRequestSchema,
+  ImportLeadsResponseSchema,
   DeleteLeadRequestSchema,
   DeleteLeadResponseSchema,
   UpdateLeadRequestSchema,
@@ -18,6 +20,8 @@ import {
   type BootstrapResponse,
   type CreateLeadRequest,
   type CreateLeadResponse,
+  type ImportLeadsRequest,
+  type ImportLeadsResponse,
   type DeleteLeadRequest,
   type DeleteLeadResponse,
   type Lead,
@@ -25,6 +29,13 @@ import {
   type UpdateLeadResponse
 } from '../../../shared/contracts/appContracts';
 import { matchesMemberEngagement } from '../../../shared/memberAssignment';
+import { normalizeIndianMobile } from '../../../shared/contracts/indianMobile';
+import {
+  CHOOSE_MONTH_MESSAGE,
+  LeadImportError,
+  planLeadImport,
+  readPublicGoogleSheet
+} from '../../../shared/contracts/leadImport';
 import { mockBootstrapData } from './mockData';
 
 export class MockLeadRepository implements LeadRepository {
@@ -178,6 +189,62 @@ export class MockLeadRepository implements LeadRepository {
     };
     this.leads.push(lead);
     return CreateLeadResponseSchema.parse({ success: true, lead });
+  }
+
+  async importLeads(payload: ImportLeadsRequest): Promise<ImportLeadsResponse> {
+    const parsed = ImportLeadsRequestSchema.parse(payload);
+    const campaign = mockBootstrapData.config.campaigns.find(
+      (item) => item.id === parsed.campaignId
+    );
+    if (!campaign || campaign.type !== 'Leads') {
+      throw new LeadImportError('INVALID_CAMPAIGN', CHOOSE_MONTH_MESSAGE);
+    }
+    const rows = await readPublicGoogleSheet(parsed.sheetUrl);
+    const existingMobiles = new Set(
+      this.leads
+        .filter((lead) => lead.campaignType !== 'Members')
+        .map((lead) => normalizeIndianMobile(lead.mobile))
+        .filter(Boolean)
+    );
+    const plan = planLeadImport(rows, existingMobiles);
+    if (plan.outcome === 'needs_columns') {
+      return ImportLeadsResponseSchema.parse({
+        success: true,
+        outcome: 'needs_columns',
+        importedCount: 0,
+        skippedCount: 0,
+        invalidCount: 0,
+        missingColumns: plan.missingColumns,
+        leads: []
+      });
+    }
+
+    const assignee = mockBootstrapData.user.email.toLowerCase();
+    const leads: Lead[] = plan.leads.map((item) => ({
+      id: nanoid(),
+      mobile: item.mobile,
+      name: item.name,
+      quality: 'Quality',
+      followUp: 'Follow-up',
+      lastUpdated: 'Just now',
+      status: 'Response',
+      notes: item.notes,
+      campaignId: parsed.campaignId,
+      campaignType: 'Leads',
+      assignedVolunteerEmail: assignee,
+      wishlistPrograms: '',
+      donePrograms: ''
+    }));
+    this.leads.push(...leads);
+    return ImportLeadsResponseSchema.parse({
+      success: true,
+      outcome: 'imported',
+      importedCount: leads.length,
+      skippedCount: plan.skippedCount,
+      invalidCount: plan.invalidCount,
+      missingColumns: [],
+      leads
+    });
   }
 
   async deleteLead(payload: DeleteLeadRequest): Promise<DeleteLeadResponse> {

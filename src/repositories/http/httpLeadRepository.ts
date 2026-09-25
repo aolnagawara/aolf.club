@@ -5,6 +5,8 @@ import {
   BootstrapResponseSchema,
   CreateLeadRequestSchema,
   CreateLeadResponseSchema,
+  ImportLeadsRequestSchema,
+  ImportLeadsResponseSchema,
   DeleteLeadRequestSchema,
   DeleteLeadResponseSchema,
   UpdateLeadRequestSchema,
@@ -14,6 +16,8 @@ import {
   type BootstrapResponse,
   type CreateLeadRequest,
   type CreateLeadResponse,
+  type ImportLeadsRequest,
+  type ImportLeadsResponse,
   type DeleteLeadRequest,
   type DeleteLeadResponse,
   type UpdateLeadRequest,
@@ -58,6 +62,16 @@ export class HttpLeadRepository implements LeadRepository {
     const parsed = CreateLeadRequestSchema.parse(payload);
     const response = await this.apiClient.post<unknown>('/api/leads', parsed);
     return CreateLeadResponseSchema.parse(response);
+  }
+
+  async importLeads(payload: ImportLeadsRequest): Promise<ImportLeadsResponse> {
+    const parsed = ImportLeadsRequestSchema.parse(payload);
+    const response = await this.apiClient.post<unknown>(
+      '/api/leads?action=import',
+      parsed,
+      20_000
+    );
+    return ImportLeadsResponseSchema.parse(response);
   }
 
   async deleteLead(payload: DeleteLeadRequest): Promise<DeleteLeadResponse> {

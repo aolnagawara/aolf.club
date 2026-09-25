@@ -5,6 +5,7 @@ import { ApiClient } from './apiClient';
 import type {
   AssignMembersRequest,
   CreateLeadRequest,
+  ImportLeadsRequest,
   DeleteLeadRequest,
   UpdateLeadRequest
 } from '../../shared/contracts/appContracts';
@@ -19,9 +20,10 @@ async function getRepository(): Promise<LeadRepository> {
     return httpLeadRepository;
   }
   if (!mockLeadRepositoryPromise) {
-    mockLeadRepositoryPromise = import(
-      '../repositories/mock/mockLeadRepository'
-    ).then(({ MockLeadRepository }) => new MockLeadRepository());
+    mockLeadRepositoryPromise =
+      import('../repositories/mock/mockLeadRepository').then(
+        ({ MockLeadRepository }) => new MockLeadRepository()
+      );
   }
   return mockLeadRepositoryPromise;
 }
@@ -35,6 +37,9 @@ export const leadService = {
   },
   async createLead(payload: CreateLeadRequest) {
     return (await getRepository()).createLead(payload);
+  },
+  async importLeads(payload: ImportLeadsRequest) {
+    return (await getRepository()).importLeads(payload);
   },
   async updateLead(payload: UpdateLeadRequest) {
     return (await getRepository()).updateLead(payload);

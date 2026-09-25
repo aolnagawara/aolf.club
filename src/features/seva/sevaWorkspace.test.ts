@@ -1308,6 +1308,115 @@ describe('Seva workspace selection and bulk actions', () => {
     expect(app.authError).toBe('Enter a valid 10-digit Indian mobile number.');
     expect(app.isCreateRecordModalOpen).toBe(true);
   });
+
+  it('imports leads into the open month and shows the counts', async () => {
+    const importLeads = vi.fn(async () => ({
+      success: true as const,
+      outcome: 'imported' as const,
+      importedCount: 1,
+      skippedCount: 1,
+      invalidCount: 0,
+      missingColumns: [],
+      leads: [
+        {
+          id: 'importedLeadId0000001',
+          mobile: '9090909090',
+          name: 'Ravi Kumar',
+          quality: 'Quality',
+          followUp: 'Follow-up',
+          lastUpdated: 'Just now',
+          status: 'Response',
+          notes: 'Location: Hebbal',
+          campaignId: 'cmpLeads01AbcDefGhIJk',
+          campaignType: 'Leads' as const,
+          assignedVolunteerEmail: 'volunteer@example.com',
+          wishlistPrograms: '',
+          donePrograms: ''
+        }
+      ]
+    }));
+    vi.stubGlobal('window', { appRuntime: { importLeads } });
+    const app = sevaWorkspace();
+    app.campaignType = 'Leads';
+    app.selectedCampaignId = 'cmpLeads01AbcDefGhIJk';
+    app.importSheetUrl =
+      'https://docs.google.com/spreadsheets/d/1AbCdEfGhIjKlMnOpQrStUvWxYz0123456789abc/edit';
+
+    await app.submitLeadImport();
+
+    expect(importLeads).toHaveBeenCalledWith({
+      sheetUrl: app.importSheetUrl,
+      campaignId: 'cmpLeads01AbcDefGhIJk'
+    });
+    expect(app.importLeadsMessage).toBe(
+      '1 lead imported\n1 existing lead skipped'
+    );
+    expect(app.importLeadsNeedsRetry).toBe(false);
+    expect(app.leads[0]).toMatchObject({
+      name: 'Ravi Kumar',
+      assignedVolunteerEmail: 'volunteer@example.com',
+      notes: 'Location: Hebbal'
+    });
+  });
+
+  it('asks for a column rename when name or mobile is unclear', async () => {
+    const importLeads = vi.fn(async () => ({
+      success: true as const,
+      outcome: 'needs_columns' as const,
+      importedCount: 0,
+      skippedCount: 0,
+      invalidCount: 0,
+      missingColumns: ['Name' as const],
+      leads: []
+    }));
+    vi.stubGlobal('window', { appRuntime: { importLeads } });
+    const app = sevaWorkspace();
+    app.campaignType = 'Leads';
+    app.selectedCampaignId = 'cmpLeads01AbcDefGhIJk';
+    app.importSheetUrl =
+      'https://docs.google.com/spreadsheets/d/1AbCdEfGhIjKlMnOpQrStUvWxYz0123456789abc/edit';
+
+    await app.submitLeadImport();
+
+    expect(app.importLeadsNeedsRetry).toBe(true);
+    expect(app.importLeadsMessage).toContain(
+      'Could not identify the Name column'
+    );
+    expect(app.importLeadsMessage).toContain('Rename that column to Name');
+    expect(app.leads).toEqual([]);
+  });
+
+  it('does not import while every month is selected', async () => {
+    const importLeads = vi.fn();
+    vi.stubGlobal('window', { appRuntime: { importLeads } });
+    const app = sevaWorkspace();
+    app.campaignType = 'Leads';
+    app.selectedCampaignId = 'all';
+    app.importSheetUrl =
+      'https://docs.google.com/spreadsheets/d/1AbCdEfGhIjKlMnOpQrStUvWxYz0123456789abc/edit';
+
+    await app.submitLeadImport();
+
+    expect(importLeads).not.toHaveBeenCalled();
+    expect(app.importLeadsMessage).toBe(
+      'Choose a month before importing leads.'
+    );
+  });
+
+  it('asks for a Google Sheets link before importing', async () => {
+    const importLeads = vi.fn();
+    vi.stubGlobal('window', { appRuntime: { importLeads } });
+    const app = sevaWorkspace();
+    app.campaignType = 'Leads';
+    app.selectedCampaignId = 'cmpLeads01AbcDefGhIJk';
+    app.importSheetUrl = 'https://example.com/sheet';
+
+    await app.submitLeadImport();
+
+    expect(importLeads).not.toHaveBeenCalled();
+    expect(app.importLeadsMessage).toBe('Paste a Google Sheets link.');
+    expect(app.importLeadsNeedsRetry).toBe(true);
+  });
 });
 
 describe('Seva workspace course management', () => {

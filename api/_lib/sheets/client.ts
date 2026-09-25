@@ -381,12 +381,59 @@ export async function updateSheetValuesBatch(
   );
 }
 
-export async function appendSheetRow(
+export async function readSharedSpreadsheetGrid(
+  spreadsheetId: string,
+  gid: string,
+  operation?: SheetsOperation
+): Promise<unknown[][]> {
+  if (!/^[A-Za-z0-9_-]{10,128}$/.test(spreadsheetId) || !/^\d+$/.test(gid)) {
+    throw new Error('Invalid spreadsheet reference.');
+  }
+
+  const meta = await callSheetsApi<{
+    sheets?: Array<{ properties?: { sheetId?: number; title?: string } }>;
+  }>(
+    'data',
+    'spreadsheets.get',
+    'https://sheets.googleapis.com/v4/spreadsheets/' +
+      spreadsheetId +
+      '?fields=' +
+      encodeURIComponent('sheets.properties(sheetId,title)'),
+    { method: 'GET' },
+    operation
+  );
+  const sheets = Array.isArray(meta.sheets) ? meta.sheets : [];
+  const requestedId = Number(gid);
+  let sheet = sheets.find((item) => item.properties?.sheetId === requestedId);
+  if (!sheet && requestedId === 0) {
+    sheet = sheets[0];
+  }
+  const title = sheet?.properties?.title;
+  if (!title) {
+    throw new Error('Spreadsheet tab was not found.');
+  }
+
+  const range = "'" + title.replace(/'/g, "''") + "'!A:ZZ";
+  const payload = await callSheetsApi<SheetsValuesResponse>(
+    'data',
+    'values.get',
+    buildGoogleSheetsValuesUrl(spreadsheetId, range),
+    { method: 'GET' },
+    operation
+  );
+  return Array.isArray(payload.values) ? payload.values : [];
+}
+
+export async function appendSheetRows(
   target: SpreadsheetTarget,
   range: string,
-  rowValues: string[],
+  rows: string[][],
   operation?: SheetsOperation
 ) {
+  if (!rows.length) {
+    return;
+  }
+
   const url = buildGoogleSheetsAppendUrl(
     getSpreadsheetId(target),
     range,
@@ -398,10 +445,19 @@ export async function appendSheetRow(
     url,
     {
       method: 'POST',
-      data: { values: [rowValues] }
+      data: { values: rows }
     },
     operation
   );
+}
+
+export async function appendSheetRow(
+  target: SpreadsheetTarget,
+  range: string,
+  rowValues: string[],
+  operation?: SheetsOperation
+) {
+  await appendSheetRows(target, range, [rowValues], operation);
 }
 
 export async function deleteSheetRow(

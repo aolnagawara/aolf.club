@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest';
 import {
   createCourseForUser,
   deleteCourseForUser,
+  deleteLeadForUser,
   getBootstrapForUser,
-  getPublicCourses
+  getPublicCourses,
+  importLeadsForUser
 } from '../../../api/_lib/storage/mockStore.js';
 
 describe('mock store campaign selection', () => {
@@ -27,6 +29,48 @@ describe('mock store campaign selection', () => {
     expect(result.leads.every((lead) => lead.campaignType === 'Leads')).toBe(
       true
     );
+  });
+
+  it('assigns imported leads to the signed-in user and skips existing lead mobiles', async () => {
+    const createdIds: string[] = [];
+    try {
+      const result = await importLeadsForUser(
+        { id: 'user-1', email: 'Volunteer@Example.com' },
+        {
+          campaignId: 'cmpLeads01AbcDefGhIJk',
+          rows: [
+            ['Name', 'Mobile', 'Assigned To', 'Location'],
+            ['Aarav Sharma', '9876543210', 'someone@else.com', 'Hebbal'],
+            ['Nisha Verma', '9123456780', 'someone@else.com', 'Indiranagar'],
+            ['New Person', '9090909090', 'someone@else.com', 'Hebbal'],
+            ['Member Number', '9988776655', 'someone@else.com', 'JP Nagar']
+          ]
+        }
+      );
+      createdIds.push(...result.leads.map((lead) => lead.id));
+
+      expect(result.importedCount).toBe(2);
+      expect(result.skippedCount).toBe(2);
+      expect(
+        result.leads.every(
+          (lead) => lead.assignedVolunteerEmail === 'volunteer@example.com'
+        )
+      ).toBe(true);
+      expect(result.leads.map((lead) => lead.mobile).sort()).toEqual([
+        '9090909090',
+        '9988776655'
+      ]);
+      expect(
+        result.leads.find((lead) => lead.mobile === '9090909090')?.notes
+      ).toBe('Assigned To: someone@else.com\nLocation: Hebbal');
+    } finally {
+      for (const id of createdIds) {
+        await deleteLeadForUser(
+          { id: 'user-1', email: 'volunteer@example.com' },
+          { id, campaignType: 'Leads' }
+        );
+      }
+    }
   });
 });
 

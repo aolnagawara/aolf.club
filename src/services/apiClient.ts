@@ -27,15 +27,19 @@ export class ApiClient {
     });
   }
 
-  async post<T>(path: string, body: unknown): Promise<T> {
-    return this.request<T>(path, {
-      method: 'POST',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json'
+  async post<T>(path: string, body: unknown, timeoutMs?: number): Promise<T> {
+    return this.request<T>(
+      path,
+      {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
       },
-      body: JSON.stringify(body)
-    });
+      timeoutMs
+    );
   }
 
   async delete<T>(path: string, body: unknown): Promise<T> {
@@ -49,9 +53,13 @@ export class ApiClient {
     });
   }
 
-  private async request<T>(path: string, init: RequestInit): Promise<T> {
+  private async request<T>(
+    path: string,
+    init: RequestInit,
+    timeoutMs = this.timeoutMs
+  ): Promise<T> {
     const controller = new AbortController();
-    const timeout = window.setTimeout(() => controller.abort(), this.timeoutMs);
+    const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
     try {
       const response = await fetch(this.baseUrl + path, {
         ...init,

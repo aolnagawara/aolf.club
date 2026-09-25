@@ -379,6 +379,11 @@ export function createAuthAndBootstrapMethods() {
       this.isFollowUpModalOpen = false;
       this.isProgramEditorOpen = false;
       this.isAssignMembersModalOpen = false;
+      this.isImportLeadsModalOpen = false;
+      this.isImportingLeads = false;
+      this.importSheetUrl = '';
+      this.importLeadsMessage = '';
+      this.importLeadsNeedsRetry = false;
       this.leads = [];
       this.campaigns = [];
       this.selectedCampaign = null;

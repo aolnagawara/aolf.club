@@ -166,6 +166,21 @@ export const CreateLeadResponseSchema = z.object({
   lead: LeadSchema
 });
 
+export const ImportLeadsRequestSchema = z.object({
+  sheetUrl: z.string().trim().min(1).max(2000),
+  campaignId: NanoIdSchema
+});
+
+export const ImportLeadsResponseSchema = z.object({
+  success: z.literal(true),
+  outcome: z.enum(['imported', 'needs_columns']),
+  importedCount: z.number().int().min(0),
+  skippedCount: z.number().int().min(0),
+  invalidCount: z.number().int().min(0),
+  missingColumns: z.array(z.enum(['Name', 'Mobile'])),
+  leads: z.array(LeadSchema)
+});
+
 export const DeleteLeadRequestSchema = z.object({
   id: z.string().min(1),
   campaignType: z.enum(['Leads', 'Members'])
@@ -350,6 +365,8 @@ export type UpdateLeadRequest = z.infer<typeof UpdateLeadRequestSchema>;
 export type UpdateLeadResponse = z.infer<typeof UpdateLeadResponseSchema>;
 export type CreateLeadRequest = z.infer<typeof CreateLeadRequestSchema>;
 export type CreateLeadResponse = z.infer<typeof CreateLeadResponseSchema>;
+export type ImportLeadsRequest = z.infer<typeof ImportLeadsRequestSchema>;
+export type ImportLeadsResponse = z.infer<typeof ImportLeadsResponseSchema>;
 export type DeleteLeadRequest = z.infer<typeof DeleteLeadRequestSchema>;
 export type DeleteLeadResponse = z.infer<typeof DeleteLeadResponseSchema>;
 export type AssignMembersRequest = z.infer<typeof AssignMembersRequestSchema>;
