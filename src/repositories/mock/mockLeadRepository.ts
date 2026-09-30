@@ -2,6 +2,7 @@ import type { LeadRepository } from '../contracts';
 import { nanoid } from 'nanoid';
 import {
   ALL_LEADS_SCOPE_ID,
+  DUPLICATE_LEAD_MOBILE_MESSAGE,
   AssignMembersRequestSchema,
   isAllLeadsScope,
   AssignMembersResponseSchema,
@@ -41,8 +42,33 @@ import { mockBootstrapData } from './mockData';
 export class MockLeadRepository implements LeadRepository {
   private leads: Lead[] = structuredClone(mockBootstrapData.leads);
 
-  async getBootstrap(campaignId?: string | null): Promise<BootstrapResponse> {
+  private assigneeFor(
+    campaignType: 'Leads' | 'Members',
+    assigneeEmail?: string | null
+  ): string {
+    if (campaignType === 'Members') {
+      return mockBootstrapData.user.email.toLowerCase();
+    }
+    const requested = String(
+      assigneeEmail || mockBootstrapData.user.email || ''
+    )
+      .trim()
+      .toLowerCase();
+    const allowed = (mockBootstrapData.config.allowedUsers || []).map((email) =>
+      email.toLowerCase()
+    );
+    if (allowed.length && !allowed.includes(requested)) {
+      throw new Error('VOLUNTEER_NOT_ALLOWED');
+    }
+    return requested;
+  }
+
+  async getBootstrap(
+    campaignId?: string | null,
+    assigneeEmail?: string | null
+  ): Promise<BootstrapResponse> {
     if (isAllLeadsScope(campaignId)) {
+      const ownerEmail = this.assigneeFor('Leads', assigneeEmail);
       const leadCampaignIds = new Set(
         mockBootstrapData.config.campaigns
           .filter((campaign) => campaign.type === 'Leads')
@@ -55,6 +81,8 @@ export class MockLeadRepository implements LeadRepository {
           .filter(
             (lead) =>
               lead.campaignType === 'Leads' &&
+              lead.assignedVolunteerEmail.trim().toLowerCase() ===
+                ownerEmail &&
               leadCampaignIds.has(String(lead.campaignId || ''))
           )
           .map((lead) => ({ ...lead }))
@@ -69,6 +97,7 @@ export class MockLeadRepository implements LeadRepository {
     if (!selectedCampaign) {
       throw new Error('Campaign not found: ' + selectedCampaignId);
     }
+    const ownerEmail = this.assigneeFor(selectedCampaign.type, assigneeEmail);
 
     const payload = {
       ...mockBootstrapData,
@@ -77,7 +106,8 @@ export class MockLeadRepository implements LeadRepository {
         .filter(
           (lead) =>
             lead.campaignId === selectedCampaign.id &&
-            lead.campaignType === selectedCampaign.type
+            lead.campaignType === selectedCampaign.type &&
+            lead.assignedVolunteerEmail.trim().toLowerCase() === ownerEmail
         )
         .map((lead) => ({ ...lead }))
     };
@@ -155,6 +185,26 @@ export class MockLeadRepository implements LeadRepository {
       );
     }
 
+    const sessionEmail = mockBootstrapData.user.email.toLowerCase();
+    const currentAssignee = this.leads[index].assignedVolunteerEmail
+      .trim()
+      .toLowerCase();
+    const allowed = new Set(
+      (mockBootstrapData.config.allowedUsers || []).map((email) =>
+        email.toLowerCase()
+      )
+    );
+    const targetVolunteerEmail = parsed.assignedVolunteerEmail
+      ? parsed.assignedVolunteerEmail.toLowerCase()
+      : '';
+    const reassigning =
+      Boolean(targetVolunteerEmail) &&
+      targetVolunteerEmail !== currentAssignee &&
+      allowed.has(currentAssignee);
+    if (currentAssignee !== sessionEmail && !reassigning) {
+      throw new Error('FORBIDDEN_LEAD_ASSIGNMENT');
+    }
+
     this.leads[index] = {
       ...this.leads[index],
       ...parsed,
@@ -172,6 +222,16 @@ export class MockLeadRepository implements LeadRepository {
 
   async createLead(payload: CreateLeadRequest): Promise<CreateLeadResponse> {
     const parsed = CreateLeadRequestSchema.parse(payload);
+    if (parsed.campaignType === 'Leads') {
+      const duplicate = this.leads.some(
+        (lead) =>
+          lead.campaignType === 'Leads' &&
+          normalizeIndianMobile(lead.mobile) === parsed.mobile
+      );
+      if (duplicate) {
+        throw new Error(DUPLICATE_LEAD_MOBILE_MESSAGE);
+      }
+    }
     const lead: Lead = {
       id: nanoid(),
       mobile: parsed.mobile,

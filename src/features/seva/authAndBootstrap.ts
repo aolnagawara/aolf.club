@@ -371,6 +371,7 @@ export function createAuthAndBootstrapMethods() {
 
       this.authenticatedUser = null;
       this.volunteerEmail = '';
+      this.viewedVolunteerEmail = '';
       this.authError = '';
       this.isVolunteerModalOpen = true;
       this.isProfileMenuOpen = false;
@@ -552,9 +553,18 @@ export function createAuthAndBootstrapMethods() {
 
       this.isLoadingBootstrap = true;
       try {
-        const response = await window.appRuntime.loadBootstrap(
-          campaignId || this.selectedCampaignId || null
-        );
+        const targetCampaignId = campaignId || this.selectedCampaignId || null;
+        const viewedEmail = this.getViewedVolunteerEmail();
+        const sessionEmail = String(this.volunteerEmail || '')
+          .trim()
+          .toLowerCase();
+        const response =
+          viewedEmail && viewedEmail !== sessionEmail
+            ? await window.appRuntime.loadBootstrap(
+                targetCampaignId,
+                viewedEmail
+              )
+            : await window.appRuntime.loadBootstrap(targetCampaignId);
         if (!response || !response.success) {
           throw new Error('Seva data could not be loaded.');
         }

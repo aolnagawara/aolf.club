@@ -1,5 +1,6 @@
 import {
   isAllLeadsScope,
+  DUPLICATE_LEAD_MOBILE_MESSAGE,
   MAX_MEMBERS_PER_VOLUNTEER,
   type UpdateLeadRequest
 } from '../../../shared/contracts/appContracts';
@@ -55,6 +56,52 @@ async function runSequentialLeadRequests(
     }
   }
   return results;
+}
+
+function viewedVolunteerEmail(context: SevaWorkspaceContext): string {
+  return String(context.viewedVolunteerEmail || context.volunteerEmail || '')
+    .trim()
+    .toLowerCase();
+}
+
+function volunteerOptions(
+  context: SevaWorkspaceContext,
+  excludeEmail = ''
+): OptionItem[] {
+  return getAllowedVolunteers(context)
+    .filter((volunteer) => volunteer.email !== excludeEmail)
+    .map((volunteer) => ({
+      value: volunteer.email,
+      label: volunteer.name
+    }))
+    .sort((left, right) => left.label.localeCompare(right.label));
+}
+
+function leadMatchesCurrentView(
+  context: SevaWorkspaceContext,
+  lead: {
+    campaignId?: string;
+    campaignType?: string;
+    assignedVolunteerEmail?: string;
+  }
+): boolean {
+  if (context.campaignType === 'Members') {
+    return lead.campaignId === context.selectedCampaignId;
+  }
+  const viewed = viewedVolunteerEmail(context);
+  if (viewed) {
+    const assignee = String(lead.assignedVolunteerEmail || '')
+      .trim()
+      .toLowerCase();
+    if (assignee !== viewed) {
+      return false;
+    }
+  }
+  return (
+    lead.campaignId === context.selectedCampaignId ||
+    (isAllLeadsScope(context.selectedCampaignId) &&
+      lead.campaignType === 'Leads')
+  );
 }
 
 function getAllowedVolunteers(context: SevaWorkspaceContext) {
@@ -264,31 +311,84 @@ export function createRecordActionMethods() {
       this.isOptionSheetOpen = true;
     },
     openReassignVolunteerSheet(this: SevaWorkspaceContext): void {
-      const assignedEmails = new Set(
-        getSelectedRecords(this).map((lead) =>
-          lead.assignedVolunteerEmail.trim().toLowerCase()
-        )
+      this.openVolunteerSheet('reassignVolunteer');
+    },
+    openViewVolunteerSheet(this: SevaWorkspaceContext): void {
+      this.openVolunteerSheet('viewVolunteer');
+    },
+    getViewedVolunteerEmail(this: SevaWorkspaceContext): string {
+      return viewedVolunteerEmail(this);
+    },
+    getViewedVolunteerLabel(this: SevaWorkspaceContext): string {
+      const email = viewedVolunteerEmail(this);
+      const match = getAllowedVolunteers(this).find(
+        (volunteer) => volunteer.email === email
       );
-      const volunteers = getAllowedVolunteers(this).filter(
-        (volunteer) => !assignedEmails.has(volunteer.email)
-      );
-      if (!volunteers.length) {
+      if (match && match.name) {
+        return match.name;
+      }
+      return email.split('@')[0] || 'Volunteer';
+    },
+    openVolunteerSheet(
+      this: SevaWorkspaceContext,
+      mode: 'viewVolunteer' | 'reassignVolunteer'
+    ): void {
+      const excludeEmail =
+        mode === 'reassignVolunteer' ? viewedVolunteerEmail(this) : '';
+      const options = volunteerOptions(this, excludeEmail);
+      if (!options.length) {
         this.authError =
-          'No other volunteers are available in the allowed list.';
+          mode === 'reassignVolunteer'
+            ? 'No other volunteers are available in the allowed list.'
+            : 'No volunteers are available in the allowed list.';
         return;
       }
-      this.optionSheetMode = 'reassignVolunteer';
+      this.optionSheetMode = mode;
       this.optionSheetTitle =
-        'Reassign ' + String(this.selectedCount()) + ' selected';
-      this.optionSheetOptions = volunteers
-        .map((volunteer) => ({
-          value: volunteer.email,
-          label: volunteer.name
-        }))
-        .sort((a, b) => a.label.localeCompare(b.label));
-      this.currentOptionValue = '';
+        mode === 'reassignVolunteer'
+          ? 'Reassign ' + String(this.selectedCount()) + ' selected'
+          : 'Show leads for';
+      this.optionSheetOptions = options;
+      this.currentOptionValue =
+        mode === 'viewVolunteer' ? viewedVolunteerEmail(this) : '';
       this.activeOptionLead = null;
       this.isOptionSheetOpen = true;
+    },
+    async selectViewedVolunteer(
+      this: SevaWorkspaceContext,
+      email: string
+    ): Promise<void> {
+      const normalized = String(email || '')
+        .trim()
+        .toLowerCase();
+      if (!normalized || normalized === viewedVolunteerEmail(this)) {
+        return;
+      }
+      if (
+        !getAllowedVolunteers(this).some(
+          (volunteer) => volunteer.email === normalized
+        )
+      ) {
+        this.authError = 'The selected volunteer is not in the allowed list.';
+        return;
+      }
+      const saved = await this.flushPendingSaves();
+      if (!saved) {
+        this.authError =
+          'Some changes could not be saved. Please retry before switching volunteer.';
+        return;
+      }
+      const previous = this.viewedVolunteerEmail;
+      this.viewedVolunteerEmail = normalized;
+      this.isCampaignSwitching = true;
+      try {
+        const loaded = await this.loadBootstrap(this.selectedCampaignId);
+        if (!loaded) {
+          this.viewedVolunteerEmail = previous;
+        }
+      } finally {
+        this.isCampaignSwitching = false;
+      }
     },
     async moveSelectedRecords(
       this: SevaWorkspaceContext,
@@ -488,7 +588,7 @@ export function createRecordActionMethods() {
             lead.assignedVolunteerEmail = normalizedEmail;
           }
         });
-        if (normalizedEmail !== this.volunteerEmail.toLowerCase()) {
+        if (normalizedEmail !== viewedVolunteerEmail(this)) {
           this.leads = this.leads.filter((lead) => !reassignedIds.has(lead.id));
           if (reassignedIds.has(this.activeCardId)) {
             this.activeCardId = '';
@@ -712,11 +812,7 @@ export function createRecordActionMethods() {
           campaignId: this.createRecordDraft.campaignId,
           campaignType: this.createRecordType
         });
-        if (
-          response.lead.campaignId === this.selectedCampaignId ||
-          (isAllLeadsScope(this.selectedCampaignId) &&
-            response.lead.campaignType === 'Leads')
-        ) {
+        if (leadMatchesCurrentView(this, response.lead)) {
           this.leads = [this.normalizeLead(response.lead), ...this.leads];
         }
         this.isCreateRecordModalOpen = false;
@@ -724,10 +820,14 @@ export function createRecordActionMethods() {
           (this.createRecordType === 'Members' ? 'Member' : 'Lead') +
           ' added successfully.';
       } catch (error) {
-        this.authError = toUserErrorMessage(
-          error,
-          'Unable to add the record. Please try again.'
-        );
+        this.authError =
+          error instanceof Error &&
+          error.message === DUPLICATE_LEAD_MOBILE_MESSAGE
+            ? DUPLICATE_LEAD_MOBILE_MESSAGE
+            : toUserErrorMessage(
+                error,
+                'Unable to add the record. Please try again.'
+              );
       } finally {
         this.isCreateRecordSaving = false;
       }
@@ -771,7 +871,14 @@ export function createRecordActionMethods() {
         const formatted = formatImportResult(response);
         this.importLeadsMessage = formatted.message;
         this.importLeadsNeedsRetry = formatted.needsRetry;
-        if (response.outcome === 'imported' && response.leads.length) {
+        if (
+          response.outcome === 'imported' &&
+          response.leads.length &&
+          viewedVolunteerEmail(this) ===
+            String(this.volunteerEmail || '')
+              .trim()
+              .toLowerCase()
+        ) {
           this.leads = [
             ...response.leads.map((lead) => this.normalizeLead(lead)),
             ...this.leads

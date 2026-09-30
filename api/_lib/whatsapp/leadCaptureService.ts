@@ -357,11 +357,9 @@ export async function upsertLeadByMobileAndCampaign(
   }
 
   const mobileHeader = headers[mobileHeaderIndex];
-  const campaignIdHeader = headers[campaignIdIndex];
   const existingLead = records.find(
     ({ record }) =>
-      normalizeIndianMobile(record[mobileHeader] || '') === parsed.mobile &&
-      normalizeSpaces(record[campaignIdHeader] || '') === campaign.id
+      normalizeIndianMobile(record[mobileHeader] || '') === parsed.mobile
   );
 
   const now = new Date().toISOString();
@@ -371,7 +369,6 @@ export async function upsertLeadByMobileAndCampaign(
       name: parsed.name || row.name || '',
       quality: parsed.leadQuality || row.quality || 'Quality',
       notes: appendNotes(row.notes || '', parsed.notes),
-      campaignId: campaign.id,
       campaignType: 'Leads',
       assignedVolunteerEmail: row.assignedVolunteerEmail || volunteerEmail,
       wishlistPrograms: parsed.course || row.wishlistPrograms || '',
@@ -633,7 +630,7 @@ export async function handleButtonReply(
     return {
       action: 'send_text',
       message:
-        'ℹ️ Lead already existed for this month. Existing lead has been updated.'
+        'ℹ️ Lead already existed. Existing lead has been updated.'
     };
   }
 

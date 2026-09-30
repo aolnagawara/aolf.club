@@ -1,5 +1,6 @@
 import {
   ALL_LEADS_SCOPE_ID,
+  DUPLICATE_LEAD_MOBILE_MESSAGE,
   AssignMembersRequestSchema,
   isAllLeadsScope,
   AssignMembersResponseSchema,
@@ -120,12 +121,30 @@ export function isUserAllowed(email: string) {
     .includes(requestedEmail);
 }
 
+function resolveAssigneeEmail(
+  user: AuthenticatedUser,
+  assigneeEmail: string | null | undefined,
+  campaignType: 'Leads' | 'Members'
+): string {
+  if (campaignType === 'Members') {
+    return normalizeEmail(user.email);
+  }
+  const requested =
+    normalizeEmail(assigneeEmail || '') || normalizeEmail(user.email);
+  if (!isUserAllowed(requested)) {
+    throw new Error('VOLUNTEER_NOT_ALLOWED');
+  }
+  return requested;
+}
+
 export async function getBootstrapForUser(
   user: AuthenticatedUser,
-  campaignId?: string | null
+  campaignId?: string | null,
+  assigneeEmail?: string | null
 ) {
   const store = getStore();
   if (isAllLeadsScope(campaignId)) {
+    const ownerEmail = resolveAssigneeEmail(user, assigneeEmail, 'Leads');
     const leadCampaignIds = new Set(
       mockBootstrapData.config.campaigns
         .filter((campaign) => campaign.type === 'Leads')
@@ -137,7 +156,7 @@ export async function getBootstrapForUser(
       campaignId: ALL_LEADS_SCOPE_ID,
       leads: store.leads.filter(
         (lead) =>
-          isAssignedToUser(lead, String(user.email || '')) &&
+          isAssignedToUser(lead, ownerEmail) &&
           lead.campaignType === 'Leads' &&
           leadCampaignIds.has(String(lead.campaignId || ''))
       )
@@ -151,6 +170,11 @@ export async function getBootstrapForUser(
   if (!selectedCampaign) {
     throw new Error('CAMPAIGN_NOT_FOUND');
   }
+  const ownerEmail = resolveAssigneeEmail(
+    user,
+    assigneeEmail,
+    selectedCampaign.type
+  );
 
   const payload = {
     ...mockBootstrapData,
@@ -158,7 +182,7 @@ export async function getBootstrapForUser(
     campaignId: selectedCampaign.id,
     leads: store.leads.filter(
       (lead) =>
-        isAssignedToUser(lead, String(user.email || '')) &&
+        isAssignedToUser(lead, ownerEmail) &&
         lead.campaignId === selectedCampaign.id &&
         lead.campaignType === selectedCampaign.type
     )
@@ -187,7 +211,18 @@ export async function updateLeadForUser(
     throw new Error('Lead not found.');
   }
 
-  if (!isAssignedToUser(store.leads[index], String(user.email || ''))) {
+  const sessionEmail = normalizeEmail(user.email);
+  const currentAssignee = normalizeEmail(
+    store.leads[index].assignedVolunteerEmail
+  );
+  const reassigningToAnotherAllowedVolunteer =
+    Boolean(targetVolunteerEmail) &&
+    targetVolunteerEmail !== currentAssignee &&
+    isUserAllowed(currentAssignee);
+  if (
+    currentAssignee !== sessionEmail &&
+    !reassigningToAnotherAllowedVolunteer
+  ) {
     throw new Error('FORBIDDEN_LEAD_ASSIGNMENT');
   }
 
@@ -273,6 +308,17 @@ export async function createLeadForUser(
   }
   if (campaign.type !== parsed.campaignType) {
     throw new Error('CAMPAIGN_TYPE_MISMATCH');
+  }
+  if (parsed.campaignType === 'Leads') {
+    const mobile = normalizeIndianMobile(parsed.mobile);
+    const duplicate = store.leads.some(
+      (lead) =>
+        lead.campaignType === 'Leads' &&
+        normalizeIndianMobile(lead.mobile) === mobile
+    );
+    if (duplicate) {
+      throw new Error(DUPLICATE_LEAD_MOBILE_MESSAGE);
+    }
   }
 
   const lead: Lead = {

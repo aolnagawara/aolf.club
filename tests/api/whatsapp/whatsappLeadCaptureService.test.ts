@@ -195,6 +195,44 @@ describe('WhatsApp lead Sheet upsert', () => {
     expect(mockAppendSheetRow).not.toHaveBeenCalled();
   });
 
+  it('updates an existing mobile from another month instead of creating a second lead', async () => {
+    mockReadSheetValues.mockResolvedValue([
+      headers,
+      [
+        'july-id',
+        'Sandip Old',
+        'Warm',
+        'Follow-up',
+        '',
+        'Response',
+        'Existing',
+        'leads-jul',
+        'Leads',
+        'original-owner@example.com',
+        '',
+        '',
+        '9876543210'
+      ]
+    ]);
+
+    const result = await upsertLeadByMobileAndCampaign(
+      'volunteer@example.com',
+      parsedLead,
+      { id: 'leads-aug', name: 'August Leads', type: 'Leads' }
+    );
+
+    expect(result).toEqual({ action: 'updated' });
+    expect(mockAppendSheetRow).not.toHaveBeenCalled();
+    const updates = mockUpdateSheetValuesBatch.mock.calls[0][1] as Array<{
+      range: string;
+      values: string[][];
+    }>;
+    expect(updates.every((update) => update.range.endsWith('2'))).toBe(true);
+    expect(updates.some((update) => update.values[0][0] === 'leads-aug')).toBe(
+      false
+    );
+  });
+
   it('rejects a lead sheet without the required campaignId header', async () => {
     mockReadSheetValues.mockResolvedValue([
       headers.filter((header) => header !== 'campaignId')

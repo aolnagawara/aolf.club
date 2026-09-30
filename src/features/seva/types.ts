@@ -106,6 +106,7 @@ export interface SevaWorkspaceState {
   metricFilter: string;
   searchQuery: string;
   volunteerEmail: string;
+  viewedVolunteerEmail: string;
   authenticatedUser: AuthenticatedUser | null;
   authError: string;
   actionMessage: string;

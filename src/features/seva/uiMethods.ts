@@ -119,6 +119,12 @@ export function createUiMethods() {
         return;
       }
 
+      if (this.optionSheetMode === 'viewVolunteer') {
+        this.closeOptionSheet();
+        await this.selectViewedVolunteer(value);
+        return;
+      }
+
       if (!this.activeOptionLead || !this.optionSheetMode) {
         this.closeOptionSheet();
         return;

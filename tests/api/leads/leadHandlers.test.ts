@@ -30,6 +30,7 @@ vi.mock('../../../api/_lib/leads/importSheet.js', () => ({
   loadImportSheetRows: mockLoadImportSheetRows
 }));
 
+import { DUPLICATE_LEAD_MOBILE_MESSAGE } from '../../../shared/contracts/appContracts.js';
 import leadHandler from '../../../api/leads/index.js';
 import {
   LeadImportError,
@@ -121,6 +122,28 @@ describe('lead API error classification', () => {
       }
     });
     expect(console.error).toHaveBeenCalledOnce();
+  });
+
+  it('reports a duplicate lead mobile as a validation error', async () => {
+    mockStore.createLeadForAuthorizedUser.mockRejectedValue(
+      new Error(DUPLICATE_LEAD_MOBILE_MESSAGE)
+    );
+    const { response, state } = createResponse();
+
+    await leadHandler(
+      { method: 'POST', headers: {}, query: {}, body: {} },
+      response
+    );
+
+    expect(state.statusCode).toBe(400);
+    expect(state.body).toMatchObject({
+      success: false,
+      error: {
+        code: 'VALIDATION_ERROR',
+        message: DUPLICATE_LEAD_MOBILE_MESSAGE,
+        retryable: false
+      }
+    });
   });
 
   it('reports unexpected update failures as internal errors', async () => {

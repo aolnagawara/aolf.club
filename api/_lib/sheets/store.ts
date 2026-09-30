@@ -3,6 +3,7 @@ import {
   AssignMembersResponseSchema,
   AppConfigSchema,
   ALL_LEADS_SCOPE_ID,
+  DUPLICATE_LEAD_MOBILE_MESSAGE,
   BootstrapResponseSchema,
   isAllLeadsScope,
   CreateCourseRequestSchema,
@@ -645,10 +646,24 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
     return snapshot.allowedUsers.has(normalizeEmail(user.email));
   }
 
+  function resolveAssigneeEmail(
+    snapshot: MetadataSnapshot,
+    user: SessionUser,
+    assigneeEmail?: string | null
+  ): string {
+    const requested =
+      normalizeEmail(assigneeEmail || '') || normalizeEmail(user.email);
+    if (!snapshot.allowedUsers.has(requested)) {
+      throw new Error('VOLUNTEER_NOT_ALLOWED');
+    }
+    return requested;
+  }
+
   async function getAllAssignedLeads(
     user: SessionUser,
     snapshot: MetadataSnapshot,
-    operation: SheetsOperation
+    operation: SheetsOperation,
+    ownerEmail: string
   ): Promise<BootstrapResponse> {
     const leadsCampaigns = snapshot.config.campaigns.filter(
       (campaign) => campaign.type === 'Leads'
@@ -660,7 +675,6 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
     const rows = await readSheetValues('data', layout.leadsRange, operation);
     const headers = (rows[0] || []).map((value) => String(value || '').trim());
     const leadColumns = resolveLeadColumns(headers);
-    const requestedEmail = normalizeEmail(user.email);
     const leads: Lead[] = [];
 
     for (let rowIndex = 1; rowIndex < rows.length; rowIndex += 1) {
@@ -678,7 +692,7 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
       const assignedEmail = normalizeEmail(
         getCell(row, leadColumns.assignedVolunteerEmail)
       );
-      if (assignedEmail !== requestedEmail) {
+      if (assignedEmail !== ownerEmail) {
         continue;
       }
       leads.push(mapRowToLead(row, leadColumns, campaign));
@@ -691,13 +705,23 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
     user: SessionUser,
     snapshot: MetadataSnapshot,
     operation: SheetsOperation,
-    campaignId?: string | null
+    campaignId?: string | null,
+    assigneeEmail?: string | null
   ): Promise<BootstrapResponse> {
     if (isAllLeadsScope(campaignId)) {
-      return getAllAssignedLeads(user, snapshot, operation);
+      return getAllAssignedLeads(
+        user,
+        snapshot,
+        operation,
+        resolveAssigneeEmail(snapshot, user, assigneeEmail)
+      );
     }
 
     const selectedCampaign = selectCampaign(snapshot, campaignId);
+    const ownerEmail =
+      selectedCampaign.type === 'Members'
+        ? normalizeEmail(user.email)
+        : resolveAssigneeEmail(snapshot, user, assigneeEmail);
     const layout = getSheetLayout();
     const range =
       selectedCampaign.type === 'Members'
@@ -706,7 +730,6 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
     const rows = await readSheetValues('data', range, operation);
     const headers = (rows[0] || []).map((value) => String(value || '').trim());
     const leadColumns = resolveLeadColumns(headers);
-    const requestedEmail = normalizeEmail(user.email);
     const leads: Lead[] = [];
 
     for (let rowIndex = 1; rowIndex < rows.length; rowIndex += 1) {
@@ -717,7 +740,7 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
       const assignedEmail = normalizeEmail(
         getCell(row, leadColumns.assignedVolunteerEmail)
       );
-      if (assignedEmail !== requestedEmail) {
+      if (assignedEmail !== ownerEmail) {
         continue;
       }
       leads.push(mapRowToLead(row, leadColumns, selectedCampaign));
@@ -861,7 +884,6 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
       throw new Error('Lead sheet header must contain an id column.');
     }
 
-    const requestedEmail = normalizeEmail(user.email);
     type Candidate = { rowNumber: number; values: string[] };
     let exactMatch: Candidate | null = null;
 
@@ -877,13 +899,10 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
       throw new Error('Lead not found.');
     }
 
-    const assignedVolunteerEmail = normalizeEmail(
+    const sessionEmail = normalizeEmail(user.email);
+    const currentAssignee = normalizeEmail(
       getCell(target.values, columns.assignedVolunteerEmail)
     );
-    if (assignedVolunteerEmail !== requestedEmail) {
-      throw new Error('FORBIDDEN_LEAD_ASSIGNMENT');
-    }
-
     const targetVolunteerEmail =
       payload.assignedVolunteerEmail === undefined
         ? undefined
@@ -893,6 +912,16 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
       !snapshot.allowedUsers.has(targetVolunteerEmail)
     ) {
       throw new Error('VOLUNTEER_NOT_ALLOWED');
+    }
+    const reassigningToAnotherAllowedVolunteer =
+      targetVolunteerEmail !== undefined &&
+      targetVolunteerEmail !== currentAssignee &&
+      snapshot.allowedUsers.has(currentAssignee);
+    if (
+      currentAssignee !== sessionEmail &&
+      !reassigningToAnotherAllowedVolunteer
+    ) {
+      throw new Error('FORBIDDEN_LEAD_ASSIGNMENT');
     }
 
     const targetRowNumber = target.rowNumber;
@@ -963,6 +992,17 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
     const columns = resolveLeadColumns(headers);
     if (columns.id < 0 || columns.campaignId < 0) {
       throw new Error('Lead sheet must contain id and campaignId columns.');
+    }
+    if (campaign.type === 'Leads' && columns.mobile >= 0) {
+      const mobile = normalizeIndianMobile(payload.mobile);
+      const duplicate = rows.some(
+        (row, index) =>
+          index > 0 &&
+          normalizeIndianMobile(getCell(row, columns.mobile)) === mobile
+      );
+      if (duplicate) {
+        throw new Error(DUPLICATE_LEAD_MOBILE_MESSAGE);
+      }
     }
 
     const timestamp = now().toISOString();
@@ -1490,6 +1530,7 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
     async getBootstrapForAuthorizedUser(
       user: SessionUser,
       campaignId?: string | null,
+      assigneeEmail?: string | null,
       operation?: SheetsOperation
     ): Promise<AuthorizedStoreResult<BootstrapResponse>> {
       return withStoreOperation(operation, async (activeOperation) => {
@@ -1499,7 +1540,13 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
         }
         return {
           allowed: true,
-          value: await getBootstrap(user, snapshot, activeOperation, campaignId)
+          value: await getBootstrap(
+            user,
+            snapshot,
+            activeOperation,
+            campaignId,
+            assigneeEmail
+          )
         };
       });
     },

@@ -28,12 +28,20 @@ import { ApiClient } from '../../services/apiClient';
 export class HttpLeadRepository implements LeadRepository {
   constructor(private readonly apiClient: ApiClient) {}
 
-  async getBootstrap(campaignId?: string | null): Promise<BootstrapResponse> {
-    const query = campaignId
-      ? '?campaignId=' + encodeURIComponent(campaignId)
-      : '';
+  async getBootstrap(
+    campaignId?: string | null,
+    assigneeEmail?: string | null
+  ): Promise<BootstrapResponse> {
+    const params = new URLSearchParams();
+    if (campaignId) {
+      params.set('campaignId', campaignId);
+    }
+    if (assigneeEmail) {
+      params.set('assignee', assigneeEmail);
+    }
+    const query = params.toString();
     const response = await this.apiClient.get<unknown>(
-      '/api/bootstrap' + query
+      '/api/bootstrap' + (query ? '?' + query : '')
     );
     return BootstrapResponseSchema.parse(response);
   }

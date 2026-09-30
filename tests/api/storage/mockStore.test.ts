@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   createCourseForUser,
+  createLeadForUser,
   deleteCourseForUser,
   deleteLeadForUser,
   getBootstrapForUser,
@@ -29,6 +30,30 @@ describe('mock store campaign selection', () => {
     expect(result.leads.every((lead) => lead.campaignType === 'Leads')).toBe(
       true
     );
+  });
+
+  it('returns another allowed volunteer when that assignee is requested', async () => {
+    const result = await getBootstrapForUser(
+      { id: 'user-1', email: 'volunteer@example.com' },
+      'all',
+      'other-volunteer@example.com'
+    );
+
+    expect(result.leads.map((lead) => lead.name)).toEqual(['Nisha Verma']);
+  });
+
+  it('rejects a new lead when that mobile already exists', async () => {
+    await expect(
+      createLeadForUser(
+        { id: 'user-1', email: 'volunteer@example.com' },
+        {
+          name: 'Again',
+          mobile: '9876543210',
+          campaignId: 'cmpLeads01AbcDefGhIJk',
+          campaignType: 'Leads'
+        }
+      )
+    ).rejects.toThrow('This mobile number is already a lead.');
   });
 
   it('assigns imported leads to the signed-in user and skips existing lead mobiles', async () => {

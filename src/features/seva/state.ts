@@ -37,6 +37,7 @@ export function createSevaWorkspaceInitialState(): SevaWorkspaceState {
     metricFilter: 'all',
     searchQuery: '',
     volunteerEmail: '',
+    viewedVolunteerEmail: '',
     authenticatedUser: null,
     authError: '',
     actionMessage: '',

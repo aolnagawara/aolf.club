@@ -22,8 +22,11 @@ export const appRuntime = {
   async signOut() {
     return authService.signOut();
   },
-  async loadBootstrap(campaignId?: string | null) {
-    return leadService.getBootstrap(campaignId);
+  async loadBootstrap(
+    campaignId?: string | null,
+    assigneeEmail?: string | null
+  ) {
+    return leadService.getBootstrap(campaignId, assigneeEmail);
   },
   async assignMembers(payload: AssignMembersRequest) {
     return leadService.assignMembers(payload);

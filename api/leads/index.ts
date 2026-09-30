@@ -1,6 +1,7 @@
 import type { ApiRequest, ApiResponse } from '../_lib/http/responses.js';
 import { sendApiError } from '../_lib/http/errors.js';
 import { firstQueryValue, methodNotAllowed } from '../_lib/http/request.js';
+import { DUPLICATE_LEAD_MOBILE_MESSAGE } from '../../shared/contracts/appContracts.js';
 import {
   LeadImportError,
   readImportLeadsRequest
@@ -103,6 +104,16 @@ function sendCommonLeadError(
   }
 
   const message = error instanceof Error ? error.message : '';
+
+  if (message.includes(DUPLICATE_LEAD_MOBILE_MESSAGE)) {
+    return sendApiError(res, error, context, {
+      status: 400,
+      code: 'VALIDATION_ERROR',
+      message: DUPLICATE_LEAD_MOBILE_MESSAGE,
+      retryable: false,
+      category: 'validation'
+    });
+  }
 
   if (message.includes('Lead sheet must contain')) {
     return sendApiError(res, error, context, {

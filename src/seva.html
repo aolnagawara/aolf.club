@@ -367,6 +367,18 @@
                 </button>
                 <button
                   type="button"
+                  x-show="campaignType !== 'Members'"
+                  @click="openViewVolunteerSheet()"
+                  :disabled="isLoadingBootstrap || isCampaignSwitching"
+                  class="min-w-0 flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 font-medium text-slate-700 text-left flex items-center justify-between gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                  aria-label="Show leads for"
+                  title="Show leads for"
+                >
+                  <span class="truncate" x-text="getViewedVolunteerLabel()"></span>
+                  <i data-lucide="users" class="w-4 h-4 shrink-0 text-slate-500"></i>
+                </button>
+                <button
+                  type="button"
                   @click="refreshCurrentCampaign()"
                   :disabled="isLoadingBootstrap || isCampaignSwitching || isCampaignRefreshing || isAssigningMembers"
                   class="w-10 shrink-0 rounded-lg border border-slate-200 bg-white text-slate-600 flex items-center justify-center hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -1534,7 +1546,7 @@
               ></div>
               <div
                 class="space-y-2"
-                :class="optionSheetMode === 'reassignVolunteer' ? 'max-h-[15rem] overflow-y-auto pr-1' : ''"
+                :class="optionSheetMode === 'reassignVolunteer' || optionSheetMode === 'viewVolunteer' ? 'max-h-[15rem] overflow-y-auto pr-1' : ''"
               >
                 <template x-for="item in optionSheetOptions" :key="item.value">
                   <button

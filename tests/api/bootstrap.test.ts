@@ -112,4 +112,56 @@ describe('bootstrap error propagation', () => {
       })
     );
   });
+
+  it('forwards the requested assignee to the store', async () => {
+    mockStore.getBootstrapForAuthorizedUser.mockResolvedValue({
+      allowed: true,
+      value: { success: true }
+    });
+    const { response, state } = createResponse();
+
+    await handler(
+      {
+        method: 'GET',
+        headers: {},
+        query: {
+          campaignId: 'all',
+          assignee: 'other-volunteer@example.com'
+        }
+      },
+      response
+    );
+
+    expect(state.statusCode).toBe(200);
+    expect(mockStore.getBootstrapForAuthorizedUser).toHaveBeenCalledWith(
+      expect.objectContaining({ email: 'volunteer@example.com' }),
+      'all',
+      'other-volunteer@example.com'
+    );
+  });
+
+  it('rejects an assignee outside the allowed list', async () => {
+    mockStore.getBootstrapForAuthorizedUser.mockRejectedValue(
+      new Error('VOLUNTEER_NOT_ALLOWED')
+    );
+    const { response, state } = createResponse();
+
+    await handler(
+      {
+        method: 'GET',
+        headers: {},
+        query: { assignee: 'stranger@example.com' }
+      },
+      response
+    );
+
+    expect(state.statusCode).toBe(400);
+    expect(state.body).toMatchObject({
+      success: false,
+      error: {
+        code: 'VALIDATION_ERROR',
+        message: 'The selected volunteer is not in the allowed list.'
+      }
+    });
+  });
 });

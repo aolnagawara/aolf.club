@@ -47,10 +47,12 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     }
 
     const campaignId = firstQueryValue(req, 'campaignId') || undefined;
+    const assigneeEmail = firstQueryValue(req, 'assignee') || undefined;
     const store = await loadDataStore();
     const result = await store.getBootstrapForAuthorizedUser(
       user,
-      campaignId
+      campaignId,
+      assigneeEmail
     );
     if (!result.allowed) {
       return sendApiError(res, new Error('Authorization denied.'), context, {
@@ -72,6 +74,15 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
         message: 'Campaign not found.',
         retryable: false,
         category: 'not_found'
+      });
+    }
+    if (message.includes('VOLUNTEER_NOT_ALLOWED')) {
+      return sendApiError(res, error, context, {
+        status: 400,
+        code: 'VALIDATION_ERROR',
+        message: 'The selected volunteer is not in the allowed list.',
+        retryable: false,
+        category: 'validation'
       });
     }
     return sendApiError(res, error, context);

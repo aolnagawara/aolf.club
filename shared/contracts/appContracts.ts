@@ -9,6 +9,10 @@ const NanoIdSchema = z
 /** Workspace scope that loads every Leads campaign instead of one month. */
 export const ALL_LEADS_SCOPE_ID = 'all';
 
+/** A lead mobile number may exist only once across every leads month. */
+export const DUPLICATE_LEAD_MOBILE_MESSAGE =
+  'This mobile number is already a lead.';
+
 export function isAllLeadsScope(
   campaignId: string | null | undefined
 ): boolean {

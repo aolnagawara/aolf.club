@@ -290,6 +290,61 @@ describe('Sheets store campaign and access scoping', () => {
     ]);
   });
 
+  it('loads one allowed volunteer when that assignee is requested', async () => {
+    const fixture = createFixture([
+      [
+        'lead-mine',
+        'My lead',
+        'Hot',
+        '',
+        '',
+        '',
+        '',
+        CAMPAIGN_A,
+        'Leads',
+        USER.email
+      ],
+      [
+        'lead-other',
+        'Another volunteer',
+        'Warm',
+        '',
+        '',
+        '',
+        '',
+        CAMPAIGN_A,
+        'Leads',
+        OTHER_VOLUNTEER_EMAIL
+      ]
+    ]);
+
+    const result = await fixture.store.getBootstrapForAuthorizedUser(
+      USER,
+      CAMPAIGN_A,
+      OTHER_VOLUNTEER_EMAIL
+    );
+
+    expect(result.allowed).toBe(true);
+    if (!result.allowed) {
+      throw new Error('Expected user to be authorized.');
+    }
+    expect(result.value.leads.map((lead) => lead.name)).toEqual([
+      'Another volunteer'
+    ]);
+  });
+
+  it('rejects an assignee who is not on the allowed list', async () => {
+    const fixture = createFixture([]);
+
+    await expect(
+      fixture.store.getBootstrapForAuthorizedUser(
+        USER,
+        CAMPAIGN_A,
+        'stranger@example.com'
+      )
+    ).rejects.toThrow('VOLUNTEER_NOT_ALLOWED');
+  });
+
   it('assigns matching members in Sheet order without sorting candidates', async () => {
     const fixture = createFixture([], LEAD_HEADERS, undefined, [
       [
@@ -528,6 +583,64 @@ describe('Sheets store campaign and access scoping', () => {
     ).rejects.toThrow('VOLUNTEER_NOT_ALLOWED');
   });
 
+  it('reassigns a lead owned by another allowed volunteer', async () => {
+    const fixture = createFixture([
+      [
+        'stable-other-id',
+        'Owned by someone else',
+        'Warm',
+        '',
+        '',
+        'Response',
+        '',
+        CAMPAIGN_A,
+        'Leads',
+        OTHER_VOLUNTEER_EMAIL
+      ]
+    ]);
+
+    const result = await fixture.store.updateLeadForAuthorizedUser(USER, {
+      id: 'stable-other-id',
+      campaignId: CAMPAIGN_A,
+      campaignType: 'Leads',
+      assignedVolunteerEmail: USER.email
+    });
+
+    expect(result.allowed).toBe(true);
+    const updates = fixture.updateSheetValuesBatch.mock.calls[0][1];
+    expect(updates).toContainEqual({
+      range: 'Leads!J2',
+      values: [[USER.email]]
+    });
+  });
+
+  it('rejects a field edit on a lead owned by another volunteer', async () => {
+    const fixture = createFixture([
+      [
+        'stable-other-id',
+        'Owned by someone else',
+        'Warm',
+        '',
+        '',
+        'Response',
+        '',
+        CAMPAIGN_A,
+        'Leads',
+        OTHER_VOLUNTEER_EMAIL
+      ]
+    ]);
+
+    await expect(
+      fixture.store.updateLeadForAuthorizedUser(USER, {
+        id: 'stable-other-id',
+        campaignId: CAMPAIGN_A,
+        campaignType: 'Leads',
+        notes: 'Must stay unchanged'
+      })
+    ).rejects.toThrow('FORBIDDEN_LEAD_ASSIGNMENT');
+    expect(fixture.updateSheetValuesBatch).not.toHaveBeenCalled();
+  });
+
   it('finds a stable id even when its current campaignId differs', async () => {
     const fixture = createFixture([
       [
@@ -729,6 +842,44 @@ describe('Sheets store campaign and access scoping', () => {
     ).rejects.toThrow('Enter a valid 10-digit Indian mobile number.');
   });
 
+  it('rejects a lead whose mobile already exists in another month', async () => {
+    const headers = [
+      'id',
+      'mobile',
+      ...LEAD_HEADERS.filter((header) => header !== 'id')
+    ];
+    const fixture = createFixture(
+      [
+        [
+          'existingLeadId0000001',
+          '9876543210',
+          'Aarav Sharma',
+          'Quality',
+          'Follow-up',
+          '2026-08-01T00:00:00.000Z',
+          'Response',
+          '',
+          CAMPAIGN_A,
+          'Leads',
+          USER.email,
+          '',
+          ''
+        ]
+      ],
+      headers
+    );
+
+    await expect(
+      fixture.store.createLeadForAuthorizedUser(USER, {
+        name: 'Duplicate lead',
+        mobile: '98765 43210',
+        campaignId: CAMPAIGN_B,
+        campaignType: 'Leads'
+      })
+    ).rejects.toThrow('This mobile number is already a lead.');
+    expect(fixture.appendSheetRow).not.toHaveBeenCalled();
+  });
+
   it('persists deletion by removing the physical Sheet row', async () => {
     const fixture = createFixture([
       [
@@ -828,6 +979,29 @@ describe('Sheets store lead import', () => {
     expect(appended[0][headers.indexOf('notes')]).toBe(
       'Location: Indiranagar\nAssigned To: someone@else.com'
     );
+  });
+
+  it('skips a mobile that already exists in another month', async () => {
+    const row = existingLead('9876543210');
+    row[headers.indexOf('campaignId')] = CAMPAIGN_B;
+    const fixture = createFixture([row], headers);
+    const result = await fixture.store.importLeadsForAuthorizedUser(USER, {
+      campaignId: CAMPAIGN_A,
+      rows: [
+        ['Name', 'Mobile'],
+        ['Anita Rao', '9876543210']
+      ]
+    });
+
+    expect(result.allowed).toBe(true);
+    if (!result.allowed) {
+      return;
+    }
+    expect(result.value).toMatchObject({
+      importedCount: 0,
+      skippedCount: 1
+    });
+    expect(fixture.appendSheetRows).not.toHaveBeenCalled();
   });
 
   it('does not write rows when name or mobile cannot be identified', async () => {

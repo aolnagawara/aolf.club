@@ -847,8 +847,12 @@ describe('mock lead repository identity', () => {
 
     const allLeads = await repository.getBootstrap('all');
     expect(allLeads.campaignId).toBe('all');
-    expect(allLeads.leads.map((lead) => lead.name)).toEqual([
-      'Aarav Sharma',
+    expect(allLeads.leads.map((lead) => lead.name)).toEqual(['Aarav Sharma']);
+    const otherVolunteerLeads = await repository.getBootstrap(
+      'all',
+      'other-volunteer@example.com'
+    );
+    expect(otherVolunteerLeads.leads.map((lead) => lead.name)).toEqual([
       'Nisha Verma'
     ]);
     expect(
@@ -1201,6 +1205,124 @@ describe('Seva workspace selection and bulk actions', () => {
     );
     expect(app.leads).toEqual([]);
     expect(app.selectedCount()).toBe(0);
+  });
+
+  it('lists every allowed volunteer except the volunteer whose leads are open', async () => {
+    const updateLead = vi.fn(async (payload) => ({
+      success: true as const,
+      lead: { id: payload.id, lastUpdated: 'reassigned' }
+    }));
+    vi.stubGlobal('window', { appRuntime: { updateLead } });
+    const app = sevaWorkspace();
+    const campaign = {
+      id: 'cmpLeads01AbcDefGhIJk',
+      name: 'Current',
+      type: 'Leads' as const
+    };
+    const lead = createLead(
+      app,
+      campaign.id,
+      campaign.type,
+      'stable-reassign-id'
+    );
+    lead.assignedVolunteerEmail = 'another.volunteer@example.com';
+    app.leads = [lead];
+    app.campaigns = [campaign];
+    app.selectedCampaignId = campaign.id;
+    app.campaignType = 'Leads';
+    app.volunteerEmail = 'volunteer@example.com';
+    app.viewedVolunteerEmail = 'another.volunteer@example.com';
+    app.appConfig.volunteers = [
+      { email: 'volunteer@example.com', name: 'Current Volunteer' },
+      {
+        email: 'another.volunteer@example.com',
+        name: 'Another Volunteer'
+      }
+    ];
+    app.toggleLeadSelection(lead);
+
+    app.openReassignVolunteerSheet();
+    expect(app.optionSheetOptions).toEqual([
+      {
+        value: 'volunteer@example.com',
+        label: 'Current Volunteer'
+      }
+    ]);
+    await app.applyOptionSelection('volunteer@example.com');
+
+    expect(app.leads).toEqual([]);
+  });
+
+  it('reuses the option sheet to choose whose leads are shown', async () => {
+    const loadBootstrap = vi.fn(async () => ({
+      success: true as const,
+      user: {
+        id: 'user-1',
+        email: 'volunteer@example.com'
+      },
+      campaignId,
+      config: {
+        campaigns: [
+          {
+            id: campaignId,
+            name: 'Current',
+            type: 'Leads' as const
+          }
+        ],
+        programs: [],
+        programDisplayOrder: [],
+        volunteers: [
+          { email: 'volunteer@example.com', name: 'Current Volunteer' },
+          {
+            email: 'another.volunteer@example.com',
+            name: 'Another Volunteer'
+          }
+        ],
+        allowedUsers: [
+          'volunteer@example.com',
+          'another.volunteer@example.com'
+        ]
+      },
+      leads: []
+    }));
+    vi.stubGlobal('window', { appRuntime: { loadBootstrap } });
+    const app = sevaWorkspace();
+    const campaignId = 'cmpLeads01AbcDefGhIJk';
+    app.volunteerEmail = 'volunteer@example.com';
+    app.viewedVolunteerEmail = 'volunteer@example.com';
+    app.selectedCampaignId = campaignId;
+    app.campaignType = 'Leads';
+    app.appConfig.volunteers = [
+      { email: 'volunteer@example.com', name: 'Current Volunteer' },
+      {
+        email: 'another.volunteer@example.com',
+        name: 'Another Volunteer'
+      }
+    ];
+
+    app.openViewVolunteerSheet();
+    expect(app.optionSheetMode).toBe('viewVolunteer');
+    expect(app.optionSheetTitle).toBe('Show leads for');
+    expect(app.currentOptionValue).toBe('volunteer@example.com');
+    expect(app.optionSheetOptions).toEqual([
+      {
+        value: 'another.volunteer@example.com',
+        label: 'Another Volunteer'
+      },
+      {
+        value: 'volunteer@example.com',
+        label: 'Current Volunteer'
+      }
+    ]);
+
+    app.flushPendingSaves = vi.fn(async () => true);
+    await app.applyOptionSelection('another.volunteer@example.com');
+
+    expect(app.viewedVolunteerEmail).toBe('another.volunteer@example.com');
+    expect(loadBootstrap).toHaveBeenCalledWith(
+      campaignId,
+      'another.volunteer@example.com'
+    );
   });
 
   it('adds a new record to the current campaign without reloading', async () => {
