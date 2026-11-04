@@ -301,6 +301,28 @@ export async function sendTextMessage(
   });
 }
 
+export function maskPhoneNumber(phone: string): string {
+  const digits = phone.replace(/\D/g, '');
+
+  // Handle Indian numbers with or without country code.
+  const hasIndiaCode = digits.length === 12 && digits.startsWith('91');
+  const countryCode = hasIndiaCode ? '+91 ' : '';
+  const nationalNumber = hasIndiaCode
+    ? digits.slice(2)
+    : digits;
+
+  if (nationalNumber.length <= 6) {
+    return countryCode + 'X'.repeat(nationalNumber.length);
+  }
+
+  return (
+    countryCode +
+    nationalNumber.slice(0, 2) +
+    'X'.repeat(nationalNumber.length - 6) +
+    nationalNumber.slice(-4)
+  );
+}
+
 export async function sendConfirmationButtons(
   to: string,
   parsed: ParsedLeadMessage,
@@ -310,7 +332,7 @@ export async function sendConfirmationButtons(
     '📋 Please confirm the extracted details',
     '',
     '👤 Name      : ' + (parsed.name || '-'),
-    '📱 Mobile    : ' + (parsed.mobile || '-'),
+    '📱 Mobile    : ' + (maskPhoneNumber(parsed.mobile) || '-'),
     '📘 Course    : ' + (parsed.course || '-'),
     '🔥 Quality   : ' + (parsed.leadQuality || '-'),
     '📅 Month     : ' + (parsed.month || '-'),
