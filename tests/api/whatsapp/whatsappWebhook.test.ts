@@ -192,14 +192,14 @@ describe('whatsapp webhook event routing', () => {
     expect(capture.jsonBody).toEqual({ success: true });
   });
 
-  it('sends the edit instruction and copyable lead draft', async () => {
-    const editMessages = [
-      'Copy the next message, correct any details, and send it back.',
-      'Sandip 9876543210 HP,DSN Hot Aug Need callback'
+  it('sends the discard instruction and generic lead sample', async () => {
+    const discardMessages = [
+      'Lead discarded. To send a new lead, replace the placeholders in the next message with the lead details.',
+      'Name Mobile Course'
     ];
     mockHandleButtonReply.mockResolvedValue({
       action: 'send_text',
-      messages: editMessages
+      messages: discardMessages
     });
 
     const req = createRequest({
@@ -215,8 +215,8 @@ describe('whatsapp webhook event routing', () => {
                     type: 'interactive',
                     interactive: {
                       button_reply: {
-                        id: 'edit_lead',
-                        title: 'Edit'
+                        id: 'discard_lead',
+                        title: 'Discard'
                       }
                     }
                   }
@@ -233,17 +233,17 @@ describe('whatsapp webhook event routing', () => {
 
     expect(mockHandleButtonReply).toHaveBeenCalledWith(
       '919876543210',
-      'edit_lead'
+      'discard_lead'
     );
     expect(mockSendTextMessage).toHaveBeenNthCalledWith(
       1,
       '919876543210',
-      editMessages[0]
+      discardMessages[0]
     );
     expect(mockSendTextMessage).toHaveBeenNthCalledWith(
       2,
       '919876543210',
-      editMessages[1]
+      discardMessages[1]
     );
     expect(mockMarkMessageProcessed).toHaveBeenCalledWith('msg-2');
     expect(mockSendConfirmationButtons).not.toHaveBeenCalled();

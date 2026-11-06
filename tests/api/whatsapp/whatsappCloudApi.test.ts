@@ -130,7 +130,7 @@ describe('whatsappCloudApi verification helpers', () => {
     await assertion;
   });
 
-  it('sends only extracted fields in the confirmation body', async () => {
+  it('omits the mobile number and offers Confirm & Save or Discard', async () => {
     process.env.META_ACCESS_TOKEN = 'access-token';
     process.env.META_PHONE_NUMBER_ID = 'phone-id';
     process.env.META_API_VERSION = 'v21.0';
@@ -159,7 +159,7 @@ describe('whatsappCloudApi verification helpers', () => {
     const payload = JSON.parse(String(request.body)) as {
       interactive: {
         body: { text: string };
-        action: { buttons: Array<{ reply: { id: string } }> };
+        action: { buttons: Array<{ reply: { id: string; title: string } }> };
       };
     };
     expect(payload.interactive.body.text).toBe(
@@ -167,17 +167,22 @@ describe('whatsappCloudApi verification helpers', () => {
         '📋 Please confirm the extracted details',
         '',
         '👤 Name      : Sandip',
-        '📱 Mobile    : 9876543210',
         '📘 Course    : HP',
         '🔥 Quality   : Hot',
         '📅 Month     : Aug',
         '📝 Notes     : Call tomorrow'
       ].join('\n')
     );
+    expect(payload.interactive.body.text).not.toContain('Mobile');
+    expect(payload.interactive.body.text).not.toContain('9876543210');
+    expect(payload.interactive.body.text).not.toContain('98XXXX3210');
     expect(payload.interactive.body.text).not.toContain('Original Message');
     expect(payload.interactive.body.text).not.toContain('RAW SOURCE MESSAGE');
     expect(
       payload.interactive.action.buttons.map((button) => button.reply.id)
-    ).toEqual(['confirm_save.signed-token', 'edit_lead.signed-token']);
+    ).toEqual(['confirm_save.signed-token', 'discard_lead.signed-token']);
+    expect(
+      payload.interactive.action.buttons.map((button) => button.reply.title)
+    ).toEqual(['✅ Confirm & Save', '🗑️ Discard']);
   });
 });

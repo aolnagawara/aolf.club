@@ -55,6 +55,18 @@ describe('WhatsApp confirmation token', () => {
     });
   });
 
+  it.each(['discard_lead', 'edit_lead'] as const)(
+    'parses %s buttons with and without a signed token',
+    (action) => {
+      const token = createConfirmationToken(pending) || '';
+      const buttonId = buildConfirmationButtonId(action, token);
+
+      expect(buttonId.length).toBeLessThanOrEqual(256);
+      expect(parseConfirmationButtonId(buttonId)).toEqual({ action, token });
+      expect(parseConfirmationButtonId(action)).toEqual({ action, token: '' });
+    }
+  );
+
   it('rejects a token used by a different sender or after expiry', () => {
     const token = createConfirmationToken(pending) || '';
 

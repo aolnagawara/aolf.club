@@ -447,26 +447,11 @@ function parseAndValidateLead(
   return parsed;
 }
 
-export function buildEditableLeadMessage(parsed: ParsedLeadMessage): string {
-  return [
-    parsed.name,
-    parsed.mobile,
-    parsed.course,
-    parsed.leadQuality,
-    parsed.month,
-    parsed.notes
-  ]
-    .map((value) => normalizeSpaces(value))
-    .filter(Boolean)
-    .join(' ');
-}
-
 export function buildShareableLeadMessage(parsed: ParsedLeadMessage): string {
   return [
     'Lead added 👍',
     '',
     'Name: ' + parsed.name,
-    'Mobile: ' + parsed.mobile,
     parsed.course ? 'Course: ' + parsed.course : '',
     parsed.leadQuality ? 'Quality: ' + parsed.leadQuality : '',
     parsed.month ? 'Month: ' + parsed.month : '',
@@ -515,7 +500,7 @@ export async function handleIncomingText(
     }
     return {
       action: 'send_text',
-      message: 'Please choose Confirm & Save or Edit for the previous lead.'
+      message: 'Please choose Confirm & Save or Discard for the previous lead.'
     };
   }
 
@@ -545,7 +530,7 @@ export async function handleIncomingText(
       return {
         action: 'send_text',
         message:
-          "I couldn't find the name near mobile number. Please resend in format: <name> 9876543210 HP Hot Aug"
+          "I couldn't find the name near mobile number. Please resend in format: Name Mobile Course"
       };
     }
 
@@ -602,13 +587,13 @@ export async function handleButtonReply(
     };
   }
 
-  if (action === 'edit_lead') {
+  if (action === 'discard_lead' || action === 'edit_lead') {
     await removePendingLead(volunteerPhone, pending.id);
     return {
       action: 'send_text',
       messages: [
-        'Copy the next message, correct any details, and send it back.',
-        buildEditableLeadMessage(pending.parsed) || pending.originalMessage
+        'Lead discarded. To send a new lead, replace the placeholders in the next message with the lead details.',
+        'Name Mobile Course'
       ]
     };
   }
@@ -629,8 +614,7 @@ export async function handleButtonReply(
   if (saved.action === 'updated') {
     return {
       action: 'send_text',
-      message:
-        'ℹ️ Lead already existed. Existing lead has been updated.'
+      message: 'ℹ️ Lead already existed. Existing lead has been updated.'
     };
   }
 

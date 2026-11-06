@@ -9,13 +9,16 @@ import {
 import type { PendingLeadConfirmation } from './pendingStore.js';
 
 const CONFIRM_ACTION = 'confirm_save';
-const EDIT_ACTION = 'edit_lead';
+const DISCARD_ACTION = 'discard_lead';
+// Accept buttons sent before Edit was renamed to Discard.
+const LEGACY_EDIT_ACTION = 'edit_lead';
 const MAX_BUTTON_ID_CHARS = 256;
 const MAX_INFLATED_TOKEN_BYTES = 8_192;
 const SIGNATURE_BYTES = 12;
 const TOKEN_VERSION = '1';
 
-type ConfirmationAction = typeof CONFIRM_ACTION | typeof EDIT_ACTION;
+type ConfirmationAction =
+  typeof CONFIRM_ACTION | typeof DISCARD_ACTION | typeof LEGACY_EDIT_ACTION;
 type TokenPayload = [
   version: string,
   expiresAtBase36: string,
@@ -78,7 +81,11 @@ export function parseConfirmationButtonId(buttonIdValue: string): {
   token: string;
 } | null {
   const value = String(buttonIdValue || '').trim();
-  for (const action of [CONFIRM_ACTION, EDIT_ACTION] as const) {
+  for (const action of [
+    CONFIRM_ACTION,
+    DISCARD_ACTION,
+    LEGACY_EDIT_ACTION
+  ] as const) {
     if (value === action) {
       return { action, token: '' };
     }

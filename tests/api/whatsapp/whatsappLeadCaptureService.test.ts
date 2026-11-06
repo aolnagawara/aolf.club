@@ -103,13 +103,12 @@ describe('WhatsApp lead Sheet upsert', () => {
     ).toEqual({ status: 'no_month_match', month: 'Mar' });
   });
 
-  it('builds an informal plain-text lead summary for team sharing', () => {
+  it('builds a saved lead summary without the mobile number', () => {
     expect(buildShareableLeadMessage(parsedLead)).toBe(
       [
         'Lead added 👍',
         '',
         'Name: Sandip',
-        'Mobile: 9876543210',
         'Course: HP',
         'Quality: Hot',
         'Month: Aug',
@@ -289,6 +288,27 @@ describe('WhatsApp lead Sheet upsert', () => {
     expect(result.confirmationToken).toEqual(expect.any(String));
   });
 
+  it('asks the volunteer to confirm or discard the pending lead', async () => {
+    await upsertPendingLead(
+      '919876543210',
+      'volunteer@example.com',
+      parsedLead,
+      'source-message-pending'
+    );
+    mockReadSheetValues.mockResolvedValue([
+      ['email', 'name', 'mobile'],
+      ['volunteer@example.com', 'Volunteer', '919876543210']
+    ]);
+
+    await expect(
+      handleIncomingText('919876543210', 'Another lead', 'source-message-next')
+    ).resolves.toEqual({
+      action: 'send_text',
+      message: 'Please choose Confirm & Save or Discard for the previous lead.'
+    });
+    await expect(getPendingLead('919876543210')).resolves.not.toBeNull();
+  });
+
   it('defaults a missing lead quality and month before showing confirmation', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-08-31T20:00:00.000Z'));
@@ -346,83 +366,85 @@ describe('WhatsApp lead Sheet upsert', () => {
     );
   });
 
-  it('returns a copyable edit draft and discards the pending lead before delivery', async () => {
-    vi.useFakeTimers();
-    process.env.WHATSAPP_PENDING_TTL_SECONDS = '1';
-    mockReadSheetValues.mockImplementation(async (target, range) => {
-      if (target === 'access' && range === 'AllowedUsers!A:Z') {
-        return [
-          ['email', 'name', 'mobile'],
-          ['volunteer@example.com', 'Volunteer', '919876543210']
-        ];
-      }
-      if (target === 'data' && range === 'Config!A:B') {
-        return [
-          ['key', 'value'],
-          [
-            'programs',
-            JSON.stringify([{ code: 'HP', label: 'Happiness Program' }])
-          ]
-        ];
-      }
-      if (target === 'data' && range === 'Campaigns!A:F') {
-        return [
-          ['id', 'name', 'type'],
-          ['leads-sep', 'September Leads', 'Leads']
-        ];
-      }
-      throw new Error(`Unexpected Sheet read: ${target} ${range}`);
-    });
-    const editableParsedLead = {
-      ...parsedLead,
-      course: 'HP,DSN'
-    };
-    await upsertPendingLead(
-      '919876543210',
-      'volunteer@example.com',
-      editableParsedLead,
-      'source-message-old'
-    );
+  it.each(['discard_lead', 'edit_lead'])(
+    'returns a generic sample and discards the pending lead for %s',
+    async (action) => {
+      vi.useFakeTimers();
+      process.env.WHATSAPP_PENDING_TTL_SECONDS = '1';
+      mockReadSheetValues.mockImplementation(async (target, range) => {
+        if (target === 'access' && range === 'AllowedUsers!A:Z') {
+          return [
+            ['email', 'name', 'mobile'],
+            ['volunteer@example.com', 'Volunteer', '919876543210']
+          ];
+        }
+        if (target === 'data' && range === 'Config!A:B') {
+          return [
+            ['key', 'value'],
+            [
+              'programs',
+              JSON.stringify([{ code: 'HP', label: 'Happiness Program' }])
+            ]
+          ];
+        }
+        if (target === 'data' && range === 'Campaigns!A:F') {
+          return [
+            ['id', 'name', 'type'],
+            ['leads-sep', 'September Leads', 'Leads']
+          ];
+        }
+        throw new Error(`Unexpected Sheet read: ${target} ${range}`);
+      });
+      const discardedParsedLead = {
+        ...parsedLead,
+        course: 'HP,DSN'
+      };
+      await upsertPendingLead(
+        '919876543210',
+        'volunteer@example.com',
+        discardedParsedLead,
+        'source-message-old'
+      );
 
-    const editResult = await handleButtonReply('919876543210', 'edit_lead');
+      const discardResult = await handleButtonReply('919876543210', action);
 
-    expect(editResult).toEqual({
-      action: 'send_text',
-      messages: [
-        'Copy the next message, correct any details, and send it back.',
-        'Sandip 9876543210 HP,DSN Hot Aug Call tomorrow'
-      ]
-    });
-    await expect(getPendingLead('919876543210')).resolves.toBeNull();
-    await vi.advanceTimersByTimeAsync(1_001);
-    expect(mockAppendSheetRow).not.toHaveBeenCalled();
+      expect(discardResult).toEqual({
+        action: 'send_text',
+        messages: [
+          'Lead discarded. To send a new lead, replace the placeholders in the next message with the lead details.',
+          'Name Mobile Course'
+        ]
+      });
+      await expect(getPendingLead('919876543210')).resolves.toBeNull();
+      await vi.advanceTimersByTimeAsync(1_001);
+      expect(mockAppendSheetRow).not.toHaveBeenCalled();
 
-    const newMessage =
-      '9123456789 Priya HP Warm Sep New lead after abandoned edit';
-    const nextResult = await handleIncomingText(
-      '919876543210',
-      newMessage,
-      'source-message-new'
-    );
+      const newMessage = '9123456789 Priya HP Warm Sep New lead after discard';
+      const nextResult = await handleIncomingText(
+        '919876543210',
+        newMessage,
+        'source-message-new'
+      );
 
-    expect(nextResult).toMatchObject({
-      action: 'show_confirmation',
-      parsed: {
-        mobile: '9123456789',
-        name: 'Priya',
-        course: 'HP',
-        leadQuality: 'Warm',
-        month: 'Sep',
-        notes: 'New lead after abandoned edit',
-        originalMessage: newMessage
-      }
-    });
-    expect(nextResult.confirmationToken).toEqual(expect.any(String));
-    expect(await getPendingLead('919876543210')).toMatchObject({
-      id: 'source-message-new',
-      parsed: { mobile: '9123456789' }
-    });
-  });
+      expect(nextResult).toMatchObject({
+        action: 'show_confirmation',
+        parsed: {
+          mobile: '9123456789',
+          name: 'Priya',
+          course: 'HP',
+          leadQuality: 'Warm',
+          month: 'Sep',
+          notes: 'New lead after discard',
+          originalMessage: newMessage
+        }
+      });
+      expect(nextResult.confirmationToken).toEqual(expect.any(String));
+      expect(await getPendingLead('919876543210')).toMatchObject({
+        id: 'source-message-new',
+        parsed: { mobile: '9123456789' }
+      });
+    }
+  );
 
   it('confirms from the signed button payload after in-memory state is lost', async () => {
     mockReadSheetValues.mockImplementation(async (target, range) => {
@@ -471,6 +493,45 @@ describe('WhatsApp lead Sheet upsert', () => {
 
     expect(confirmation).toMatchObject({ action: 'send_text' });
     expect(mockAppendSheetRow).toHaveBeenCalledTimes(1);
+  });
+
+  it('discards from the signed button after in-memory state is lost', async () => {
+    await upsertPendingLead(
+      '919876543210',
+      'volunteer@example.com',
+      parsedLead,
+      'source-message-discard-cold-start'
+    );
+    mockReadSheetValues.mockResolvedValue([
+      ['email', 'name', 'mobile'],
+      ['volunteer@example.com', 'Volunteer', '919876543210']
+    ]);
+    const incoming = await handleIncomingText(
+      '919876543210',
+      parsedLead.originalMessage,
+      'source-message-discard-cold-start'
+    );
+    expect(incoming.confirmationToken).toBeTruthy();
+    __resetWhatsAppStateForTests();
+
+    const result = await handleButtonReply(
+      '919876543210',
+      buildConfirmationButtonId(
+        'discard_lead',
+        incoming.confirmationToken || ''
+      )
+    );
+
+    expect(result).toEqual({
+      action: 'send_text',
+      messages: [
+        'Lead discarded. To send a new lead, replace the placeholders in the next message with the lead details.',
+        'Name Mobile Course'
+      ]
+    });
+    expect(mockAppendSheetRow).not.toHaveBeenCalled();
+    expect(mockUpdateSheetValuesBatch).not.toHaveBeenCalled();
+    await expect(getPendingLead('919876543210')).resolves.toBeNull();
   });
 
   it('discards an extracted lead when confirmation times out without a response', async () => {
