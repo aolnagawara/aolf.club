@@ -6,10 +6,66 @@ import {
   deleteLeadForUser,
   getBootstrapForUser,
   getPublicCourses,
-  importLeadsForUser
+  importLeadsForUser,
+  updateLeadForUser
 } from '../../../api/_lib/storage/mockStore.js';
 
 describe('mock store campaign selection', () => {
+  it('saves a target course and keeps notes through successive volunteer transfers', async () => {
+    const user = { id: 'user-1', email: 'volunteer@example.com' };
+    const other = { id: 'user-2', email: 'other-volunteer@example.com' };
+    const campaignId = 'cmpLeads01AbcDefGhIJk';
+    const created = await createLeadForUser(user, {
+      name: 'Transfer with course',
+      mobile: '9000000091',
+      notes: 'Original handoff context',
+      campaignId,
+      campaignType: 'Leads',
+      wishlistPrograms: 'HP'
+    });
+    try {
+      expect(created.lead.wishlistPrograms).toBe('HP');
+      await updateLeadForUser(user, {
+        id: created.lead.id,
+        campaignId,
+        campaignType: 'Leads',
+        assignedVolunteerEmail: other.email
+      });
+      const received = await getBootstrapForUser(other, 'all');
+      const lead = received.leads.find((item) => item.id === created.lead.id)!;
+      expect(lead.notes).toContain('Transferred from ');
+      expect(lead.notes).toContain('Original handoff context');
+      expect(lead.wishlistPrograms).toBe('HP');
+
+      await updateLeadForUser(other, {
+        id: created.lead.id,
+        campaignId,
+        campaignType: 'Leads',
+        assignedVolunteerEmail: user.email
+      });
+      await updateLeadForUser(user, {
+        id: created.lead.id,
+        campaignId,
+        campaignType: 'Leads',
+        assignedVolunteerEmail: user.email
+      });
+      const returned = await getBootstrapForUser(user, 'all');
+      const notes = returned.leads.find(
+        (item) => item.id === created.lead.id
+      )!.notes;
+      expect(notes.match(/Transferred from /g)).toHaveLength(2);
+      expect(notes).toContain('Original handoff context');
+    } finally {
+      const current = await getBootstrapForUser(user, 'all');
+      const owner = current.leads.some((lead) => lead.id === created.lead.id)
+        ? user
+        : other;
+      await deleteLeadForUser(owner, {
+        id: created.lead.id,
+        campaignType: 'Leads'
+      });
+    }
+  });
   it('rejects an unknown requested campaign like the Sheets store', async () => {
     await expect(
       getBootstrapForUser(

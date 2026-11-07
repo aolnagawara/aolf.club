@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/add",
+      "destination": "/seva.html"
+    },
+    {
       "source": "/seva",
       "destination": "/seva.html"
     },

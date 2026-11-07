@@ -1278,10 +1278,7 @@ describe('Seva workspace selection and bulk actions', () => {
             name: 'Another Volunteer'
           }
         ],
-        allowedUsers: [
-          'volunteer@example.com',
-          'another.volunteer@example.com'
-        ]
+        allowedUsers: ['volunteer@example.com', 'another.volunteer@example.com']
       },
       leads: []
     }));
@@ -1407,6 +1404,116 @@ describe('Seva workspace selection and bulk actions', () => {
       name: 'New lead',
       campaignId: campaign.id
     });
+  });
+
+  it('quickly adds successive leads with multiple target programs and the selected Seva', async () => {
+    const repository = new MockLeadRepository();
+    const createLead = vi.fn((payload) => repository.createLead(payload));
+    vi.stubGlobal('window', {
+      location: { pathname: '/add' },
+      appRuntime: { createLead }
+    });
+    const app = sevaWorkspace();
+    const focus = vi.fn();
+    app.$nextTick = (callback) => callback();
+    app.$refs = { createRecordName: { focus } };
+    app.campaigns = [
+      { id: 'cmpLeads01AbcDefGhIJk', name: 'Current', type: 'Leads' }
+    ];
+    app.selectedCampaignId = 'all';
+    app.appConfig.programs = app.defaultPrograms;
+    app.appConfig.programDisplayOrder = ['HP', 'DSN'];
+    app.refreshProgramCaches();
+    app.openCreateRecord('Leads');
+    app.createRecordDraft.name = 'Quick first';
+    app.createRecordDraft.mobile = '9000000011';
+    app.createRecordDraft.notes = 'Call tomorrow';
+    app.openOptionSheet('quality');
+    expect(app.optionSheetOptions.map((option) => option.value)).toEqual([
+      'Hot',
+      'Warm',
+      'Cold'
+    ]);
+    app.closeCreateRecord();
+    expect(app.isCreateRecordModalOpen).toBe(true);
+    await app.applyOptionSelection('Hot');
+    expect(app.createRecordDraft.quality).toBe('Hot');
+    app.openProgramEditor();
+    app.toggleProgramSelection('wishlist', 'HP');
+    app.toggleProgramSelection('wishlist', 'DSN');
+    app.applyProgramEditor();
+
+    await app.saveCreatedRecord();
+
+    expect(app.isQuickAddPage).toBe(true);
+    expect(app.isCreateRecordModalOpen).toBe(true);
+    expect(app.createRecordDraft).toEqual({
+      name: '',
+      mobile: '',
+      notes: '',
+      quality: 'Quality',
+      wishlistPrograms: ['HP', 'DSN'],
+      campaignId: 'cmpLeads01AbcDefGhIJk'
+    });
+    expect(app.leads[0].wishlistPrograms).toEqual(['HP', 'DSN']);
+    expect(app.leads[0].quality).toBe('Hot');
+    expect(focus).toHaveBeenCalledTimes(2);
+
+    app.createRecordDraft.name = 'Quick second';
+    app.createRecordDraft.mobile = '9000000012';
+    await app.saveCreatedRecord();
+
+    const saved = await repository.getBootstrap('all');
+    expect(saved.leads.filter((lead) => lead.name.startsWith('Quick'))).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: 'Quick first',
+          quality: 'Hot',
+          wishlistPrograms: 'HP,DSN',
+          notes: 'Call tomorrow'
+        }),
+        expect.objectContaining({
+          name: 'Quick second',
+          quality: 'Quality',
+          wishlistPrograms: 'HP,DSN',
+          notes: ''
+        })
+      ])
+    );
+    app.closeCreateRecord();
+    expect(app.isCreateRecordModalOpen).toBe(true);
+  });
+
+  it('preserves quick-add details on duplicate errors and ignores repeated submits while saving', async () => {
+    const pending = deferred<never>();
+    const createLead = vi.fn(() => pending.promise);
+    vi.stubGlobal('window', {
+      location: { pathname: '/add/' },
+      appRuntime: { createLead }
+    });
+    const app = sevaWorkspace();
+    app.campaigns = [
+      { id: 'cmpLeads01AbcDefGhIJk', name: 'Current', type: 'Leads' }
+    ];
+    app.openCreateRecord('Leads');
+    Object.assign(app.createRecordDraft, {
+      name: 'Keep these details',
+      mobile: '9876543210',
+      notes: 'Follow up',
+      wishlistPrograms: ['HP', 'DSN']
+    });
+    const draft = { ...app.createRecordDraft };
+    const saving = app.saveCreatedRecord();
+    await app.saveCreatedRecord();
+    expect(createLead).toHaveBeenCalledOnce();
+
+    pending.reject(new Error('This mobile number is already a lead.'));
+    await saving;
+
+    expect(app.authError).toBe('This mobile number is already a lead.');
+    expect(app.createRecordDraft).toEqual(draft);
+    expect(app.isCreateRecordModalOpen).toBe(true);
+    expect(app.isCreateRecordSaving).toBe(false);
   });
 
   it('rejects an invalid mobile number before creating a record', async () => {
@@ -1745,6 +1852,76 @@ describe('Seva workspace course management', () => {
 });
 
 describe('Seva workspace program editor', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  function createAddLeadContext() {
+    const app = sevaWorkspace();
+    app.campaigns = [
+      { id: 'cmpLeads01AbcDefGhIJk', name: 'Current', type: 'Leads' }
+    ];
+    app.appConfig.programs = app.defaultPrograms;
+    app.appConfig.programDisplayOrder = ['HP', 'DSN'];
+    app.refreshProgramCaches();
+    app.openCreateRecord('Leads');
+    return app;
+  }
+
+  it('reuses the editor for new lead programs without modifying an existing lead', () => {
+    const app = createAddLeadContext();
+    const lead = createLead(app);
+    app.leads = [lead];
+
+    app.openProgramEditor();
+    expect(app.programEditorTarget).toBe('createRecord');
+    expect(app.activeProgramLead).toBeNull();
+    app.toggleProgramSelection('wishlist', 'HP');
+    app.toggleProgramSelection('wishlist', 'DSN');
+    expect(app.createRecordDraft.wishlistPrograms).toEqual([]);
+    app.closeCreateRecord();
+    expect(app.isCreateRecordModalOpen).toBe(true);
+    app.applyProgramEditor();
+
+    expect(app.createRecordDraft.wishlistPrograms).toEqual(['HP', 'DSN']);
+    expect(
+      app.formatPrograms(app.createRecordDraft.wishlistPrograms, '🎯')
+    ).toBe('🎯HP·DSN');
+    expect(lead.wishlistPrograms).toEqual([]);
+    expect(lead.isDirty).toBe(false);
+    expect(app.isProgramEditorOpen).toBe(false);
+    expect(app.isCreateRecordModalOpen).toBe(true);
+
+    app.openProgramEditor(lead);
+    expect(app.programEditorTarget).toBe('lead');
+    app.toggleProgramSelection('wishlist', 'HP');
+    app.toggleProgramSelection('done', 'DSN');
+    app.applyProgramEditor();
+    expect(lead.wishlistPrograms).toEqual(['HP']);
+    expect(lead.donePrograms).toEqual(['DSN']);
+    expect(app.createRecordDraft.wishlistPrograms).toEqual(['HP', 'DSN']);
+  });
+
+  it('discards draft program changes on Cancel and supports removing every selection', () => {
+    const app = createAddLeadContext();
+    app.createRecordDraft.wishlistPrograms = ['HP'];
+
+    app.openProgramEditor();
+    expect(app.isProgramSelected('wishlist', 'HP')).toBe(true);
+    app.toggleProgramSelection('wishlist', 'HP');
+    app.toggleProgramSelection('wishlist', 'DSN');
+    app.closeProgramEditor();
+    expect(app.createRecordDraft.wishlistPrograms).toEqual(['HP']);
+    expect(app.isCreateRecordModalOpen).toBe(true);
+
+    app.openProgramEditor();
+    expect(app.programDraft.wishlist).toEqual(['HP']);
+    app.toggleProgramSelection('wishlist', 'HP');
+    app.applyProgramEditor();
+    expect(app.createRecordDraft.wishlistPrograms).toEqual([]);
+  });
+
   it('applies selected programs to the card summary without a reload', () => {
     const app = sevaWorkspace();
     app.appConfig.programs = [
@@ -1789,7 +1966,9 @@ describe('Seva workspace program editor', () => {
   it('places the month short form next to the target course in All', () => {
     const app = sevaWorkspace();
     const campaignId = 'cmpLeads01AbcDefGhIJk';
-    app.campaigns = [{ id: campaignId, name: 'July Leads Campaign', type: 'Leads' }];
+    app.campaigns = [
+      { id: campaignId, name: 'July Leads Campaign', type: 'Leads' }
+    ];
     app.appConfig.showDonePrograms = true;
     const lead = createLead(app, campaignId);
     app.selectedCampaignId = 'all';

@@ -553,7 +553,7 @@ describe('Sheets store campaign and access scoping', () => {
         '',
         '',
         'Response',
-        '',
+        'Requested an evening call',
         CAMPAIGN_A,
         'Leads',
         USER.email
@@ -572,6 +572,19 @@ describe('Sheets store campaign and access scoping', () => {
       range: 'Leads!J2',
       values: [[OTHER_VOLUNTEER_EMAIL]]
     });
+    expect(updates).toContainEqual({
+      range: 'Leads!G2',
+      values: [
+        [
+          expect.stringContaining(
+            'Transferred from Current Volunteer to Another Volunteer on 5 Aug 2026, 5:30 pm IST.'
+          )
+        ]
+      ]
+    });
+    expect(
+      updates.find((update) => update.range === 'Leads!G2')?.values[0][0]
+    ).toContain('Requested an evening call');
 
     await expect(
       fixture.store.updateLeadForAuthorizedUser(USER, {
@@ -788,6 +801,8 @@ describe('Sheets store campaign and access scoping', () => {
       name: 'Created lead',
       mobile: '9876543210',
       notes: 'Created in the FAB',
+      quality: 'Warm',
+      wishlistPrograms: 'HP,DSN',
       campaignId: CAMPAIGN_B,
       campaignType: 'Leads'
     });
@@ -799,8 +814,10 @@ describe('Sheets store campaign and access scoping', () => {
     expect(result.value.lead.id).toHaveLength(21);
     expect(result.value.lead).toMatchObject({
       name: 'Created lead',
+      quality: 'Warm',
       campaignId: CAMPAIGN_B,
-      assignedVolunteerEmail: USER.email
+      assignedVolunteerEmail: USER.email,
+      wishlistPrograms: 'HP,DSN'
     });
     expect(fixture.appendSheetRow).toHaveBeenCalledOnce();
     const [target, range, row] = fixture.appendSheetRow.mock.calls[0];
@@ -808,7 +825,34 @@ describe('Sheets store campaign and access scoping', () => {
     expect(range).toBe(LAYOUT.leadsRange);
     expect(row[0]).toBe(result.value.lead.id);
     expect(row[1]).toBe('Created lead');
+    expect(row[2]).toBe('Warm');
     expect(row[7]).toBe(CAMPAIGN_B);
+    expect(row[10]).toBe('HP,DSN');
+  });
+
+  it('does not add a transfer note when the volunteer is unchanged', async () => {
+    const fixture = createFixture([
+      [
+        'same-owner',
+        'Same owner',
+        'Warm',
+        '',
+        '',
+        'Response',
+        'Keep this note',
+        CAMPAIGN_A,
+        'Leads',
+        USER.email
+      ]
+    ]);
+    await fixture.store.updateLeadForAuthorizedUser(USER, {
+      id: 'same-owner',
+      campaignId: CAMPAIGN_A,
+      campaignType: 'Leads',
+      assignedVolunteerEmail: USER.email
+    });
+    const updates = fixture.updateSheetValuesBatch.mock.calls[0][1];
+    expect(updates.some((update) => update.range === 'Leads!G2')).toBe(false);
   });
 
   it('normalizes a +91 mobile and rejects an invalid create mobile', async () => {

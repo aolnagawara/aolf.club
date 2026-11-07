@@ -30,6 +30,7 @@ import {
   type UpdateLeadResponse
 } from '../../../shared/contracts/appContracts';
 import { matchesMemberEngagement } from '../../../shared/memberAssignment';
+import { withVolunteerTransferNote } from '../../../shared/leadTransfer';
 import { normalizeIndianMobile } from '../../../shared/contracts/indianMobile';
 import {
   CHOOSE_MONTH_MESSAGE,
@@ -81,8 +82,7 @@ export class MockLeadRepository implements LeadRepository {
           .filter(
             (lead) =>
               lead.campaignType === 'Leads' &&
-              lead.assignedVolunteerEmail.trim().toLowerCase() ===
-                ownerEmail &&
+              lead.assignedVolunteerEmail.trim().toLowerCase() === ownerEmail &&
               leadCampaignIds.has(String(lead.campaignId || ''))
           )
           .map((lead) => ({ ...lead }))
@@ -208,6 +208,13 @@ export class MockLeadRepository implements LeadRepository {
     this.leads[index] = {
       ...this.leads[index],
       ...parsed,
+      notes: withVolunteerTransferNote(
+        parsed.notes ?? this.leads[index].notes,
+        currentAssignee,
+        targetVolunteerEmail,
+        mockBootstrapData.config.volunteers || [],
+        new Date().toISOString()
+      ),
       lastUpdated: 'Just now'
     };
 
@@ -236,7 +243,9 @@ export class MockLeadRepository implements LeadRepository {
       id: nanoid(),
       mobile: parsed.mobile,
       name: parsed.name,
-      quality: parsed.campaignType === 'Members' ? 'Engagement' : 'Quality',
+      quality:
+        parsed.quality ||
+        (parsed.campaignType === 'Members' ? 'Engagement' : 'Quality'),
       followUp: 'Follow-up',
       lastUpdated: 'Just now',
       status: 'Response',
@@ -244,7 +253,7 @@ export class MockLeadRepository implements LeadRepository {
       campaignId: parsed.campaignId,
       campaignType: parsed.campaignType,
       assignedVolunteerEmail: mockBootstrapData.user.email,
-      wishlistPrograms: '',
+      wishlistPrograms: parsed.wishlistPrograms || '',
       donePrograms: ''
     };
     this.leads.push(lead);

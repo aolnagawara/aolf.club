@@ -574,7 +574,9 @@ export function createRecordActionMethods() {
             return Promise.reject(new Error('Campaign not found.'));
           }
           return window.appRuntime.updateLead({
-            ...toUpdateRequest(this, lead, campaign),
+            id: lead.id,
+            campaignId: campaign.id,
+            campaignType: campaign.type,
             assignedVolunteerEmail: normalizedEmail
           });
         });
@@ -781,17 +783,28 @@ export function createRecordActionMethods() {
         name: '',
         mobile: '',
         notes: '',
+        quality: type === 'Members' ? 'Engagement' : 'Quality',
+        wishlistPrograms: [],
         campaignId: (preferred || campaigns[0])?.id || ''
       };
       this.isFabOpen = false;
       this.isCreateRecordModalOpen = true;
+      this.$nextTick?.(() => this.$refs?.createRecordName?.focus());
     },
     closeCreateRecord(this: SevaWorkspaceContext): void {
-      if (!this.isCreateRecordSaving) {
+      if (
+        !this.isCreateRecordSaving &&
+        !this.isQuickAddPage &&
+        !this.isProgramEditorOpen &&
+        !this.isOptionSheetOpen
+      ) {
         this.isCreateRecordModalOpen = false;
       }
     },
     async saveCreatedRecord(this: SevaWorkspaceContext): Promise<void> {
+      if (this.isCreateRecordSaving) {
+        return;
+      }
       const name = this.createRecordDraft.name.trim();
       const mobile = normalizeIndianMobile(this.createRecordDraft.mobile);
       if (!name || !mobile || !this.createRecordDraft.campaignId) {
@@ -809,13 +822,32 @@ export function createRecordActionMethods() {
           name,
           mobile,
           notes: this.createRecordDraft.notes.trim(),
+          quality: this.createRecordDraft.quality,
+          ...(this.createRecordType === 'Leads' &&
+          this.createRecordDraft.wishlistPrograms.length
+            ? {
+                wishlistPrograms: this.getProgramListForSave(
+                  this.createRecordDraft.wishlistPrograms
+                )
+              }
+            : {}),
           campaignId: this.createRecordDraft.campaignId,
           campaignType: this.createRecordType
         });
         if (leadMatchesCurrentView(this, response.lead)) {
           this.leads = [this.normalizeLead(response.lead), ...this.leads];
         }
-        this.isCreateRecordModalOpen = false;
+        if (this.isQuickAddPage) {
+          this.createRecordDraft = {
+            ...this.createRecordDraft,
+            name: '',
+            mobile: '',
+            notes: '',
+            quality: 'Quality'
+          };
+        } else {
+          this.isCreateRecordModalOpen = false;
+        }
         this.actionMessage =
           (this.createRecordType === 'Members' ? 'Member' : 'Lead') +
           ' added successfully.';
@@ -830,6 +862,9 @@ export function createRecordActionMethods() {
               );
       } finally {
         this.isCreateRecordSaving = false;
+        if (this.isQuickAddPage && !this.authError) {
+          this.$nextTick?.(() => this.$refs?.createRecordName?.focus());
+        }
       }
     },
     openImportLeads(this: SevaWorkspaceContext): void {

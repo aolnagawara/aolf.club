@@ -55,6 +55,7 @@
           role="status"
           class="fixed left-1/2 z-[100] flex w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 items-start justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50/95 px-4 py-3 text-xs text-emerald-700 shadow-lg backdrop-blur"
           style="bottom: calc(5.5rem + env(safe-area-inset-bottom))"
+          :style="'bottom: calc(' + (isQuickAddPage ? '1rem' : '5.5rem') + ' + env(safe-area-inset-bottom))'"
         >
           <span x-text="actionMessage"></span>
           <button
@@ -160,6 +161,14 @@
                   </button>
                 </div>
               </div>
+              <a
+                x-show="!isQuickAddPage"
+                href="/add"
+                class="block px-2 py-1.5 text-xs rounded-md text-indigo-700 hover:bg-indigo-50"
+                role="menuitem"
+              >
+                Quick add lead
+              </a>
               <button
                 x-show="authenticatedUser"
                 type="button"
@@ -174,7 +183,10 @@
         </div>
       </header>
 
-      <main class="px-4 pt-4 pb-28 space-y-4 flex-1 relative">
+      <main
+        class="px-4 pt-4 space-y-4 flex-1 relative"
+        :class="isQuickAddPage ? 'pb-6' : 'pb-28'"
+      >
         <div
           x-show="isLoadingBootstrap || isCampaignSwitching"
           x-transition.opacity
@@ -218,9 +230,10 @@
               >
                 Welcome to AOLF Connect
               </h1>
-              <p class="text-sm leading-relaxed text-slate-600 mt-1.5">
-                Sign in with Google to continue to the Seva Workspace.
-              </p>
+              <p
+                class="text-sm leading-relaxed text-slate-600 mt-1.5"
+                x-text="isQuickAddPage ? 'Sign in with Google to quickly add leads.' : 'Sign in with Google to continue to the Seva Workspace.'"
+              ></p>
             </div>
             <div
               x-show="authError"
@@ -295,7 +308,7 @@
           class="space-y-4"
         >
           <div
-            x-show="authError"
+            x-show="authError && !isCreateRecordModalOpen"
             role="alert"
             class="flex items-start justify-between gap-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700"
           >
@@ -310,7 +323,10 @@
             </button>
           </div>
 
-          <div class="grid grid-cols-2 gap-1 rounded-xl bg-slate-200/80 p-1">
+          <div
+            x-show="!isQuickAddPage"
+            class="grid grid-cols-2 gap-1 rounded-xl bg-slate-200/80 p-1"
+          >
             <button
               type="button"
               @click="switchWorkspaceView('callTracker')"
@@ -329,7 +345,10 @@
             </button>
           </div>
 
-          <div x-show="workspaceView === 'callTracker'" class="space-y-4">
+          <div
+            x-show="!isQuickAddPage && workspaceView === 'callTracker'"
+            class="space-y-4"
+          >
             <!-- 2. CAMPAIGN OVERVIEW CARD -->
             <section
               class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 space-y-3"
@@ -374,8 +393,14 @@
                   aria-label="Show leads for"
                   title="Show leads for"
                 >
-                  <span class="truncate" x-text="getViewedVolunteerLabel()"></span>
-                  <i data-lucide="users" class="w-4 h-4 shrink-0 text-slate-500"></i>
+                  <span
+                    class="truncate"
+                    x-text="getViewedVolunteerLabel()"
+                  ></span>
+                  <i
+                    data-lucide="users"
+                    class="w-4 h-4 shrink-0 text-slate-500"
+                  ></i>
                 </button>
                 <button
                   type="button"
@@ -753,7 +778,7 @@
           </div>
 
           <section
-            x-show="workspaceView === 'courseManagement'"
+            x-show="!isQuickAddPage && workspaceView === 'courseManagement'"
             class="space-y-3"
             aria-label="Activity management"
           >
@@ -867,7 +892,7 @@
           <div
             class="fixed z-30 left-1/2 -translate-x-1/2 w-full max-w-md px-4 pointer-events-none"
             style="bottom: max(1rem, env(safe-area-inset-bottom))"
-            x-show="authenticatedUser && !isVolunteerModalOpen && workspaceView === 'callTracker'"
+            x-show="!isQuickAddPage && authenticatedUser && !isVolunteerModalOpen && workspaceView === 'callTracker'"
             @keydown.escape.window="isSelectionMode() ? clearSelection() : (isFabOpen = false)"
           >
             <div
@@ -1023,7 +1048,8 @@
                   <span
                     class="font-medium text-slate-700"
                     x-text="getSelectedCampaignName()"
-                  ></span>.
+                  ></span
+                  >.
                 </p>
                 <p
                   class="mt-1 text-sm text-slate-600"
@@ -1151,89 +1177,118 @@
           <div
             x-show="isCreateRecordModalOpen"
             x-transition.opacity
-            class="fixed inset-0 z-40 bg-slate-900/40 flex items-end sm:items-center justify-center p-3"
+            :class="isQuickAddPage ? 'flex justify-center' : 'fixed inset-0 z-40 bg-slate-900/40 flex items-end sm:items-center justify-center p-3 overflow-y-auto'"
             @click.self="closeCreateRecord()"
-            @keydown.escape.window="closeCreateRecord()"
-            role="dialog"
-            aria-modal="true"
+            @keydown.escape.window="if (!isProgramEditorOpen && !isOptionSheetOpen) closeCreateRecord()"
+            :inert="(isProgramEditorOpen && programEditorTarget === 'createRecord') || (isOptionSheetOpen && optionSheetMode === 'createQuality')"
+            :role="isQuickAddPage ? null : 'dialog'"
+            :aria-modal="isQuickAddPage ? null : 'true'"
             aria-labelledby="create-record-title"
           >
             <form
               @submit.prevent="saveCreatedRecord()"
-              class="w-full max-w-sm bg-white rounded-2xl shadow-xl border border-slate-200 p-4 space-y-3"
+              class="w-full max-w-sm bg-white rounded-2xl shadow-sm border border-slate-200 p-4"
             >
-              <div>
-                <h3
-                  id="create-record-title"
-                  class="text-base font-semibold text-slate-900"
-                  x-text="createRecordType === 'Members' ? 'Add Member' : 'Add Lead'"
-                ></h3>
-                <p class="mt-1 text-xs text-slate-500">
-                  Create a record with a stable ID in the selected Seva.
-                </p>
-              </div>
-              <label class="block text-xs font-medium text-slate-700">
-                Name
-                <input
-                  type="text"
-                  x-model="createRecordDraft.name"
-                  required
-                  autocomplete="name"
-                  class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </label>
-              <label class="block text-xs font-medium text-slate-700">
-                Mobile
-                <input
-                  type="tel"
-                  x-model="createRecordDraft.mobile"
-                  required
-                  autocomplete="tel"
-                  class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </label>
-              <label class="block text-xs font-medium text-slate-700">
-                Seva
-                <select
-                  x-model="createRecordDraft.campaignId"
-                  required
-                  class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                >
-                  <template
-                    x-for="campaign in getCreateCampaigns()"
-                    :key="campaign.id"
+              <fieldset
+                :disabled="isCreateRecordSaving"
+                class="space-y-3 min-w-0"
+              >
+                <div>
+                  <h3
+                    id="create-record-title"
+                    class="text-base font-semibold text-slate-900"
+                    x-text="createRecordType === 'Members' ? 'Add Member' : 'Add Lead'"
+                  ></h3>
+                  <p class="mt-1 text-xs text-slate-500">
+                    Add contact details for follow-up.
+                  </p>
+                </div>
+                <div
+                  x-show="authError"
+                  role="alert"
+                  class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700"
+                  x-text="authError"
+                ></div>
+                <label class="block text-xs font-medium text-slate-700">
+                  Name
+                  <input
+                    type="text"
+                    x-model="createRecordDraft.name"
+                    x-ref="createRecordName"
+                    required
+                    autocomplete="name"
+                    class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </label>
+                <label class="block text-xs font-medium text-slate-700">
+                  Mobile
+                  <input
+                    type="tel"
+                    x-model="createRecordDraft.mobile"
+                    required
+                    autocomplete="tel"
+                    class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </label>
+                <div class="flex items-center gap-3 min-w-0">
+                  <button
+                    x-show="createRecordType === 'Leads'"
+                    type="button"
+                    @click="openProgramEditor()"
+                    x-ref="createRecordPrograms"
+                    aria-label="Edit programs"
+                    title="Tap to edit programs"
+                    aria-haspopup="dialog"
+                    :aria-expanded="isProgramEditorOpen && programEditorTarget === 'createRecord'"
+                    class="min-w-0 max-w-[220px] truncate rounded border border-slate-200 bg-slate-50 px-2 py-0.5 text-left text-xs font-medium text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    x-text="formatPrograms(createRecordDraft.wishlistPrograms, '🎯') || '✏️ Program'"
+                  ></button>
+                  <button
+                    type="button"
+                    @click="openOptionSheet('quality')"
+                    x-ref="createRecordQuality"
+                    aria-label="Edit quality"
+                    aria-haspopup="dialog"
+                    :aria-expanded="isOptionSheetOpen && optionSheetMode === 'createQuality'"
+                    class="shrink-0 rounded border border-slate-200 bg-slate-50 px-2 py-0.5 text-left text-xs font-medium text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    x-text="getQualityMeta(createRecordDraft.quality).icon + ' ' + createRecordDraft.quality"
+                  ></button>
+                </div>
+                <label class="block text-xs font-medium text-slate-700">
+                  Notes
+                  <span class="font-normal text-slate-400">(optional)</span>
+                  <textarea
+                    x-model="createRecordDraft.notes"
+                    rows="2"
+                    class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  ></textarea>
+                </label>
+                <div class="flex justify-end gap-2 pt-1">
+                  <button
+                    type="button"
+                    x-show="!isQuickAddPage"
+                    @click="closeCreateRecord()"
+                    :disabled="isCreateRecordSaving"
+                    class="min-h-11 px-4 rounded-xl border border-slate-200 text-sm text-slate-600 disabled:opacity-50"
                   >
-                    <option
-                      :value="campaign.id"
-                      x-text="campaign.name"
-                    ></option>
-                  </template>
-                </select>
-              </label>
-              <label class="block text-xs font-medium text-slate-700">
-                Notes <span class="font-normal text-slate-400">(optional)</span>
-                <textarea
-                  x-model="createRecordDraft.notes"
-                  rows="2"
-                  class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                ></textarea>
-              </label>
-              <div class="flex justify-end gap-2 pt-1">
-                <button
-                  type="button"
-                  @click="closeCreateRecord()"
-                  :disabled="isCreateRecordSaving"
-                  class="min-h-11 px-4 rounded-xl border border-slate-200 text-sm text-slate-600 disabled:opacity-50"
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    :disabled="isCreateRecordSaving"
+                    class="min-h-11 px-4 rounded-xl bg-indigo-600 text-sm font-semibold text-white disabled:opacity-50"
+                    :class="isQuickAddPage ? 'w-full' : ''"
+                    x-text="isCreateRecordSaving ? 'Saving…' : (isQuickAddPage ? 'Save & add another' : (createRecordType === 'Members' ? 'Add Member' : 'Add Lead'))"
+                  ></button>
+                </div>
+                <a
+                  x-show="isQuickAddPage"
+                  href="/seva"
+                  class="block text-center text-xs text-indigo-700 py-1"
                 >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  :disabled="isCreateRecordSaving"
-                  class="min-h-11 px-4 rounded-xl bg-indigo-600 text-sm font-semibold text-white disabled:opacity-50"
-                  x-text="isCreateRecordSaving ? 'Saving…' : (createRecordType === 'Members' ? 'Add Member' : 'Add Lead')"
-                ></button>
-              </div>
+                  Open Seva Workspace
+                </a>
+              </fieldset>
             </form>
           </div>
 
@@ -1529,12 +1584,14 @@
           <div
             x-show="isOptionSheetOpen"
             x-transition.opacity
-            class="fixed inset-0 z-40 bg-slate-900/40 flex items-end sm:items-center justify-center p-3"
+            class="fixed inset-0 z-50 bg-slate-900/40 flex items-end sm:items-center justify-center p-3"
             @click.self="closeOptionSheet()"
             @keydown.escape.window="closeOptionSheet()"
             role="dialog"
             aria-modal="true"
             aria-labelledby="option-sheet-title"
+            tabindex="-1"
+            x-ref="optionSheet"
           >
             <div
               class="w-full max-w-sm bg-white rounded-xl shadow-lg border border-slate-200 p-3 space-y-2"
@@ -1561,16 +1618,18 @@
             </div>
           </div>
 
-          <!-- Member Program Multi-Select Sheet -->
+          <!-- Shared Program Multi-Select Sheet -->
           <div
             x-show="isProgramEditorOpen"
             x-transition.opacity
-            class="fixed inset-0 z-40 bg-slate-900/40 flex items-end sm:items-center justify-center p-3"
+            class="fixed inset-0 z-50 bg-slate-900/40 flex items-end sm:items-center justify-center p-3"
             @click.self="closeProgramEditor()"
             @keydown.escape.window="closeProgramEditor()"
             role="dialog"
             aria-modal="true"
             aria-labelledby="program-editor-title"
+            tabindex="-1"
+            x-ref="programEditor"
           >
             <div
               class="w-full max-w-sm bg-white rounded-xl shadow-lg border border-slate-200 p-3 space-y-3"
@@ -1596,13 +1655,17 @@
                       @click="toggleProgramSelection('wishlist', program.code)"
                       class="px-2 py-1 rounded-full text-[11px] border"
                       :class="isProgramSelected('wishlist', program.code) ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-50 text-slate-700 border-slate-200'"
+                      :aria-pressed="isProgramSelected('wishlist', program.code)"
                       x-text="program.code"
                     ></button>
                   </template>
                 </div>
               </div>
 
-              <div class="space-y-2" x-show="shouldShowDonePrograms()">
+              <div
+                class="space-y-2"
+                x-show="programEditorTarget === 'lead' && shouldShowDonePrograms()"
+              >
                 <div class="text-xs font-medium text-slate-600">
                   ✅ Completed
                 </div>
@@ -1616,6 +1679,7 @@
                       @click="toggleProgramSelection('done', program.code)"
                       class="px-2 py-1 rounded-full text-[11px] border"
                       :class="isProgramSelected('done', program.code) ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-slate-50 text-slate-700 border-slate-200'"
+                      :aria-pressed="isProgramSelected('done', program.code)"
                       x-text="program.code"
                     ></button>
                   </template>

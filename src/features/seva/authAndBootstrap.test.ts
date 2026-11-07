@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { sevaWorkspace } from './sevaWorkspace';
+import { MockLeadRepository } from '../../repositories/mock/mockLeadRepository';
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
@@ -37,6 +38,44 @@ describe('Seva workspace sign-out', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
+  });
+
+  it('opens the reused lead form after authenticating on /add', async () => {
+    const repository = new MockLeadRepository();
+    vi.stubGlobal('window', {
+      location: { pathname: '/add' },
+      appRuntime: {
+        getAuthenticatedUser: async () => ({
+          id: 'user-1',
+          email: 'volunteer@example.com'
+        }),
+        loadBootstrap: (campaignId: string) =>
+          repository.getBootstrap(campaignId)
+      }
+    });
+    const app = sevaWorkspace();
+
+    await app.initializeAuthenticatedSession();
+
+    expect(app.isVolunteerModalOpen).toBe(false);
+    expect(app.isCreateRecordModalOpen).toBe(true);
+    expect(app.createRecordType).toBe('Leads');
+    expect(app.createRecordDraft.campaignId).toBe('cmpLeads01AbcDefGhIJk');
+  });
+
+  it('keeps the quick-add form behind sign-in when there is no session', async () => {
+    const loadBootstrap = vi.fn();
+    vi.stubGlobal('window', {
+      location: { pathname: '/add' },
+      appRuntime: { getAuthenticatedUser: async () => null, loadBootstrap }
+    });
+    const app = sevaWorkspace();
+
+    await app.initializeAuthenticatedSession();
+
+    expect(app.isVolunteerModalOpen).toBe(true);
+    expect(app.isCreateRecordModalOpen).toBe(false);
+    expect(loadBootstrap).not.toHaveBeenCalled();
   });
 
   it('flushes saves before ending the session and clearing workspace data', async () => {

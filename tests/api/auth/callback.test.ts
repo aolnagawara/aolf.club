@@ -30,6 +30,10 @@ vi.mock('../../../api/_lib/storage/dataStore.js', () => ({
 }));
 
 import handler from '../../../api/auth/index.js';
+import {
+  buildGoogleAuthUrl,
+  createOAuthState
+} from '../../../api/_lib/auth/oauth.js';
 
 function createResponse() {
   const state: { statusCode: number; body: unknown } = {
@@ -67,6 +71,10 @@ describe('Google OAuth callback error distinction', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.mocked(createOAuthState).mockReturnValue('expected-state');
+    vi.mocked(buildGoogleAuthUrl).mockReturnValue(
+      'https://accounts.google.com/test'
+    );
     mockGetUserFromAuthCode.mockResolvedValue({
       id: 'user-1',
       email: 'volunteer@example.com'
@@ -115,4 +123,76 @@ describe('Google OAuth callback error distinction', () => {
     expect(headers.get('Location')).toBe('/seva');
     expect(mockSetSessionCookie).toHaveBeenCalledOnce();
   });
+
+  it('returns volunteers to /add after signing in and clears the return cookie', async () => {
+    mockStore.isUserAllowed.mockResolvedValue(true);
+    const { response, headers } = createResponse();
+
+    await handler(
+      {
+        ...request,
+        headers: {
+          cookie: 'aolf_oauth_state=expected-state; aolf_oauth_return_to=%2Fadd'
+        }
+      },
+      response
+    );
+
+    expect(headers.get('Location')).toBe('/add');
+    expect(headers.get('Set-Cookie')).toEqual(
+      expect.arrayContaining([
+        expect.stringMatching(/^aolf_oauth_return_to=;.*Max-Age=0/)
+      ])
+    );
+  });
+
+  it('returns authorization errors to the quick-add sign-in page', async () => {
+    mockStore.isUserAllowed.mockResolvedValue(false);
+    const { response, headers } = createResponse();
+    await handler(
+      {
+        ...request,
+        headers: {
+          cookie: 'aolf_oauth_state=expected-state; aolf_oauth_return_to=%2Fadd'
+        }
+      },
+      response
+    );
+    expect(headers.get('Location')).toBe('/add?error=forbidden');
+  });
+
+  it('rejects external return destinations', async () => {
+    mockStore.isUserAllowed.mockResolvedValue(true);
+    const { response, headers } = createResponse();
+    await handler(
+      {
+        ...request,
+        headers: {
+          cookie:
+            'aolf_oauth_state=expected-state; aolf_oauth_return_to=https%3A%2F%2Fexample.com'
+        }
+      },
+      response
+    );
+    expect(headers.get('Location')).toBe('/seva');
+  });
+
+  it.each([
+    ['/add', '%2Fadd'],
+    ['https://example.com', '%2Fseva']
+  ])(
+    'remembers only supported return pages during sign-in (%s)',
+    async (returnTo, encoded) => {
+      const { response, headers } = createResponse();
+      await handler(
+        { method: 'GET', headers: {}, query: { action: 'signin', returnTo } },
+        response
+      );
+      expect(headers.get('Set-Cookie')).toEqual(
+        expect.arrayContaining([
+          expect.stringContaining('aolf_oauth_return_to=' + encoded + ';')
+        ])
+      );
+    }
+  );
 });

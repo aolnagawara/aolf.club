@@ -41,6 +41,7 @@ import {
   type UpdateLeadResponse
 } from '../../../shared/contracts/appContracts.js';
 import { matchesMemberEngagement } from '../../../shared/memberAssignment.js';
+import { withVolunteerTransferNote } from '../../../shared/leadTransfer.js';
 import { nanoid } from 'nanoid';
 import { ZodError } from 'zod';
 import {
@@ -936,7 +937,19 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
     setUpdate(columns.status, payload.status);
     setUpdate(columns.quality, payload.quality);
     setUpdate(columns.followUp, payload.followUp);
-    setUpdate(columns.notes, payload.notes);
+    setUpdate(
+      columns.notes,
+      targetVolunteerEmail !== undefined &&
+        targetVolunteerEmail !== currentAssignee
+        ? withVolunteerTransferNote(
+            payload.notes ?? getCell(target.values, columns.notes),
+            currentAssignee,
+            targetVolunteerEmail,
+            snapshot.volunteers,
+            timestamp
+          )
+        : payload.notes
+    );
     setUpdate(columns.assignedVolunteerEmail, targetVolunteerEmail);
     setUpdate(
       columns.wishlistPrograms,
@@ -1018,7 +1031,8 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
     setCell(columns.name, payload.name);
     setCell(
       columns.quality,
-      campaign.type === 'Members' ? 'Engagement' : 'Quality'
+      payload.quality ||
+        (campaign.type === 'Members' ? 'Engagement' : 'Quality')
     );
     setCell(columns.followUp, 'Follow-up');
     setCell(columns.lastUpdated, timestamp);
@@ -1027,6 +1041,7 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
     setCell(columns.campaignId, campaign.id);
     setCell(columns.campaignType, campaign.type);
     setCell(columns.assignedVolunteerEmail, normalizeEmail(user.email));
+    setCell(columns.wishlistPrograms, toCsv(payload.wishlistPrograms));
 
     await appendSheetRow('data', baseRange, row, operation);
 
@@ -1034,7 +1049,9 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
       id,
       mobile: payload.mobile,
       name: payload.name,
-      quality: campaign.type === 'Members' ? 'Engagement' : 'Quality',
+      quality:
+        payload.quality ||
+        (campaign.type === 'Members' ? 'Engagement' : 'Quality'),
       followUp: 'Follow-up',
       lastUpdated: timestamp,
       status: 'Response',
@@ -1042,7 +1059,7 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
       campaignId: campaign.id,
       campaignType: campaign.type,
       assignedVolunteerEmail: normalizeEmail(user.email),
-      wishlistPrograms: '',
+      wishlistPrograms: toCsv(payload.wishlistPrograms),
       donePrograms: ''
     });
     return CreateLeadResponseSchema.parse({ success: true, lead });

@@ -27,6 +27,9 @@ export function createEmptyCourseDraft(courseType = 'HP') {
 
 export function createSevaWorkspaceInitialState(): SevaWorkspaceState {
   return {
+    isQuickAddPage:
+      typeof window !== 'undefined' &&
+      /^\/add\/?$/.test(window.location?.pathname || ''),
     campaigns: [],
     selectedCampaignId: '',
     selectedCampaign: null,
@@ -55,6 +58,7 @@ export function createSevaWorkspaceInitialState(): SevaWorkspaceState {
     activeFollowUpLead: null,
     followUpDraft: '',
     isProgramEditorOpen: false,
+    programEditorTarget: 'lead',
     activeProgramLead: null,
     activeCardId: '',
     selectedIds: new Set<string>(),
@@ -69,6 +73,8 @@ export function createSevaWorkspaceInitialState(): SevaWorkspaceState {
       name: '',
       mobile: '',
       notes: '',
+      quality: 'Quality',
+      wishlistPrograms: [],
       campaignId: ''
     },
     isCreateRecordSaving: false,

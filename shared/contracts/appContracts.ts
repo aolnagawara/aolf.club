@@ -161,6 +161,8 @@ export const CreateLeadRequestSchema = z.object({
     })
     .transform((value) => normalizeIndianMobile(value)),
   notes: z.string().optional(),
+  quality: z.string().trim().min(1).optional(),
+  wishlistPrograms: z.string().optional(),
   campaignId: NanoIdSchema,
   campaignType: z.enum(['Leads', 'Members'])
 });

@@ -252,6 +252,9 @@ function updateCampaignUrl(campaignId: string): void {
 export function createAuthAndBootstrapMethods() {
   return {
     async init(this: SevaWorkspaceContext): Promise<void> {
+      if (this.isQuickAddPage) {
+        document.title = 'AOLF Connect | Add Lead';
+      }
       const redirectError = consumeAuthRedirectError();
       const requestedCampaignId = rememberRequestedCampaignId();
       this.applyTextSizePreference();
@@ -405,11 +408,13 @@ export function createAuthAndBootstrapMethods() {
         requestedCampaignId
       );
       const loaded = await this.loadBootstrap(campaignId);
-      if (loaded || isAllLeadsScope(campaignId)) {
-        return;
-      }
-      if (this.authError === MISSING_CAMPAIGN_MESSAGE) {
-        await this.loadBootstrap(ALL_LEADS_SCOPE_ID);
+      const ready =
+        loaded ||
+        (!isAllLeadsScope(campaignId) &&
+          this.authError === MISSING_CAMPAIGN_MESSAGE &&
+          (await this.loadBootstrap(ALL_LEADS_SCOPE_ID)));
+      if (ready && this.isQuickAddPage) {
+        this.openCreateRecord('Leads');
       }
     },
     async onCampaignChange(
