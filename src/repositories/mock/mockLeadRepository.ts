@@ -66,7 +66,8 @@ export class MockLeadRepository implements LeadRepository {
 
   async getBootstrap(
     campaignId?: string | null,
-    assigneeEmail?: string | null
+    assigneeEmail?: string | null,
+    metadataOnly = false
   ): Promise<BootstrapResponse> {
     if (isAllLeadsScope(campaignId)) {
       const ownerEmail = this.assigneeFor('Leads', assigneeEmail);
@@ -78,14 +79,17 @@ export class MockLeadRepository implements LeadRepository {
       return BootstrapResponseSchema.parse({
         ...mockBootstrapData,
         campaignId: ALL_LEADS_SCOPE_ID,
-        leads: this.leads
-          .filter(
-            (lead) =>
-              lead.campaignType === 'Leads' &&
-              lead.assignedVolunteerEmail.trim().toLowerCase() === ownerEmail &&
-              leadCampaignIds.has(String(lead.campaignId || ''))
-          )
-          .map((lead) => ({ ...lead }))
+        leads: metadataOnly
+          ? []
+          : this.leads
+              .filter(
+                (lead) =>
+                  lead.campaignType === 'Leads' &&
+                  lead.assignedVolunteerEmail.trim().toLowerCase() ===
+                    ownerEmail &&
+                  leadCampaignIds.has(String(lead.campaignId || ''))
+              )
+              .map((lead) => ({ ...lead }))
       });
     }
 
@@ -102,14 +106,16 @@ export class MockLeadRepository implements LeadRepository {
     const payload = {
       ...mockBootstrapData,
       campaignId: selectedCampaign.id,
-      leads: this.leads
-        .filter(
-          (lead) =>
-            lead.campaignId === selectedCampaign.id &&
-            lead.campaignType === selectedCampaign.type &&
-            lead.assignedVolunteerEmail.trim().toLowerCase() === ownerEmail
-        )
-        .map((lead) => ({ ...lead }))
+      leads: metadataOnly
+        ? []
+        : this.leads
+            .filter(
+              (lead) =>
+                lead.campaignId === selectedCampaign.id &&
+                lead.campaignType === selectedCampaign.type &&
+                lead.assignedVolunteerEmail.trim().toLowerCase() === ownerEmail
+            )
+            .map((lead) => ({ ...lead }))
     };
 
     return BootstrapResponseSchema.parse(payload);

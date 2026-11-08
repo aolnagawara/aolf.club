@@ -52,6 +52,34 @@ describe('bootstrap error propagation', () => {
     });
   });
 
+  it('requests metadata without lead rows for the direct entry flow', async () => {
+    mockStore.getBootstrapForAuthorizedUser.mockResolvedValue({
+      allowed: true,
+      value: { success: true, leads: [] }
+    });
+    const { response, state } = createResponse();
+    await handler(
+      { ...request, query: { campaignId: 'all', metadataOnly: '1' } },
+      response
+    );
+    expect(state.statusCode).toBe(200);
+    expect(mockStore.getBootstrapForAuthorizedUser).toHaveBeenCalledWith(
+      expect.objectContaining({ email: 'volunteer@example.com' }),
+      'all',
+      undefined,
+      undefined,
+      true
+    );
+  });
+
+  it('requires authentication even for metadata-only bootstrap', async () => {
+    mockReadSessionUser.mockResolvedValue(null);
+    const { response, state } = createResponse();
+    await handler({ ...request, query: { metadataOnly: '1' } }, response);
+    expect(state.statusCode).toBe(401);
+    expect(mockStore.getBootstrapForAuthorizedUser).not.toHaveBeenCalled();
+  });
+
   it('keeps a completed allowlist denial separate from infrastructure failure', async () => {
     mockStore.getBootstrapForAuthorizedUser.mockResolvedValue({
       allowed: false

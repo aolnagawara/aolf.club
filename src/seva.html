@@ -176,7 +176,7 @@
 
       <main class="px-4 pt-4 pb-28 space-y-4 flex-1 relative">
         <div
-          x-show="isLoadingBootstrap || isCampaignSwitching"
+          x-show="(isLoadingBootstrap || isCampaignSwitching) && !isCreateRecordModalOpen"
           x-transition.opacity
           class="absolute inset-0 z-20 bg-white/70 backdrop-blur-[1px] flex items-center justify-center rounded-xl"
         >
@@ -194,7 +194,7 @@
 
         <section
           x-cloak
-          x-show="isVolunteerModalOpen"
+          x-show="isVolunteerModalOpen && !isCreateRecordModalOpen"
           class="min-h-[calc(100vh-2rem)] flex items-center justify-center py-8"
           aria-labelledby="seva-login-title"
         >
@@ -289,9 +289,9 @@
 
         <div
           x-cloak
-          x-show="!isVolunteerModalOpen"
-          :inert="isLoadingBootstrap || isCampaignSwitching"
-          :aria-busy="isLoadingBootstrap || isCampaignSwitching"
+          x-show="!isVolunteerModalOpen || (isAddLeadRoute && isCreateRecordModalOpen)"
+          :inert="(isLoadingBootstrap || isCampaignSwitching) && !isCreateRecordModalOpen"
+          :aria-busy="(isLoadingBootstrap || isCampaignSwitching) && !isCreateRecordModalOpen"
           class="space-y-4"
         >
           <div
@@ -538,6 +538,27 @@
 
             <!-- 3. LEADS QUEUE SECTION -->
             <section class="space-y-3">
+              <p
+                x-show="isLoadingExistingLeads"
+                role="status"
+                class="text-xs text-slate-500"
+              >
+                Loading existing leads…
+              </p>
+              <div
+                x-show="existingLeadsError"
+                class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700"
+              >
+                <span role="alert" x-text="existingLeadsError"></span>
+                <button
+                  type="button"
+                  @click="loadExistingLeadsInBackground()"
+                  :disabled="isLoadingExistingLeads"
+                  class="ml-2 font-medium underline"
+                >
+                  Retry
+                </button>
+              </div>
               <div class="flex justify-between items-center">
                 <h2
                   class="text-xs font-bold uppercase tracking-wider text-slate-500"
@@ -763,7 +784,7 @@
               </div>
 
               <div
-                x-show="filteredLeads().length === 0"
+                x-show="filteredLeads().length === 0 && !isLoadingExistingLeads && !existingLeadsError"
                 class="bg-white rounded-xl border border-slate-200 p-4 text-center text-xs text-slate-500"
               >
                 No records found for this filter or search.
@@ -1196,6 +1217,12 @@
                   <p class="mt-1 text-xs text-slate-500">
                     Add contact details for follow-up.
                   </p>
+                  <p
+                    x-show="isAddLeadRoute && !isLeadEntryReady && isLoadingBootstrap"
+                    role="status"
+                    class="mt-1 text-xs text-slate-500"
+                    x-text="authenticatedUser ? 'Preparing lead form… You can start typing.' : 'Checking sign-in… You can start typing.'"
+                  ></p>
                 </div>
                 <label class="block text-xs font-medium text-slate-700">
                   Name
@@ -1225,6 +1252,7 @@
                     @click="openProgramEditor()"
                     x-ref="createRecordPrograms"
                     aria-label="Edit programs"
+                    :disabled="isAddLeadRoute && !isLeadEntryReady"
                     title="Tap to edit programs"
                     aria-haspopup="dialog"
                     :aria-expanded="isProgramEditorOpen && programEditorTarget === 'createRecord'"
@@ -1236,6 +1264,7 @@
                     @click="openOptionSheet('quality')"
                     x-ref="createRecordQuality"
                     aria-label="Edit quality"
+                    :disabled="isAddLeadRoute && !isLeadEntryReady"
                     aria-haspopup="dialog"
                     :aria-expanded="isOptionSheetOpen && optionSheetMode === 'createQuality'"
                     class="shrink-0 rounded border border-slate-200 bg-slate-50 px-2 py-0.5 text-left text-xs font-medium text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -1248,6 +1277,14 @@
                   class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700"
                   x-text="authError"
                 ></div>
+                <button
+                  x-show="isAddLeadRoute && !isLeadEntryReady && !isLoadingBootstrap && authError"
+                  type="button"
+                  @click="openAuthenticatedWorkspace()"
+                  class="text-xs font-medium text-indigo-700 underline"
+                >
+                  Retry preparing form
+                </button>
                 <label class="block text-xs font-medium text-slate-700">
                   Notes
                   <span class="font-normal text-slate-400">(optional)</span>
@@ -1268,7 +1305,7 @@
                   </button>
                   <button
                     type="submit"
-                    :disabled="isCreateRecordSaving"
+                    :disabled="isCreateRecordSaving || (isAddLeadRoute && !isLeadEntryReady)"
                     class="min-h-11 px-4 rounded-xl bg-indigo-600 text-sm font-semibold text-white disabled:opacity-50"
                     x-text="isCreateRecordSaving ? 'Saving…' : (createRecordType === 'Members' ? 'Add Member' : 'Add Lead')"
                   ></button>

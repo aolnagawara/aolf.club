@@ -711,8 +711,22 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
     snapshot: MetadataSnapshot,
     operation: SheetsOperation,
     campaignId?: string | null,
-    assigneeEmail?: string | null
+    assigneeEmail?: string | null,
+    metadataOnly = false
   ): Promise<BootstrapResponse> {
+    if (metadataOnly) {
+      const campaign = isAllLeadsScope(campaignId)
+        ? null
+        : selectCampaign(snapshot, campaignId);
+      if (campaign?.type !== 'Members')
+        resolveAssigneeEmail(snapshot, user, assigneeEmail);
+      return toBootstrapResponse(
+        user,
+        snapshot,
+        campaign?.id || ALL_LEADS_SCOPE_ID,
+        []
+      );
+    }
     if (isAllLeadsScope(campaignId)) {
       return getAllAssignedLeads(
         user,
@@ -1566,7 +1580,8 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
       user: SessionUser,
       campaignId?: string | null,
       assigneeEmail?: string | null,
-      operation?: SheetsOperation
+      operation?: SheetsOperation,
+      metadataOnly = false
     ): Promise<AuthorizedStoreResult<BootstrapResponse>> {
       return withStoreOperation(operation, async (activeOperation) => {
         const snapshot = await loadMetadataSnapshot(activeOperation);
@@ -1580,7 +1595,8 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
             snapshot,
             activeOperation,
             campaignId,
-            assigneeEmail
+            assigneeEmail,
+            metadataOnly
           )
         };
       });

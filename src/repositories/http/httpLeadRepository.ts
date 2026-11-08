@@ -30,9 +30,11 @@ export class HttpLeadRepository implements LeadRepository {
 
   async getBootstrap(
     campaignId?: string | null,
-    assigneeEmail?: string | null
+    assigneeEmail?: string | null,
+    metadataOnly = false
   ): Promise<BootstrapResponse> {
     const params = new URLSearchParams();
+    if (metadataOnly) params.set('metadataOnly', '1');
     if (campaignId) {
       params.set('campaignId', campaignId);
     }

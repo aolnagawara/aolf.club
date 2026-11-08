@@ -24,9 +24,10 @@ export const appRuntime = {
   },
   async loadBootstrap(
     campaignId?: string | null,
-    assigneeEmail?: string | null
+    assigneeEmail?: string | null,
+    metadataOnly = false
   ) {
-    return leadService.getBootstrap(campaignId, assigneeEmail);
+    return leadService.getBootstrap(campaignId, assigneeEmail, metadataOnly);
   },
   async assignMembers(payload: AssignMembersRequest) {
     return leadService.assignMembers(payload);

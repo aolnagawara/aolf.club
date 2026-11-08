@@ -98,8 +98,12 @@ describe('AOLF Connect frontend presentation', () => {
 
     expect(page).toContain('<title>AOLF Connect | Seva Workspace</title>');
     expect(page).toContain('x-data="sevaWorkspace()"');
-    expect(page).toContain('x-show="isVolunteerModalOpen"');
-    expect(page).toContain('x-show="!isVolunteerModalOpen"');
+    expect(page).toContain(
+      'x-show="isVolunteerModalOpen && !isCreateRecordModalOpen"'
+    );
+    expect(page).toContain(
+      'x-show="!isVolunteerModalOpen || (isAddLeadRoute && isCreateRecordModalOpen)"'
+    );
     expect(page).toContain('x-cloak');
     expect(page).toContain('Continue with Google');
     expect(page).toContain('@click="startAuthFlow()"');

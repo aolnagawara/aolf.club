@@ -100,6 +100,10 @@ export type AppConfig = Omit<ContractAppConfig, 'id' | 'allowedUsers'> &
 
 export interface SevaWorkspaceState {
   isAddLeadRoute: boolean;
+  isLeadEntryReady: boolean;
+  isLoadingExistingLeads: boolean;
+  existingLeadsError: string;
+  bootstrapGeneration: number;
   leadSort: string;
   campaigns: Campaign[];
   selectedCampaignId: string;

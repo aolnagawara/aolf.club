@@ -1,6 +1,8 @@
 # Lead sorting and direct entry
 
-`/seva/add-lead` opens the existing Seva Add Lead dialog after volunteer sign-in. It uses the current Leads campaign when available, otherwise the first configured Leads campaign. Program and Quality are optional and use the same pickers as lead cards. After saving or cancelling, the URL returns to `/seva`.
+`/seva/add-lead` opens the existing Add Lead dialog immediately. Volunteers can type while sign-in and a metadata-only configuration request are checked. Saving and the optional Program/Quality pickers become available after the destination is verified. This first request reads configuration and access information without reading lead/member rows. It uses the current Leads campaign when available, otherwise the first configured Leads campaign.
+
+After saving or cancelling, the URL returns to `/seva` and existing leads load in the background. A list-loading failure has a separate retry message and does not interrupt a new form or affect a successful save. Stale responses are ignored after switching Seva or signing out, and a list modified by a new lead, deletion, or transfer during loading is re-fetched instead of overwritten.
 
 The Sort control beside Filter supports name, lead creation time, and last successful update time in both directions. Sorting applies to all matching records before the visible-page limit. The preference is stored per signed-in email in the browser. Legacy records with missing or invalid dates remain after records with known dates, preserving their relative order.
 

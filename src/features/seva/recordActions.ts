@@ -769,6 +769,16 @@ export function createRecordActionMethods() {
     ): Campaign[] {
       return this.campaigns.filter((campaign) => campaign.type === type);
     },
+    getCreateCampaignId(
+      this: SevaWorkspaceContext,
+      type: CampaignType
+    ): string {
+      const campaigns = this.getCreateCampaigns(type) as Campaign[];
+      const preferred = campaigns.find(
+        (campaign) => campaign.id === this.selectedCampaignId
+      );
+      return (preferred || campaigns[0])?.id || '';
+    },
     openCreateRecord(this: SevaWorkspaceContext, type: CampaignType): void {
       const campaigns = this.getCreateCampaigns(type);
       if (!campaigns.length) {
@@ -776,9 +786,6 @@ export function createRecordActionMethods() {
           'No ' + type.toLowerCase() + ' Seva is available for this record.';
         return;
       }
-      const preferred = campaigns.find(
-        (campaign: Campaign) => campaign.id === this.selectedCampaignId
-      );
       this.createRecordType = type;
       this.createRecordDraft = {
         name: '',
@@ -786,7 +793,7 @@ export function createRecordActionMethods() {
         notes: '',
         quality: type === 'Members' ? 'Engagement' : 'Quality',
         wishlistPrograms: [],
-        campaignId: (preferred || campaigns[0])?.id || ''
+        campaignId: this.getCreateCampaignId(type)
       };
       this.isFabOpen = false;
       this.authError = '';
@@ -815,6 +822,7 @@ export function createRecordActionMethods() {
           url.pathname + url.search + url.hash
         );
       }
+      if (this.isLeadEntryReady) void this.loadExistingLeadsInBackground();
     },
     async copyCreatedLeadDetails(text: string): Promise<boolean> {
       try {
@@ -829,6 +837,7 @@ export function createRecordActionMethods() {
     async saveCreatedRecord(this: SevaWorkspaceContext): Promise<void> {
       if (
         this.isCreateRecordSaving ||
+        (this.isAddLeadRoute && !this.isLeadEntryReady) ||
         this.isProgramEditorOpen ||
         this.isOptionSheetOpen
       )

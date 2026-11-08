@@ -1,9 +1,6 @@
 import type { ApiRequest, ApiResponse } from './_lib/http/responses.js';
 import { sendApiError } from './_lib/http/errors.js';
-import {
-  firstQueryValue,
-  methodNotAllowed
-} from './_lib/http/request.js';
+import { firstQueryValue, methodNotAllowed } from './_lib/http/request.js';
 
 async function loadSessionUser(req: ApiRequest) {
   const { readSessionUser } = await import('./_lib/auth/session.js');
@@ -49,11 +46,20 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     const campaignId = firstQueryValue(req, 'campaignId') || undefined;
     const assigneeEmail = firstQueryValue(req, 'assignee') || undefined;
     const store = await loadDataStore();
-    const result = await store.getBootstrapForAuthorizedUser(
-      user,
-      campaignId,
-      assigneeEmail
-    );
+    const result =
+      firstQueryValue(req, 'metadataOnly') === '1'
+        ? await store.getBootstrapForAuthorizedUser(
+            user,
+            campaignId,
+            assigneeEmail,
+            undefined,
+            true
+          )
+        : await store.getBootstrapForAuthorizedUser(
+            user,
+            campaignId,
+            assigneeEmail
+          );
     if (!result.allowed) {
       return sendApiError(res, new Error('Authorization denied.'), context, {
         status: 403,

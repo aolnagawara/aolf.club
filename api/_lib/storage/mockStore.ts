@@ -141,7 +141,8 @@ function resolveAssigneeEmail(
 export async function getBootstrapForUser(
   user: AuthenticatedUser,
   campaignId?: string | null,
-  assigneeEmail?: string | null
+  assigneeEmail?: string | null,
+  metadataOnly = false
 ) {
   const store = getStore();
   if (isAllLeadsScope(campaignId)) {
@@ -155,12 +156,14 @@ export async function getBootstrapForUser(
       ...mockBootstrapData,
       user,
       campaignId: ALL_LEADS_SCOPE_ID,
-      leads: store.leads.filter(
-        (lead) =>
-          isAssignedToUser(lead, ownerEmail) &&
-          lead.campaignType === 'Leads' &&
-          leadCampaignIds.has(String(lead.campaignId || ''))
-      )
+      leads: metadataOnly
+        ? []
+        : store.leads.filter(
+            (lead) =>
+              isAssignedToUser(lead, ownerEmail) &&
+              lead.campaignType === 'Leads' &&
+              leadCampaignIds.has(String(lead.campaignId || ''))
+          )
     });
   }
 
@@ -181,12 +184,14 @@ export async function getBootstrapForUser(
     ...mockBootstrapData,
     user,
     campaignId: selectedCampaign.id,
-    leads: store.leads.filter(
-      (lead) =>
-        isAssignedToUser(lead, ownerEmail) &&
-        lead.campaignId === selectedCampaign.id &&
-        lead.campaignType === selectedCampaign.type
-    )
+    leads: metadataOnly
+      ? []
+      : store.leads.filter(
+          (lead) =>
+            isAssignedToUser(lead, ownerEmail) &&
+            lead.campaignId === selectedCampaign.id &&
+            lead.campaignType === selectedCampaign.type
+        )
   };
 
   return BootstrapResponseSchema.parse(payload);

@@ -157,6 +157,52 @@ function createFixture(
 }
 
 describe('Sheets store campaign and access scoping', () => {
+  it.each([CAMPAIGN_A, 'all'])(
+    'loads authorized entry metadata without reading lead or member rows (%s)',
+    async (campaignId) => {
+      const fixture = createFixture([]);
+      const result = await fixture.store.getBootstrapForAuthorizedUser(
+        USER,
+        campaignId,
+        undefined,
+        undefined,
+        true
+      );
+      expect(result.allowed).toBe(true);
+      if (!result.allowed) throw new Error('Expected authorized metadata');
+      expect(result.value).toMatchObject({ campaignId, leads: [] });
+      expect(result.value.config.campaigns).toHaveLength(3);
+      expect(
+        fixture.readSheetValues.mock.calls.every((call) => call[0] === 'access')
+      ).toBe(true);
+      expect(fixture.readSheetValuesBatch).toHaveBeenCalledOnce();
+    }
+  );
+
+  it('still authorizes entry metadata and rejects invalid destinations without reading leads', async () => {
+    const fixture = createFixture([]);
+    await expect(
+      fixture.store.getBootstrapForAuthorizedUser(
+        { ...USER, email: 'denied@example.com' },
+        'all',
+        undefined,
+        undefined,
+        true
+      )
+    ).resolves.toEqual({ allowed: false });
+    await expect(
+      fixture.store.getBootstrapForAuthorizedUser(
+        USER,
+        'missing',
+        undefined,
+        undefined,
+        true
+      )
+    ).rejects.toThrow('CAMPAIGN_NOT_FOUND');
+    expect(
+      fixture.readSheetValues.mock.calls.every((call) => call[0] === 'access')
+    ).toBe(true);
+  });
   it('denies access when AllowedUsers is empty even if legacy Config lists the user', async () => {
     const fixture = createFixture([], LEAD_HEADERS, [['email', 'name']]);
 

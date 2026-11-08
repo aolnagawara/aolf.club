@@ -34,7 +34,8 @@ export type ApiDataStore = {
     user: SessionUser,
     campaignId?: string | null,
     assigneeEmail?: string | null,
-    operation?: SheetsOperation
+    operation?: SheetsOperation,
+    metadataOnly?: boolean
   ) => Promise<AuthorizedStoreResult<BootstrapResponse>>;
   assignMembersForAuthorizedUser: (
     user: SessionUser,

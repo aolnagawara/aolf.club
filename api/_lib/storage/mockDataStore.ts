@@ -34,13 +34,24 @@ export const mockDataStore: ApiDataStore = {
     return isMockUserAllowed(user.email);
   },
 
-  async getBootstrapForAuthorizedUser(user, campaignId, assigneeEmail) {
+  async getBootstrapForAuthorizedUser(
+    user,
+    campaignId,
+    assigneeEmail,
+    _operation,
+    metadataOnly = false
+  ) {
     if (!isMockUserAllowed(user.email)) {
       return { allowed: false };
     }
     return {
       allowed: true,
-      value: await getMockBootstrapForUser(user, campaignId, assigneeEmail)
+      value: await getMockBootstrapForUser(
+        user,
+        campaignId,
+        assigneeEmail,
+        metadataOnly
+      )
     };
   },
 

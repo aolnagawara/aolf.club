@@ -31,9 +31,14 @@ async function getRepository(): Promise<LeadRepository> {
 export const leadService = {
   async getBootstrap(
     campaignId?: string | null,
-    assigneeEmail?: string | null
+    assigneeEmail?: string | null,
+    metadataOnly = false
   ) {
-    return (await getRepository()).getBootstrap(campaignId, assigneeEmail);
+    return (await getRepository()).getBootstrap(
+      campaignId,
+      assigneeEmail,
+      metadataOnly
+    );
   },
   async assignMembers(payload: AssignMembersRequest) {
     return (await getRepository()).assignMembers(payload);

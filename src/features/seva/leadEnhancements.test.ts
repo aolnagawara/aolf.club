@@ -23,10 +23,13 @@ function environment(pathname = '/seva') {
     appRuntime: {
       createLead,
       getAuthenticatedUser: async () => mockBootstrapData.user,
-      loadBootstrap: (id: string) => repository.getBootstrap(id)
+      loadBootstrap: (id: string, email?: string, metadataOnly = false) =>
+        repository.getBootstrap(id, email, metadataOnly)
     }
   });
   const app = sevaWorkspace();
+  // This fixture provides a preloaded, authorized form configuration.
+  app.isLeadEntryReady = true;
   app.campaigns = structuredClone(mockBootstrapData.config.campaigns);
   app.selectedCampaignId = campaignId;
   app.volunteerEmail = mockBootstrapData.user.email;
