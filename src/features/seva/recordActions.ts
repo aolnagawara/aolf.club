@@ -11,6 +11,7 @@ import type {
   OptionItem,
   SevaWorkspaceContext
 } from './types';
+import { buildLeadShareMessage } from '../../../shared/leadShare';
 import { toUserErrorMessage } from '../../services/apiClient';
 import { normalizeIndianMobile } from '../../../shared/contracts/indianMobile';
 import {
@@ -574,7 +575,9 @@ export function createRecordActionMethods() {
             return Promise.reject(new Error('Campaign not found.'));
           }
           return window.appRuntime.updateLead({
-            ...toUpdateRequest(this, lead, campaign),
+            id: lead.id,
+            campaignId: campaign.id,
+            campaignType: campaign.type,
             assignedVolunteerEmail: normalizedEmail
           });
         });
@@ -781,17 +784,55 @@ export function createRecordActionMethods() {
         name: '',
         mobile: '',
         notes: '',
+        quality: type === 'Members' ? 'Engagement' : 'Quality',
+        wishlistPrograms: [],
         campaignId: (preferred || campaigns[0])?.id || ''
       };
       this.isFabOpen = false;
+      this.authError = '';
       this.isCreateRecordModalOpen = true;
+      this.$nextTick?.(() => this.$refs?.createRecordName?.focus());
     },
     closeCreateRecord(this: SevaWorkspaceContext): void {
-      if (!this.isCreateRecordSaving) {
+      if (
+        !this.isCreateRecordSaving &&
+        !this.isProgramEditorOpen &&
+        !this.isOptionSheetOpen
+      ) {
         this.isCreateRecordModalOpen = false;
+        this.leaveAddLeadRoute();
+      }
+    },
+    leaveAddLeadRoute(this: SevaWorkspaceContext): void {
+      if (!this.isAddLeadRoute) return;
+      this.isAddLeadRoute = false;
+      if (window.location?.href && window.history?.replaceState) {
+        const url = new URL(window.location.href);
+        url.pathname = '/seva';
+        window.history.replaceState(
+          {},
+          '',
+          url.pathname + url.search + url.hash
+        );
+      }
+    },
+    async copyCreatedLeadDetails(text: string): Promise<boolean> {
+      try {
+        if (typeof navigator === 'undefined' || !navigator.clipboard?.writeText)
+          throw new Error('Clipboard unavailable');
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch {
+        return false;
       }
     },
     async saveCreatedRecord(this: SevaWorkspaceContext): Promise<void> {
+      if (
+        this.isCreateRecordSaving ||
+        this.isProgramEditorOpen ||
+        this.isOptionSheetOpen
+      )
+        return;
       const name = this.createRecordDraft.name.trim();
       const mobile = normalizeIndianMobile(this.createRecordDraft.mobile);
       if (!name || !mobile || !this.createRecordDraft.campaignId) {
@@ -809,6 +850,16 @@ export function createRecordActionMethods() {
           name,
           mobile,
           notes: this.createRecordDraft.notes.trim(),
+          ...(this.createRecordDraft.quality
+            ? { quality: this.createRecordDraft.quality }
+            : {}),
+          ...(this.createRecordDraft.wishlistPrograms.length
+            ? {
+                wishlistPrograms: this.getProgramListForSave(
+                  this.createRecordDraft.wishlistPrograms
+                )
+              }
+            : {}),
           campaignId: this.createRecordDraft.campaignId,
           campaignType: this.createRecordType
         });
@@ -816,9 +867,27 @@ export function createRecordActionMethods() {
           this.leads = [this.normalizeLead(response.lead), ...this.leads];
         }
         this.isCreateRecordModalOpen = false;
+        this.leaveAddLeadRoute();
+        let clipboardCopied = true;
+        if (this.createRecordType === 'Leads') {
+          const lead = response.lead;
+          const campaign = this.campaigns.find(
+            (item) => item.id === lead.campaignId
+          );
+          const shareText = buildLeadShareMessage({
+            name: lead.name,
+            mobile: lead.mobile,
+            course: lead.wishlistPrograms,
+            leadQuality: lead.quality === 'Quality' ? '' : lead.quality,
+            month: campaign?.name || '',
+            notes: lead.notes
+          });
+          clipboardCopied = await this.copyCreatedLeadDetails(shareText);
+        }
         this.actionMessage =
           (this.createRecordType === 'Members' ? 'Member' : 'Lead') +
-          ' added successfully.';
+          ' added successfully.' +
+          (clipboardCopied ? '' : ' Clipboard access was blocked.');
       } catch (error) {
         this.authError =
           error instanceof Error &&

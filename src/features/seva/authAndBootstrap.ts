@@ -285,6 +285,7 @@ export function createAuthAndBootstrapMethods() {
           .trim()
           .toLowerCase();
         this.isVolunteerModalOpen = false;
+        this.restoreLeadSort();
         await this.openAuthenticatedWorkspace(requestedCampaignId);
       } catch (error) {
         this.authError = toAuthErrorMessage(
@@ -306,6 +307,7 @@ export function createAuthAndBootstrapMethods() {
           .trim()
           .toLowerCase();
         this.isVolunteerModalOpen = false;
+        this.restoreLeadSort();
         await this.openAuthenticatedWorkspace(requestedCampaignId);
       } catch (error) {
         this.authError = toAuthErrorMessage(
@@ -369,6 +371,7 @@ export function createAuthAndBootstrapMethods() {
         return;
       }
 
+      this.leadSort = 'added-desc';
       this.authenticatedUser = null;
       this.volunteerEmail = '';
       this.viewedVolunteerEmail = '';
@@ -405,12 +408,12 @@ export function createAuthAndBootstrapMethods() {
         requestedCampaignId
       );
       const loaded = await this.loadBootstrap(campaignId);
-      if (loaded || isAllLeadsScope(campaignId)) {
-        return;
-      }
-      if (this.authError === MISSING_CAMPAIGN_MESSAGE) {
-        await this.loadBootstrap(ALL_LEADS_SCOPE_ID);
-      }
+      const ready =
+        loaded ||
+        (!isAllLeadsScope(campaignId) &&
+          this.authError === MISSING_CAMPAIGN_MESSAGE &&
+          (await this.loadBootstrap(ALL_LEADS_SCOPE_ID)));
+      if (ready && this.isAddLeadRoute) this.openCreateRecord('Leads');
     },
     async onCampaignChange(
       this: SevaWorkspaceContext,

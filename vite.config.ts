@@ -109,7 +109,9 @@ function sevaRewritePlugin() {
     const pathname = queryIndex >= 0 ? url.slice(0, queryIndex) : url;
     const query = queryIndex >= 0 ? url.slice(queryIndex) : '';
 
-    return pathname === '/seva' || pathname === '/seva/'
+    return ['/seva', '/seva/', '/seva/add-lead', '/seva/add-lead/'].includes(
+      pathname
+    )
       ? `/seva.html${query}`
       : url;
   };

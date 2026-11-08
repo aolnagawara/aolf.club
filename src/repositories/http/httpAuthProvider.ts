@@ -20,7 +20,10 @@ export class HttpAuthProvider implements AuthProvider {
 
   async signIn(): Promise<AuthenticatedUser> {
     if (typeof window !== 'undefined') {
-      window.location.assign('/api/auth?action=signin');
+      const returnTo = /^\/seva\/add-lead\/?$/.test(window.location.pathname)
+        ? '&returnTo=%2Fseva%2Fadd-lead'
+        : '';
+      window.location.assign('/api/auth?action=signin' + returnTo);
     }
 
     return new Promise<AuthenticatedUser>(() => {

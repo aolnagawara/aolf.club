@@ -1,5 +1,6 @@
 {
   "rewrites": [
+    {"source": "/seva/add-lead", "destination": "/seva.html"},
     {
       "source": "/seva",
       "destination": "/seva.html"

@@ -1,4 +1,5 @@
 import type { LeadRepository } from '../contracts';
+import { withVolunteerTransferNote } from '../../../shared/leadTransfer.js';
 import { nanoid } from 'nanoid';
 import {
   ALL_LEADS_SCOPE_ID,
@@ -81,8 +82,7 @@ export class MockLeadRepository implements LeadRepository {
           .filter(
             (lead) =>
               lead.campaignType === 'Leads' &&
-              lead.assignedVolunteerEmail.trim().toLowerCase() ===
-                ownerEmail &&
+              lead.assignedVolunteerEmail.trim().toLowerCase() === ownerEmail &&
               leadCampaignIds.has(String(lead.campaignId || ''))
           )
           .map((lead) => ({ ...lead }))
@@ -208,14 +208,21 @@ export class MockLeadRepository implements LeadRepository {
     this.leads[index] = {
       ...this.leads[index],
       ...parsed,
-      lastUpdated: 'Just now'
+      notes: withVolunteerTransferNote(
+        parsed.notes ?? this.leads[index].notes,
+        currentAssignee,
+        targetVolunteerEmail,
+        mockBootstrapData.config.volunteers || [],
+        new Date().toISOString()
+      ),
+      lastUpdated: new Date().toISOString()
     };
 
     return UpdateLeadResponseSchema.parse({
       success: true,
       lead: {
         id: parsed.id,
-        lastUpdated: 'Just now'
+        lastUpdated: new Date().toISOString()
       }
     });
   }
@@ -236,15 +243,18 @@ export class MockLeadRepository implements LeadRepository {
       id: nanoid(),
       mobile: parsed.mobile,
       name: parsed.name,
-      quality: parsed.campaignType === 'Members' ? 'Engagement' : 'Quality',
+      quality:
+        parsed.quality ||
+        (parsed.campaignType === 'Members' ? 'Engagement' : 'Quality'),
       followUp: 'Follow-up',
-      lastUpdated: 'Just now',
+      lastUpdated: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
       status: 'Response',
       notes: parsed.notes || '',
       campaignId: parsed.campaignId,
       campaignType: parsed.campaignType,
       assignedVolunteerEmail: mockBootstrapData.user.email,
-      wishlistPrograms: '',
+      wishlistPrograms: parsed.wishlistPrograms || '',
       donePrograms: ''
     };
     this.leads.push(lead);
@@ -286,7 +296,8 @@ export class MockLeadRepository implements LeadRepository {
       name: item.name,
       quality: 'Quality',
       followUp: 'Follow-up',
-      lastUpdated: 'Just now',
+      lastUpdated: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
       status: 'Response',
       notes: item.notes,
       campaignId: parsed.campaignId,

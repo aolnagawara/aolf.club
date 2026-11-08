@@ -1,3 +1,4 @@
+import { createSortingMethods } from './sorting';
 import { createSevaWorkspaceInitialState } from './state';
 import { createAuthAndBootstrapMethods } from './authAndBootstrap';
 import { createLeadLifecycleMethods } from './leadLifecycle';
@@ -24,10 +25,9 @@ import {
   showsProgramTabs
 } from '../courses/courseWorkspaceCore';
 
-type CourseWorkspaceMethods =
-  ReturnType<
-    typeof import('../courses/courseWorkspace')['createCourseWorkspaceMethods']
-  >;
+type CourseWorkspaceMethods = ReturnType<
+  (typeof import('../courses/courseWorkspace'))['createCourseWorkspaceMethods']
+>;
 
 let courseWorkspaceMethodsPromise: Promise<CourseWorkspaceMethods> | null =
   null;
@@ -144,6 +144,7 @@ export function sevaWorkspace(): SevaWorkspaceContext {
     ...createLeadLifecycleMethods(),
     ...createProgramMethods(),
     ...createDateAndFilterMethods(),
+    ...createSortingMethods(),
     ...createUiMethods(),
     ...createRecordActionMethods(),
     ...createCommunicationMethods(),

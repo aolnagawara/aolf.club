@@ -35,7 +35,8 @@ describe('shared sheet primitives', () => {
   });
 
   it('keeps the dedicated mobile column append-only for legacy row compatibility', () => {
-    expect(SHEET_HEADERS.leads.at(-1)).toBe('mobile');
+    expect(SHEET_HEADERS.leads[12]).toBe('mobile');
+    expect(SHEET_HEADERS.leads[13]).toBe('createdAt');
     expect(SHEET_HEADERS.members).toEqual(SHEET_HEADERS.leads);
     expect(SHEET_HEADERS.courses).toEqual([
       'id',

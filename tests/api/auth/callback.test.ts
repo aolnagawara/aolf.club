@@ -105,6 +105,33 @@ describe('Google OAuth callback error distinction', () => {
     expect(headers.get('Location')).toBe('/seva?error=upstream_timeout');
   });
 
+  it.each([
+    ['%2Fseva%2Fadd-lead', '/seva/add-lead'],
+    ['https%3A%2F%2Fevil.example', '/seva']
+  ])(
+    'returns only to an allowed deep-link destination (%s)',
+    async (cookie, expected) => {
+      mockStore.isUserAllowed.mockResolvedValue(true);
+      const { response, headers } = createResponse();
+      await handler(
+        {
+          ...request,
+          headers: {
+            cookie:
+              'aolf_oauth_state=expected-state; aolf_oauth_return_to=' + cookie
+          }
+        },
+        response
+      );
+      expect(headers.get('Location')).toBe(expected);
+      expect(headers.get('Set-Cookie')).toEqual(
+        expect.arrayContaining([
+          expect.stringMatching(/aolf_oauth_return_to=;.*Max-Age=0/)
+        ])
+      );
+    }
+  );
+
   it('redirects a successful sign-in to the volunteer workspace', async () => {
     mockStore.isUserAllowed.mockResolvedValue(true);
     const { response, state, headers } = createResponse();

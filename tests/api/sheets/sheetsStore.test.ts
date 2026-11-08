@@ -553,7 +553,7 @@ describe('Sheets store campaign and access scoping', () => {
         '',
         '',
         'Response',
-        '',
+        'Original handoff context',
         CAMPAIGN_A,
         'Leads',
         USER.email
@@ -571,6 +571,14 @@ describe('Sheets store campaign and access scoping', () => {
     expect(updates).toContainEqual({
       range: 'Leads!J2',
       values: [[OTHER_VOLUNTEER_EMAIL]]
+    });
+    expect(updates).toContainEqual({
+      range: 'Leads!G2',
+      values: [
+        [
+          'Transferred from Current Volunteer to Another Volunteer on 5 Aug 2026, 5:30 pm IST.\nOriginal handoff context'
+        ]
+      ]
     });
 
     await expect(
@@ -781,6 +789,37 @@ describe('Sheets store campaign and access scoping', () => {
     });
   });
 
+  it('preserves creation dates during subsequent lead edits', async () => {
+    const fixture = createFixture(
+      [
+        [
+          'historical',
+          'Historic lead',
+          'Warm',
+          '',
+          '',
+          'Response',
+          '',
+          CAMPAIGN_A,
+          'Leads',
+          USER.email,
+          '',
+          '',
+          '2026-01-01T00:00:00Z'
+        ]
+      ],
+      [...LEAD_HEADERS, 'createdAt']
+    );
+    await fixture.store.updateLeadForAuthorizedUser(USER, {
+      id: 'historical',
+      campaignId: CAMPAIGN_A,
+      campaignType: 'Leads',
+      notes: 'Changed'
+    });
+    const updates = fixture.updateSheetValuesBatch.mock.calls[0][1];
+    expect(updates.some((update) => update.range === 'Leads!M2')).toBe(false);
+  });
+
   it('creates an assigned record with a generated stable id', async () => {
     const fixture = createFixture([]);
 
@@ -788,6 +827,8 @@ describe('Sheets store campaign and access scoping', () => {
       name: 'Created lead',
       mobile: '9876543210',
       notes: 'Created in the FAB',
+      quality: 'Warm',
+      wishlistPrograms: 'HP,DSN',
       campaignId: CAMPAIGN_B,
       campaignType: 'Leads'
     });
@@ -799,6 +840,9 @@ describe('Sheets store campaign and access scoping', () => {
     expect(result.value.lead.id).toHaveLength(21);
     expect(result.value.lead).toMatchObject({
       name: 'Created lead',
+      quality: 'Warm',
+      wishlistPrograms: 'HP,DSN',
+      createdAt: '2026-08-05T12:00:00.000Z',
       campaignId: CAMPAIGN_B,
       assignedVolunteerEmail: USER.email
     });
@@ -808,6 +852,13 @@ describe('Sheets store campaign and access scoping', () => {
     expect(range).toBe(LAYOUT.leadsRange);
     expect(row[0]).toBe(result.value.lead.id);
     expect(row[1]).toBe('Created lead');
+    expect(row[10]).toBe('HP,DSN');
+    expect(row[12]).toBe('2026-08-05T12:00:00.000Z');
+    expect(fixture.updateSheetValuesBatch).toHaveBeenCalledWith(
+      'data',
+      [{ range: 'Leads!M1', values: [['createdAt']] }],
+      expect.any(Object)
+    );
     expect(row[7]).toBe(CAMPAIGN_B);
   });
 

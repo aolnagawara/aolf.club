@@ -1,11 +1,11 @@
 import type { ApiRequest, ApiResponse } from '../_lib/http/responses.js';
 import { reportApiError, sendApiError } from '../_lib/http/errors.js';
-import {
-  firstQueryValue,
-  methodNotAllowed
-} from '../_lib/http/request.js';
+import { firstQueryValue, methodNotAllowed } from '../_lib/http/request.js';
 
 const OAUTH_STATE_COOKIE = 'aolf_oauth_state';
+const RETURN_COOKIE = 'aolf_oauth_return_to';
+const safeReturn = (value: string) =>
+  value === '/seva/add-lead' ? value : '/seva';
 
 async function loadCookies() {
   return import('../_lib/auth/cookies.js');
@@ -28,27 +28,36 @@ function authAction(req: ApiRequest): string {
   return firstQueryValue(req, 'action').trim().toLowerCase() || 'session';
 }
 
-function redirectToLoginWithError(res: ApiResponse, errorCode: string) {
+function redirectToLoginWithError(
+  res: ApiResponse,
+  errorCode: string,
+  returnTo = '/seva'
+) {
   res.status(302);
-  res.setHeader('Location', '/seva?error=' + encodeURIComponent(errorCode));
+  res.setHeader(
+    'Location',
+    returnTo + '?error=' + encodeURIComponent(errorCode)
+  );
   return res.end();
 }
 
 async function clearOAuthStateCookie(res: ApiResponse) {
   const { appendSetCookie, serializeCookie } = await loadCookies();
-  appendSetCookie(
-    res,
-    serializeCookie(OAUTH_STATE_COOKIE, '', {
-      maxAge: 0,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'Lax',
-      httpOnly: true,
-      path: '/'
-    })
-  );
+  for (const name of [OAUTH_STATE_COOKIE, RETURN_COOKIE])
+    appendSetCookie(
+      res,
+      serializeCookie(name, '', {
+        maxAge: 0,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'Lax',
+        httpOnly: true,
+        path: '/'
+      })
+    );
 }
 
 async function handleSignin(req: ApiRequest, res: ApiResponse) {
+  const returnTo = safeReturn(firstQueryValue(req, 'returnTo'));
   const context = {
     route: 'GET /api/auth?action=signin',
     action: 'start_google_signin',
@@ -77,12 +86,22 @@ async function handleSignin(req: ApiRequest, res: ApiResponse) {
     );
 
     res.status(302);
+    appendSetCookie(
+      res,
+      serializeCookie(RETURN_COOKIE, returnTo, {
+        maxAge: 600,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'Lax',
+        httpOnly: true,
+        path: '/'
+      })
+    );
     res.setHeader('Location', buildGoogleAuthUrl(state));
     return res.end();
   } catch (error) {
     reportApiError(error, context);
     res.status(302);
-    res.setHeader('Location', '/seva?error=signin_unavailable');
+    res.setHeader('Location', returnTo + '?error=signin_unavailable');
     return res.end();
   }
 }
@@ -110,6 +129,7 @@ async function handleCallback(req: ApiRequest, res: ApiResponse) {
   const { parseCookies } = await loadCookies();
   const cookies = parseCookies(req.headers.cookie);
   const stateCookie = cookies[OAUTH_STATE_COOKIE] || '';
+  const returnTo = safeReturn(cookies[RETURN_COOKIE] || '');
 
   if (!queryCode || !queryState || queryState !== stateCookie) {
     await clearOAuthStateCookie(res);
@@ -120,7 +140,7 @@ async function handleCallback(req: ApiRequest, res: ApiResponse) {
       retryable: false,
       category: 'invalid_oauth_state'
     });
-    return redirectToLoginWithError(res, 'invalid_oauth_state');
+    return redirectToLoginWithError(res, 'invalid_oauth_state', returnTo);
   }
 
   try {
@@ -139,25 +159,25 @@ async function handleCallback(req: ApiRequest, res: ApiResponse) {
         retryable: false,
         category: 'authorization_denied'
       });
-      return redirectToLoginWithError(res, 'forbidden');
+      return redirectToLoginWithError(res, 'forbidden', returnTo);
     }
 
     const { setSessionCookie } = await loadSession();
     await setSessionCookie(res, sessionUser);
     await clearOAuthStateCookie(res);
     res.status(302);
-    res.setHeader('Location', '/seva');
+    res.setHeader('Location', returnTo);
     return res.end();
   } catch (error) {
     await clearOAuthStateCookie(res);
     const reported = reportApiError(error, context);
     if (reported.code === 'UPSTREAM_TIMEOUT') {
-      return redirectToLoginWithError(res, 'upstream_timeout');
+      return redirectToLoginWithError(res, 'upstream_timeout', returnTo);
     }
     if (reported.code === 'UPSTREAM_ERROR') {
-      return redirectToLoginWithError(res, 'upstream_error');
+      return redirectToLoginWithError(res, 'upstream_error', returnTo);
     }
-    return redirectToLoginWithError(res, 'oauth_failed');
+    return redirectToLoginWithError(res, 'oauth_failed', returnTo);
   }
 }
 

@@ -104,15 +104,15 @@ describe('AOLF Connect frontend presentation', () => {
     expect(page).toContain('Continue with Google');
     expect(page).toContain('@click="startAuthFlow()"');
     expect(page).toContain('x-show="isProgramEditorOpen"');
-    expect(page).toContain('x-text="lead.programSummary"');
+    expect(page).toContain('x-text="getLeadProgramCourse(lead)"');
     expect(page).toContain('x-for="lead in visibleLeads()"');
     expect(page).toContain("getLeadKey(lead) + '|' + lead.programSummary");
     expect(page).toContain('@click="applyFollowUpPicker()"');
     expect(page).toContain('@click.self="closeProgramEditor()"');
     expect(page).toContain('@click="applyProgramEditor()"');
     expect(page).toContain('aria-label="Text size"');
-    expect(page).toContain("@click=\"setTextSize('large')\"");
-    expect(page).toContain("@click=\"setTextSize('extraLarge')\"");
+    expect(page).toContain('@click="setTextSize(\'large\')"');
+    expect(page).toContain('@click="setTextSize(\'extraLarge\')"');
     expect(page).not.toContain('saveFollowUpPicker()');
     expect(page).not.toContain('saveProgramEditor()');
     expect(page).toContain('@click="closeProgramEditor()"');

@@ -50,6 +50,8 @@ export interface CreateRecordDraft {
   name: string;
   mobile: string;
   notes: string;
+  quality: string;
+  wishlistPrograms: string[];
   campaignId: string;
 }
 
@@ -80,6 +82,7 @@ export type Lead = Omit<
   isEditingName: boolean;
   isDirty: boolean;
   _originalData: LeadSnapshot | null;
+  lastSavedAt?: string;
   _nameLower: string;
   _phoneRawLower: string;
   _phoneDigits: string;
@@ -96,6 +99,8 @@ export type AppConfig = Omit<ContractAppConfig, 'id' | 'allowedUsers'> &
   Partial<Pick<ContractAppConfig, 'id' | 'allowedUsers'>>;
 
 export interface SevaWorkspaceState {
+  isAddLeadRoute: boolean;
+  leadSort: string;
   campaigns: Campaign[];
   selectedCampaignId: string;
   selectedCampaign: Campaign | null;
@@ -124,6 +129,7 @@ export interface SevaWorkspaceState {
   activeFollowUpLead: Lead | null;
   followUpDraft: string;
   isProgramEditorOpen: boolean;
+  programEditorTarget: 'lead' | 'createRecord';
   activeProgramLead: Lead | null;
   activeCardId: string;
   selectedIds: Set<string>;
@@ -184,6 +190,11 @@ export interface SevaWorkspaceState {
 export interface SevaWorkspaceContext extends SevaWorkspaceState {
   $nextTick?: (callback: () => void) => void;
   $refs?: {
+    createRecordName?: { focus: () => void };
+    createRecordPrograms?: { focus: () => void };
+    createRecordQuality?: { focus: () => void };
+    programEditor?: { focus: () => void };
+    optionSheet?: { focus: () => void };
     followUpInput?: {
       focus: () => void;
     };

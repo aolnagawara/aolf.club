@@ -32,6 +32,7 @@ import {
   type UpdateLeadRequest
 } from '../../../shared/contracts/appContracts.js';
 import { matchesMemberEngagement } from '../../../shared/memberAssignment.js';
+import { withVolunteerTransferNote } from '../../../shared/leadTransfer.js';
 import { nanoid } from 'nanoid';
 import { ZodError } from 'zod';
 import {
@@ -229,16 +230,23 @@ export async function updateLeadForUser(
   store.leads[index] = {
     ...store.leads[index],
     ...parsed,
+    notes: withVolunteerTransferNote(
+      parsed.notes ?? store.leads[index].notes,
+      currentAssignee,
+      targetVolunteerEmail,
+      mockBootstrapData.config.volunteers || [],
+      new Date().toISOString()
+    ),
     assignedVolunteerEmail:
       targetVolunteerEmail || store.leads[index].assignedVolunteerEmail,
-    lastUpdated: 'Just now'
+    lastUpdated: new Date().toISOString()
   };
 
   return UpdateLeadResponseSchema.parse({
     success: true,
     lead: {
       id: parsed.id,
-      lastUpdated: 'Just now'
+      lastUpdated: new Date().toISOString()
     }
   });
 }
@@ -325,15 +333,18 @@ export async function createLeadForUser(
     id: nanoid(),
     mobile: parsed.mobile,
     name: parsed.name,
-    quality: parsed.campaignType === 'Members' ? 'Engagement' : 'Quality',
+    quality:
+      parsed.quality ||
+      (parsed.campaignType === 'Members' ? 'Engagement' : 'Quality'),
     followUp: 'Follow-up',
     lastUpdated: new Date().toISOString(),
+    createdAt: new Date().toISOString(),
     status: 'Response',
     notes: parsed.notes || '',
     campaignId: parsed.campaignId,
     campaignType: parsed.campaignType,
     assignedVolunteerEmail: normalizeEmail(user.email),
-    wishlistPrograms: '',
+    wishlistPrograms: parsed.wishlistPrograms || '',
     donePrograms: ''
   };
   store.leads.push(lead);
@@ -394,6 +405,7 @@ export async function importLeadsForUser(
     quality: 'Quality',
     followUp: 'Follow-up',
     lastUpdated: new Date().toISOString(),
+    createdAt: new Date().toISOString(),
     status: 'Response',
     notes: item.notes,
     campaignId: campaign.id,

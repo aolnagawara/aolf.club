@@ -1,6 +1,7 @@
 import Alpine from 'alpinejs';
 import { appRuntime } from './services/appRuntime';
 import {
+  ArrowDownUp,
   Calendar,
   Download,
   ExternalLink,
@@ -25,7 +26,7 @@ import {
 import './styles/main.css';
 
 type SevaWorkspaceFactory =
-  typeof import('./features/seva/sevaWorkspace')['sevaWorkspace'];
+  (typeof import('./features/seva/sevaWorkspace'))['sevaWorkspace'];
 
 declare global {
   interface Window {
@@ -43,6 +44,7 @@ async function bootstrap() {
   window.sevaWorkspace = sevaWorkspace;
   createIcons({
     icons: {
+      ArrowDownUp,
       Calendar,
       Download,
       ExternalLink,
