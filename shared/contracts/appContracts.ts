@@ -129,9 +129,19 @@ export const ApiErrorSchema = z.object({
   })
 });
 
+const IndianMobileSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .refine((value) => Boolean(normalizeIndianMobile(value)), {
+    message: 'Enter a valid 10-digit Indian mobile number.'
+  })
+  .transform((value) => normalizeIndianMobile(value));
+
 export const UpdateLeadRequestSchema = z.object({
   id: z.string().min(1),
   name: z.string().optional(),
+  mobile: IndianMobileSchema.optional(),
   status: z.string().optional(),
   quality: z.string().optional(),
   followUp: z.string().optional(),
@@ -153,14 +163,7 @@ export const UpdateLeadResponseSchema = z.object({
 
 export const CreateLeadRequestSchema = z.object({
   name: z.string().trim().min(1),
-  mobile: z
-    .string()
-    .trim()
-    .min(1)
-    .refine((value) => Boolean(normalizeIndianMobile(value)), {
-      message: 'Enter a valid 10-digit Indian mobile number.'
-    })
-    .transform((value) => normalizeIndianMobile(value)),
+  mobile: IndianMobileSchema,
   notes: z.string().optional(),
   quality: z.string().trim().min(1).optional(),
   wishlistPrograms: z.string().optional(),

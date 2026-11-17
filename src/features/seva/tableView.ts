@@ -1,3 +1,4 @@
+import { normalizeIndianMobile } from '../../../shared/contracts/indianMobile';
 import { DEFAULT_QUALITY_META_MAP } from '../../config/campaignDefaults';
 import type { Lead, LeadQueueView, SevaWorkspaceContext } from './types';
 
@@ -75,33 +76,26 @@ export function createTableViewMethods() {
     },
     runTableContactAction(
       this: SevaWorkspaceContext,
-      action: 'call' | 'whatsapp' | 'image'
+      action: 'call' | 'whatsapp'
     ): void {
       const lead = this.tableContactLead;
       if (!lead) return;
       this.closeTableContact();
       if (action === 'call') this.dialLead(lead);
-      else if (action === 'whatsapp') void this.openWhatsappForLead(lead);
-      else void this.openImageShareForLead(lead);
+      else void this.openWhatsappForLead(lead);
     },
-    openTableLeadEdit(
+    openLeadEdit(
       this: SevaWorkspaceContext,
       lead: Lead,
-      trigger: HTMLElement,
-      focusNotes = false
+      trigger: HTMLElement
     ): void {
       this.tableSheetTrigger = trigger;
       this.tableEditError = '';
       // Pickers edit this detached copy, so Cancel can discard the whole form.
       this.tableEditDraft = { ...lead, ...this.createLeadSnapshot(lead) };
-      this.$nextTick?.(() => {
-        const target = focusNotes
-          ? this.$refs?.tableEditNotes
-          : this.$refs?.tableEditSheet;
-        target?.focus();
-      });
+      this.$nextTick?.(() => this.$refs?.tableEditSheet?.focus());
     },
-    closeTableLeadEdit(this: SevaWorkspaceContext): void {
+    closeLeadEdit(this: SevaWorkspaceContext): void {
       if (!this.tableEditDraft || this.isTableEditSaving) return;
       this.tableEditDraft = null;
       this.tableEditError = '';
@@ -131,6 +125,16 @@ export function createTableViewMethods() {
         return;
       }
 
+      if (draft.mobile !== lead.mobile) {
+        const mobile = normalizeIndianMobile(draft.mobile);
+        if (!mobile) {
+          this.tableEditError = 'Enter a valid 10-digit Indian mobile number.';
+          this.$refs?.tableEditMobile?.focus();
+          return;
+        }
+        draft.mobile = mobile;
+      }
+
       this.tableEditError = '';
       this.authError = '';
       this.isTableEditSaving = true;
@@ -146,13 +150,13 @@ export function createTableViewMethods() {
       } finally {
         this.isTableEditSaving = false;
       }
-      this.closeTableLeadEdit();
+      this.closeLeadEdit();
     },
     discardTableLeadChanges(this: SevaWorkspaceContext): void {
       const draft = this.tableEditDraft;
       if (!draft || this.isTableEditSaving) return;
       this.discardLeadChanges(this.getLeadByKey(draft.id));
-      this.closeTableLeadEdit();
+      this.closeLeadEdit();
     }
   };
 }

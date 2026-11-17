@@ -53,6 +53,7 @@ function cloneSnapshot(snapshot: LeadSnapshot): LeadSnapshot {
 function snapshotsMatch(left: LeadSnapshot, right: LeadSnapshot): boolean {
   return (
     left.name === right.name &&
+    left.mobile === right.mobile &&
     left.quality === right.quality &&
     left.followUp === right.followUp &&
     left.status === right.status &&
@@ -125,6 +126,7 @@ export function createLeadLifecycleMethods() {
     createLeadSnapshot(this: SevaWorkspaceContext, lead: Lead): LeadSnapshot {
       return {
         name: lead.name || '',
+        mobile: lead.mobile || '',
         quality: lead.quality || '',
         followUp: lead.followUp || '',
         status: lead.status || '',
@@ -269,6 +271,7 @@ export function createLeadLifecycleMethods() {
       draft: Lead
     ): Promise<boolean> {
       const original = lead._originalData ?? this.createLeadSnapshot(lead);
+      draft._originalData = original;
       const snapshot = this.createLeadSnapshot(draft);
       draft.isDirty = lead.isDirty || !snapshotsMatch(original, snapshot);
       if (!draft.isDirty) return true;

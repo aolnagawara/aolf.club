@@ -232,6 +232,24 @@ export async function updateLeadForUser(
     throw new Error('FORBIDDEN_LEAD_ASSIGNMENT');
   }
 
+  if (parsed.mobile !== undefined) {
+    if (currentAssignee !== sessionEmail) {
+      throw new Error('FORBIDDEN_LEAD_ASSIGNMENT');
+    }
+    if (
+      parsed.campaignType === 'Leads' &&
+      parsed.mobile !== normalizeIndianMobile(store.leads[index].mobile) &&
+      store.leads.some(
+        (lead, candidateIndex) =>
+          candidateIndex !== index &&
+          lead.campaignType === 'Leads' &&
+          normalizeIndianMobile(lead.mobile) === parsed.mobile
+      )
+    ) {
+      throw new Error(DUPLICATE_LEAD_MOBILE_MESSAGE);
+    }
+  }
+
   store.leads[index] = {
     ...store.leads[index],
     ...parsed,

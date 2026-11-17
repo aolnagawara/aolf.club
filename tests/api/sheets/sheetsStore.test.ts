@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { DUPLICATE_LEAD_MOBILE_MESSAGE } from '../../../shared/contracts/appContracts.js';
 import { createSheetsStore } from '../../../api/_lib/sheets/store.js';
 import type {
   SheetsOperation,
@@ -588,6 +589,66 @@ describe('Sheets store campaign and access scoping', () => {
       ])
     );
     expect(updates.map((update) => update.range)).not.toContain('Leads!B4');
+  });
+
+  it('updates the mobile cell and rejects numbers used by another lead', async () => {
+    const fixture = createFixture(
+      [
+        [
+          'target',
+          'First lead',
+          'Warm',
+          '',
+          '',
+          'Response',
+          '',
+          CAMPAIGN_A,
+          'Leads',
+          USER.email,
+          '',
+          '',
+          '9876543210'
+        ],
+        [
+          'other',
+          'Second lead',
+          'Warm',
+          '',
+          '',
+          'Response',
+          '',
+          CAMPAIGN_B,
+          'Leads',
+          OTHER_VOLUNTEER_EMAIL,
+          '',
+          '',
+          '9876543211'
+        ]
+      ],
+      [...LEAD_HEADERS, 'mobile']
+    );
+    const payload = {
+      id: 'target',
+      campaignId: CAMPAIGN_A,
+      campaignType: 'Leads' as const
+    };
+
+    await expect(
+      fixture.store.updateLeadForAuthorizedUser(USER, {
+        ...payload,
+        mobile: '+91 98765 43211'
+      })
+    ).rejects.toThrow(DUPLICATE_LEAD_MOBILE_MESSAGE);
+    expect(fixture.updateSheetValuesBatch).not.toHaveBeenCalled();
+
+    await fixture.store.updateLeadForAuthorizedUser(USER, {
+      ...payload,
+      mobile: '+91 98765 43212'
+    });
+    expect(fixture.updateSheetValuesBatch.mock.calls[0][1]).toContainEqual({
+      range: 'Leads!M2',
+      values: [['9876543212']]
+    });
   });
 
   it('reassigns a stable-id record only to a currently allowed volunteer', async () => {

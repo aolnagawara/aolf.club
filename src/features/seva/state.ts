@@ -56,6 +56,8 @@ export function createSevaWorkspaceInitialState(): SevaWorkspaceState {
     authenticatedUser: null,
     authError: '',
     actionMessage: '',
+    actionMessageText: '',
+    actionMessageTimer: null,
     isVolunteerModalOpen: true,
     filterOptions: [{ id: 'all', label: 'All' }],
     isFilterPanelOpen: false,

@@ -16,6 +16,18 @@ const TEXT_SIZE_SCALE: Record<TextSize, string> = {
 
 export function createUiMethods() {
   return {
+    scheduleActionMessage(this: SevaWorkspaceContext, message: string): void {
+      if (this.actionMessageTimer !== null) {
+        clearTimeout(this.actionMessageTimer);
+        this.actionMessageTimer = null;
+      }
+      if (!message) return;
+      this.actionMessageText = message;
+      this.actionMessageTimer = setTimeout(() => {
+        this.actionMessage = '';
+        this.actionMessageTimer = null;
+      }, 8000);
+    },
     applyTextSizePreference(this: SevaWorkspaceContext): void {
       const scale = TEXT_SIZE_SCALE[this.textSize] || TEXT_SIZE_SCALE.normal;
       if (!document.documentElement) {

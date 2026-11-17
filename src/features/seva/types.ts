@@ -63,6 +63,7 @@ export interface AssignMembersDraft {
 
 export interface LeadSnapshot {
   name: string;
+  mobile: string;
   quality: string;
   followUp: string;
   status: string;
@@ -126,6 +127,8 @@ export interface SevaWorkspaceState {
   authenticatedUser: AuthenticatedUser | null;
   authError: string;
   actionMessage: string;
+  actionMessageText: string;
+  actionMessageTimer: ReturnType<typeof setTimeout> | null;
   isVolunteerModalOpen: boolean;
   filterOptions: Array<{ id: string; label: string }>;
   isFilterPanelOpen: boolean;
@@ -209,7 +212,7 @@ export interface SevaWorkspaceContext extends SevaWorkspaceState {
     tableContactSheet?: HTMLElement;
     tableEditSheet?: HTMLElement;
     tableEditName?: HTMLInputElement;
-    tableEditNotes?: HTMLTextAreaElement;
+    tableEditMobile?: HTMLInputElement;
     tableEditQuality?: HTMLButtonElement;
     tableEditStatus?: HTMLButtonElement;
     tableEditFollowUp?: HTMLButtonElement;

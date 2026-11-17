@@ -943,6 +943,29 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
       throw new Error('FORBIDDEN_LEAD_ASSIGNMENT');
     }
 
+    if (payload.mobile !== undefined) {
+      if (currentAssignee !== sessionEmail) {
+        throw new Error('FORBIDDEN_LEAD_ASSIGNMENT');
+      }
+      if (columns.mobile < 0) {
+        throw new Error('Lead sheet is missing a mobile column.');
+      }
+      if (
+        selectedCampaign.type === 'Leads' &&
+        payload.mobile !==
+          normalizeIndianMobile(getCell(target.values, columns.mobile)) &&
+        rows.some(
+          (row, index) =>
+            index > 0 &&
+            index + 1 !== target.rowNumber &&
+            normalizeIndianMobile(getCell(row, columns.mobile)) ===
+              payload.mobile
+        )
+      ) {
+        throw new Error(DUPLICATE_LEAD_MOBILE_MESSAGE);
+      }
+    }
+
     const targetRowNumber = target.rowNumber;
     const timestamp = now().toISOString();
     const updatesByColumn = new Map<number, string>();
@@ -952,6 +975,7 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
       }
     };
     setUpdate(columns.name, payload.name);
+    setUpdate(columns.mobile, payload.mobile);
     setUpdate(columns.status, payload.status);
     setUpdate(columns.quality, payload.quality);
     setUpdate(columns.followUp, payload.followUp);

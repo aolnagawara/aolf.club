@@ -1,3 +1,4 @@
+import { decodeJwt, SignJWT } from 'jose';
 import {
   afterAll,
   afterEach,
@@ -86,6 +87,35 @@ describe('auth sign-out endpoint', () => {
     expect(headers.get('Set-Cookie')).toEqual([
       'aolf_test_session=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax'
     ]);
+  });
+
+  it('renews a valid legacy session with a token that has no expiry', async () => {
+    const legacy = await new SignJWT({
+      email: 'volunteer@example.com',
+      name: 'Volunteer'
+    })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setSubject('volunteer-id')
+      .setExpirationTime('1h')
+      .sign(new TextEncoder().encode(process.env.SESSION_SECRET));
+    const { response, state, headers } = createResponse();
+
+    await handler(
+      {
+        method: 'GET',
+        headers: { cookie: 'aolf_test_session=' + legacy },
+        query: { action: 'session' }
+      },
+      response
+    );
+
+    expect(state.statusCode).toBe(200);
+    expect(state.body).toMatchObject({ user: { id: 'volunteer-id' } });
+    expect(headers.get('Cache-Control')).toBe('no-store');
+    const cookies = headers.get('Set-Cookie') as string[];
+    expect(cookies[0]).toContain('Max-Age=34560000');
+    const renewed = cookies[0].split(';')[0].split('=')[1];
+    expect(decodeJwt(renewed)).not.toHaveProperty('exp');
   });
 
   it('rejects other methods without clearing the cookie', async () => {

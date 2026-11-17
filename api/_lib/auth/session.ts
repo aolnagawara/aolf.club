@@ -16,6 +16,8 @@ function getSecret() {
   return new TextEncoder().encode(getServerEnv().SESSION_SECRET);
 }
 
+const SESSION_COOKIE_MAX_AGE = 400 * 24 * 60 * 60;
+
 function isSecureCookie() {
   return process.env.NODE_ENV === 'production';
 }
@@ -34,7 +36,6 @@ export async function createSessionToken(user: SessionUser): Promise<string> {
     .setProtectedHeader({ alg: 'HS256' })
     .setSubject(parsed.id)
     .setIssuedAt(now)
-    .setExpirationTime(now + 7 * 24 * 60 * 60)
     .sign(getSecret());
 }
 
@@ -70,7 +71,7 @@ export async function setSessionCookie(res: ApiResponse, user: SessionUser) {
   appendSetCookie(
     res,
     serializeCookie(env.SESSION_COOKIE_NAME, token, {
-      maxAge: 7 * 24 * 60 * 60,
+      maxAge: SESSION_COOKIE_MAX_AGE,
       secure: isSecureCookie(),
       sameSite: 'Lax',
       httpOnly: true,

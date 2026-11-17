@@ -31,7 +31,7 @@ describe('table lead editor', () => {
 
   it('discards changes made through shared pickers when the edit sheet is cancelled', async () => {
     const { app, lead, updateLead } = setup();
-    app.openTableLeadEdit(lead, null);
+    app.openLeadEdit(lead, null);
     const draft = app.tableEditDraft!;
     app.openOptionSheet('status', draft);
     await app.applyOptionSelection('Call Back');
@@ -41,7 +41,7 @@ describe('table lead editor', () => {
     app.openFollowUpPicker(draft);
     app.followUpDraft = '2026-11-21T17:30';
     await app.applyFollowUpPicker();
-    app.closeTableLeadEdit();
+    app.closeLeadEdit();
     await app.flushPendingSaves();
 
     expect(draft).toMatchObject({
@@ -57,11 +57,28 @@ describe('table lead editor', () => {
     expect(updateLead).not.toHaveBeenCalled();
   });
 
+  it('validates and saves a corrected mobile number from the shared editor', async () => {
+    const { app, lead, updateLead } = setup();
+    app.leadQueueView = 'cards';
+    app.openLeadEdit(lead, null);
+    app.tableEditDraft!.mobile = '123';
+    await app.saveTableLeadEdit();
+    expect(app.tableEditError).toMatch(/valid 10-digit/);
+    expect(updateLead).not.toHaveBeenCalled();
+    app.tableEditDraft!.mobile = '+91 98765 43210';
+    await app.saveTableLeadEdit();
+    expect(updateLead).toHaveBeenCalledWith(
+      expect.objectContaining({ mobile: '9876543210' })
+    );
+    expect(lead.mobile).toBe('9876543210');
+    expect(lead._phoneDigits).toBe('9876543210');
+  });
+
   it('keeps a failed draft available for retry and updates the shared record only after saving', async () => {
     const { app, lead, updateLead } = setup();
     vi.spyOn(console, 'error').mockImplementation(() => {});
     updateLead.mockRejectedValueOnce(new Error('Unable to save the record.'));
-    app.openTableLeadEdit(lead, null);
+    app.openLeadEdit(lead, null);
     app.tableEditDraft!.name = 'Aarav S.';
     app.tableEditDraft!.notes = 'Call after five';
 
@@ -75,6 +92,7 @@ describe('table lead editor', () => {
     await app.saveTableLeadEdit();
 
     expect(updateLead).toHaveBeenCalledTimes(2);
+    expect(updateLead.mock.calls[1][0]).not.toHaveProperty('mobile');
     expect(app.tableEditDraft).toBeNull();
     expect(lead).toMatchObject({
       name: 'Aarav S.',

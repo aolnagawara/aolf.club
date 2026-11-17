@@ -211,6 +211,24 @@ export class MockLeadRepository implements LeadRepository {
       throw new Error('FORBIDDEN_LEAD_ASSIGNMENT');
     }
 
+    if (parsed.mobile !== undefined) {
+      if (currentAssignee !== sessionEmail) {
+        throw new Error('FORBIDDEN_LEAD_ASSIGNMENT');
+      }
+      if (
+        parsed.campaignType === 'Leads' &&
+        parsed.mobile !== normalizeIndianMobile(this.leads[index].mobile) &&
+        this.leads.some(
+          (lead, candidateIndex) =>
+            candidateIndex !== index &&
+            lead.campaignType === 'Leads' &&
+            normalizeIndianMobile(lead.mobile) === parsed.mobile
+        )
+      ) {
+        throw new Error(DUPLICATE_LEAD_MOBILE_MESSAGE);
+      }
+    }
+
     this.leads[index] = {
       ...this.leads[index],
       ...parsed,

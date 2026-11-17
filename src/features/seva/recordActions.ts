@@ -228,10 +228,17 @@ export function createRecordActionMethods() {
         return;
       }
       this.suppressCardClickLeadId = '';
+      this.cancelCardLongPress();
+      if (
+        (event.target as Element | null)?.closest?.(
+          'input, textarea, [contenteditable="true"]'
+        )
+      ) {
+        return;
+      }
       if (!this.isSelectionMode()) {
         this.activateCard(lead);
       }
-      this.cancelCardLongPress();
       this.cardLongPressStart = { x: event.clientX, y: event.clientY };
       this.cardLongPressTimer = setTimeout(() => {
         this.cardLongPressTimer = null;
