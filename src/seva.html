@@ -881,12 +881,12 @@
                               :aria-label="lead.name + ': ' + (lead._followUpTs === null ? 'Set follow-up' : 'Follow-up ' + getTableFollowUpState(lead) + ', ' + formatShortDate(lead.followUp))"
                               @click="openFollowUpPicker(lead)"
                             >
-                              <i
+                              <span
                                 x-show="getTableFollowUpState(lead) === 'none'"
-                                data-lucide="calendar"
-                                class="h-[18px] w-[18px] text-slate-500"
+                                class="text-lg text-slate-600"
                                 aria-hidden="true"
-                              ></i>
+                                >—</span
+                              >
                               <i
                                 x-show="getTableFollowUpState(lead) === 'due'"
                                 data-lucide="calendar-clock"
