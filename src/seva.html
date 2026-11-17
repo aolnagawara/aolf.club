@@ -762,6 +762,9 @@
                       :key="getLeadKey(lead)"
                     >
                       <tbody
+                        x-data="{ notesExpanded: false }"
+                        x-id="['lead-notes']"
+                        x-effect="if (!lead.notes.trim()) notesExpanded = false"
                         class="lead-table-row border-t border-slate-200"
                         :class="isLeadSelected(lead) && 'bg-indigo-50'"
                         :data-card-id="getLeadKey(lead)"
@@ -803,24 +806,43 @@
                             </label>
                           </td>
                           <td>
-                            <button
-                              type="button"
-                              class="flex min-h-[44px] w-full items-center rounded-md py-0.5 pl-1 pr-0.5 text-left text-sm font-semibold leading-tight text-indigo-700 active:bg-indigo-50 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-indigo-500"
-                              :aria-label="'Edit ' + lead.name + (lead.lastUpdated === 'Save failed' ? ' (unsaved changes)' : '')"
-                              :tabindex="isSelectionMode() ? -1 : 0"
-                              @click="openLeadEdit(lead, $event.currentTarget)"
-                            >
-                              <span
-                                class="line-clamp-2 break-words [overflow-wrap:anywhere]"
-                                x-text="lead.name"
-                              ></span>
-                              <i
-                                x-show="lead.lastUpdated === 'Save failed'"
-                                data-lucide="triangle-alert"
-                                class="ml-1 h-3.5 w-3.5 shrink-0 text-rose-600"
-                                aria-hidden="true"
-                              ></i>
-                            </button>
+                            <div class="flex items-center">
+                              <button
+                                type="button"
+                                class="flex min-h-[44px] min-w-0 flex-1 items-center rounded-md py-0.5 pl-1 pr-0.5 text-left text-sm font-semibold leading-tight text-indigo-700 active:bg-indigo-50 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-indigo-500"
+                                :aria-label="'Edit ' + lead.name + (lead.lastUpdated === 'Save failed' ? ' (unsaved changes)' : '')"
+                                :tabindex="isSelectionMode() ? -1 : 0"
+                                @click="openLeadEdit(lead, $event.currentTarget)"
+                              >
+                                <span
+                                  class="line-clamp-2 break-words [overflow-wrap:anywhere]"
+                                  x-text="lead.name"
+                                ></span>
+                                <i
+                                  x-show="lead.lastUpdated === 'Save failed'"
+                                  data-lucide="triangle-alert"
+                                  class="ml-1 h-3.5 w-3.5 shrink-0 text-rose-600"
+                                  aria-hidden="true"
+                                ></i>
+                              </button>
+                              <button
+                                x-show="lead.notes.trim()"
+                                type="button"
+                                class="inline-flex min-h-[44px] w-6 shrink-0 items-center justify-center rounded-md active:bg-slate-100 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-indigo-500"
+                                :class="notesExpanded ? 'text-indigo-700' : 'text-slate-600'"
+                                :tabindex="isSelectionMode() ? -1 : 0"
+                                :aria-label="'Notes for ' + lead.name"
+                                :aria-expanded="notesExpanded"
+                                :aria-controls="$id('lead-notes')"
+                                @click="notesExpanded = !notesExpanded"
+                              >
+                                <i
+                                  data-lucide="sticky-note"
+                                  class="h-4 w-4"
+                                  aria-hidden="true"
+                                ></i>
+                              </button>
+                            </div>
                           </td>
                           <td>
                             <button
@@ -901,35 +923,14 @@
                           </td>
                         </tr>
                         <tr
-                          x-data="{ notesExpanded: false }"
-                          x-show="lead.notes.trim()"
+                          :id="$id('lead-notes')"
+                          x-show="notesExpanded && lead.notes.trim()"
                         >
                           <td colspan="6">
-                            <button
-                              type="button"
-                              class="flex min-h-7 w-full items-start gap-1.5 px-3 pb-1 text-left text-xs leading-normal text-slate-600 active:bg-slate-100 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-indigo-500"
-                              :tabindex="isSelectionMode() ? -1 : 0"
-                              :aria-expanded="notesExpanded"
-                              @click="notesExpanded = !notesExpanded"
-                            >
-                              <i
-                                data-lucide="sticky-note"
-                                class="mt-0.5 h-3.5 w-3.5 shrink-0"
-                                aria-hidden="true"
-                              ></i>
-                              <span class="sr-only">Notes</span>
-                              <span
-                                class="min-w-0 flex-1"
-                                :class="notesExpanded ? 'whitespace-pre-wrap [overflow-wrap:anywhere]' : 'truncate'"
-                                x-text="lead.notes.trim()"
-                              ></span>
-                              <i
-                                data-lucide="chevron-down"
-                                class="mt-0.5 h-3.5 w-3.5 shrink-0"
-                                :class="notesExpanded && 'rotate-180'"
-                                aria-hidden="true"
-                              ></i>
-                            </button>
+                            <p
+                              class="whitespace-pre-wrap px-3 pb-2 text-left text-xs leading-normal text-slate-600 [overflow-wrap:anywhere]"
+                              x-text="lead.notes.trim()"
+                            ></p>
                           </td>
                         </tr>
                       </tbody>
