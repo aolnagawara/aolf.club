@@ -42,6 +42,7 @@ export interface CourseDraft {
   imagePreviewUrl: string;
 }
 
+export type LeadQueueView = 'cards' | 'table';
 export type WorkspaceView = 'callTracker' | 'courseManagement';
 export type CoursePickerMode = 'whatsapp' | 'imageShare';
 export type TextSize = 'normal' | 'large' | 'extraLarge';
@@ -105,6 +106,12 @@ export interface SevaWorkspaceState {
   existingLeadsError: string;
   bootstrapGeneration: number;
   leadSort: string;
+  leadQueueView: LeadQueueView;
+  tableContactLead: Lead | null;
+  tableEditDraft: Lead | null;
+  isTableEditSaving: boolean;
+  tableEditError: string;
+  tableSheetTrigger: HTMLElement | null;
   campaigns: Campaign[];
   selectedCampaignId: string;
   selectedCampaign: Campaign | null;
@@ -198,6 +205,15 @@ export interface SevaWorkspaceContext extends SevaWorkspaceState {
     createRecordPrograms?: { focus: () => void };
     createRecordQuality?: { focus: () => void };
     programEditor?: { focus: () => void };
+    queueViewButton?: HTMLButtonElement;
+    tableContactSheet?: HTMLElement;
+    tableEditSheet?: HTMLElement;
+    tableEditName?: HTMLInputElement;
+    tableEditNotes?: HTMLTextAreaElement;
+    tableEditQuality?: HTMLButtonElement;
+    tableEditStatus?: HTMLButtonElement;
+    tableEditFollowUp?: HTMLButtonElement;
+    tableEditPrograms?: HTMLButtonElement;
     optionSheet?: { focus: () => void };
     followUpInput?: {
       focus: () => void;

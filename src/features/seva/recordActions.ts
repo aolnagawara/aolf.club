@@ -274,7 +274,16 @@ export function createRecordActionMethods() {
         event.stopImmediatePropagation();
         return;
       }
-      if (event.ctrlKey || event.metaKey) {
+      // The native checkbox handles taps and keyboard activation itself.
+      if ((event.target as Element | null)?.closest?.('[data-row-checkbox]')) {
+        return;
+      }
+      if (this.isBulkActionPending && this.isSelectionMode()) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        return;
+      }
+      if (this.leadQueueView !== 'table' && (event.ctrlKey || event.metaKey)) {
         event.preventDefault();
         event.stopImmediatePropagation();
         this.toggleLeadSelection(lead);

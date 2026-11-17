@@ -290,6 +290,7 @@ export function createAuthAndBootstrapMethods() {
           .toLowerCase();
         this.isVolunteerModalOpen = false;
         this.restoreLeadSort();
+        this.restoreLeadQueueView();
         await this.openAuthenticatedWorkspace(requestedCampaignId);
       } catch (error) {
         this.authError = toAuthErrorMessage(
@@ -314,6 +315,7 @@ export function createAuthAndBootstrapMethods() {
           .toLowerCase();
         this.isVolunteerModalOpen = false;
         this.restoreLeadSort();
+        this.restoreLeadQueueView();
         await this.openAuthenticatedWorkspace(requestedCampaignId);
       } catch (error) {
         this.authError = toAuthErrorMessage(
@@ -380,6 +382,11 @@ export function createAuthAndBootstrapMethods() {
       }
 
       this.leadSort = 'added-desc';
+      this.leadQueueView = 'cards';
+      this.tableContactLead = null;
+      this.tableEditDraft = null;
+      this.tableEditError = '';
+      this.tableSheetTrigger = null;
       this.bootstrapGeneration += 1;
       this.isLoadingBootstrap = false;
       this.isLoadingExistingLeads = false;
