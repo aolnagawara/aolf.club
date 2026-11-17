@@ -116,22 +116,6 @@
           d="M13.601 2.326A7.854 7.854 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.933 7.933 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93a7.898 7.898 0 0 0-2.327-5.607m-5.607 12.2a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.066-.315-.099-.445.099-.133.197-.513.646-.627.775-.116.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.984-.59-.525-.987-1.175-1.103-1.372-.116-.198-.013-.306.087-.404.09-.088.197-.232.296-.346.1-.116.133-.198.198-.33.066-.133.033-.248-.017-.347-.05-.099-.445-1.076-.611-1.47-.16-.389-.323-.335-.445-.34-.116-.006-.248-.006-.38-.006a.729.729 0 0 0-.529.248c-.182.198-.69.677-.69 1.654s.71 1.916.81 2.049c.098.132 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.15.906.129 1.248.08.38-.058 1.171-.48 1.338-.943.164-.462.164-.86.116-.943-.05-.082-.182-.132-.38-.23"
         />
       </symbol>
-      <symbol id="seva-call-message-icon" viewBox="0 0 24 24">
-        <path
-          fill="currentColor"
-          transform="translate(24 1) scale(-.72 .95)"
-          d="M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384Z"
-        />
-        <circle cx="6.8" cy="8" r="6.3" fill="#16a34a" />
-        <use
-          href="#seva-whatsapp-icon"
-          x=".8"
-          y="2"
-          width="12"
-          height="12"
-          fill="white"
-        ></use>
-      </symbol>
     </svg>
     <!-- Main App Container managed by Alpine.js -->
     <div
@@ -167,7 +151,7 @@
       <header
         x-cloak
         x-show="authenticatedUser"
-        :inert="Boolean(tableContactLead || tableEditDraft)"
+        :inert="Boolean(tableEditDraft)"
         class="bg-white px-4 py-3 border-b border-slate-200 grid grid-cols-3 items-center sticky top-0 z-10 shadow-sm"
       >
         <div class="flex items-center">
@@ -407,7 +391,7 @@
           </div>
 
           <div
-            :inert="Boolean(tableContactLead || tableEditDraft)"
+            :inert="Boolean(tableEditDraft)"
             class="grid grid-cols-2 gap-1 rounded-xl bg-slate-200/80 p-1"
           >
             <button
@@ -430,7 +414,7 @@
 
           <div
             x-show="workspaceView === 'callTracker'"
-            :inert="Boolean(tableContactLead || tableEditDraft)"
+            :inert="Boolean(tableEditDraft)"
             class="space-y-4"
           >
             <!-- 2. CAMPAIGN OVERVIEW CARD -->
@@ -738,14 +722,22 @@
                         </th>
                         <th scope="col" class="pl-1 text-left">Name</th>
                         <th scope="col">
-                          <svg
+                          <i
+                            data-lucide="phone"
                             class="mx-auto h-4 w-4"
                             aria-hidden="true"
-                            focusable="false"
+                          ></i>
+                          <span class="sr-only">Call</span>
+                        </th>
+                        <th scope="col">
+                          <svg
+                            class="mx-auto h-4 w-4"
+                            fill="currentColor"
+                            aria-hidden="true"
                           >
-                            <use href="#seva-call-message-icon"></use>
+                            <use href="#seva-whatsapp-icon"></use>
                           </svg>
-                          <span class="sr-only">Contact</span>
+                          <span class="sr-only">WhatsApp</span>
                         </th>
                         <th scope="col">
                           <i
@@ -763,7 +755,6 @@
                           ></i>
                           <span class="sr-only">Follow-up</span>
                         </th>
-                        <th scope="col"><span class="sr-only">Edit</span></th>
                       </tr>
                     </thead>
                     <tbody
@@ -816,31 +807,55 @@
                           <td>
                             <button
                               type="button"
-                              class="flex min-h-[44px] w-full items-center rounded-md py-0.5 pl-1 pr-0.5 text-left text-sm font-semibold leading-tight text-slate-900 active:bg-indigo-50 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-indigo-500"
-                              :aria-label="'Contact ' + lead.name"
+                              class="flex min-h-[44px] w-full items-center rounded-md py-0.5 pl-1 pr-0.5 text-left text-sm font-semibold leading-tight text-indigo-700 active:bg-indigo-50 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-indigo-500"
+                              :aria-label="'Edit ' + lead.name + (lead.lastUpdated === 'Save failed' ? ' (unsaved changes)' : '')"
                               :tabindex="isSelectionMode() ? -1 : 0"
-                              @click="openTableContact(lead, $event.currentTarget)"
+                              @click="openLeadEdit(lead, $event.currentTarget)"
                             >
                               <span
                                 class="line-clamp-2 break-words [overflow-wrap:anywhere]"
                                 x-text="lead.name"
                               ></span>
+                              <i
+                                x-show="lead.lastUpdated === 'Save failed'"
+                                data-lucide="triangle-alert"
+                                class="ml-1 h-3.5 w-3.5 shrink-0 text-rose-600"
+                                aria-hidden="true"
+                              ></i>
                             </button>
                           </td>
                           <td>
                             <button
                               type="button"
-                              class="lead-row-action text-slate-600"
+                              class="lead-row-action text-indigo-700 disabled:opacity-40"
                               :tabindex="isSelectionMode() ? -1 : 0"
-                              :aria-label="'Contact actions for ' + lead.name"
-                              @click="openTableContact(lead, $event.currentTarget)"
+                              :disabled="!isSelectionMode() && !cleanPhone(lead.mobile)"
+                              :aria-label="'Call ' + lead.name"
+                              @click="dialLead(lead)"
                             >
-                              <svg
+                              <i
+                                data-lucide="phone"
                                 class="h-[18px] w-[18px]"
                                 aria-hidden="true"
-                                focusable="false"
+                              ></i>
+                            </button>
+                          </td>
+                          <td>
+                            <button
+                              type="button"
+                              class="lead-row-action text-emerald-700 disabled:opacity-40"
+                              :tabindex="isSelectionMode() ? -1 : 0"
+                              :disabled="!isSelectionMode() && !canOpenWhatsapp(lead)"
+                              :aria-label="'WhatsApp ' + lead.name"
+                              @click="openWhatsappForLead(lead)"
+                            >
+                              <svg
+                                data-icon="whatsapp"
+                                class="h-[18px] w-[18px]"
+                                fill="currentColor"
+                                aria-hidden="true"
                               >
-                                <use href="#seva-call-message-icon"></use>
+                                <use href="#seva-whatsapp-icon"></use>
                               </svg>
                             </button>
                           </td>
@@ -882,28 +897,6 @@
                                 x-show="getTableFollowUpState(lead) === 'upcoming'"
                                 data-lucide="calendar-check"
                                 class="h-[18px] w-[18px] text-amber-700"
-                                aria-hidden="true"
-                              ></i>
-                            </button>
-                          </td>
-                          <td>
-                            <button
-                              x-show="!isSelectionMode()"
-                              type="button"
-                              class="lead-row-action text-slate-700"
-                              :aria-label="'Edit ' + lead.name + (lead.lastUpdated === 'Save failed' ? ' (unsaved changes)' : '')"
-                              @click="openLeadEdit(lead, $event.currentTarget)"
-                            >
-                              <i
-                                x-show="lead.lastUpdated !== 'Save failed'"
-                                data-lucide="ellipsis-vertical"
-                                class="h-5 w-5"
-                                aria-hidden="true"
-                              ></i>
-                              <i
-                                x-show="lead.lastUpdated === 'Save failed'"
-                                data-lucide="triangle-alert"
-                                class="h-[18px] w-[18px] text-rose-600"
                                 aria-hidden="true"
                               ></i>
                             </button>
@@ -1265,7 +1258,7 @@
             class="fixed z-30 left-1/2 -translate-x-1/2 w-full max-w-md px-4 pointer-events-none"
             style="bottom: max(1rem, env(safe-area-inset-bottom))"
             x-show="authenticatedUser && !isVolunteerModalOpen && workspaceView === 'callTracker'"
-            :inert="Boolean(tableContactLead || tableEditDraft)"
+            :inert="Boolean(tableEditDraft)"
             @keydown.escape.window="isSelectionMode() && !isOptionSheetOpen ? clearSelection() : (isFabOpen = false)"
           >
             <div
@@ -1670,74 +1663,6 @@
                 </div>
               </fieldset>
             </form>
-          </div>
-
-          <!-- Table contact actions -->
-          <div
-            x-show="tableContactLead"
-            class="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/40 p-3"
-            @click.self="closeTableContact()"
-            @keydown.escape.window="closeTableContact()"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="table-contact-title"
-            tabindex="-1"
-            x-ref="tableContactSheet"
-          >
-            <div
-              class="lead-bottom-sheet relative w-full max-w-xs space-y-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-xl"
-            >
-              <div class="px-10 text-center">
-                <h3
-                  id="table-contact-title"
-                  class="break-words text-base font-semibold text-slate-900"
-                  x-text="tableContactLead?.name"
-                ></h3>
-                <p
-                  class="text-sm text-slate-600"
-                  x-text="tableContactLead?.mobile || 'No phone number'"
-                ></p>
-                <button
-                  type="button"
-                  class="lead-row-action absolute right-2 top-2 text-slate-600"
-                  aria-label="Close contact"
-                  @click="closeTableContact()"
-                >
-                  <i data-lucide="x" class="h-5 w-5" aria-hidden="true"></i>
-                </button>
-              </div>
-              <div class="flex items-center justify-center gap-3">
-                <button
-                  type="button"
-                  class="lead-row-action shrink-0 border border-indigo-200 bg-indigo-50 text-indigo-700 disabled:opacity-50"
-                  aria-label="Call"
-                  :disabled="!cleanPhone(tableContactLead?.mobile)"
-                  @click="runTableContactAction('call')"
-                >
-                  <i
-                    data-lucide="phone"
-                    class="h-5 w-5 shrink-0"
-                    aria-hidden="true"
-                  ></i>
-                </button>
-                <button
-                  type="button"
-                  class="lead-row-action shrink-0 border border-emerald-200 bg-emerald-50 text-emerald-800 disabled:opacity-50"
-                  aria-label="WhatsApp"
-                  :disabled="!tableContactLead || !canOpenWhatsapp(tableContactLead)"
-                  @click="runTableContactAction('whatsapp')"
-                >
-                  <svg
-                    data-icon="whatsapp"
-                    class="h-5 w-5 shrink-0"
-                    fill="currentColor"
-                    aria-hidden="true"
-                  >
-                    <use href="#seva-whatsapp-icon"></use>
-                  </svg>
-                </button>
-              </div>
-            </div>
           </div>
 
           <!-- Shared lead edit form -->

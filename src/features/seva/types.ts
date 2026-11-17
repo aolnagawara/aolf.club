@@ -108,7 +108,6 @@ export interface SevaWorkspaceState {
   bootstrapGeneration: number;
   leadSort: string;
   leadQueueView: LeadQueueView;
-  tableContactLead: Lead | null;
   tableEditDraft: Lead | null;
   isTableEditSaving: boolean;
   tableEditError: string;
@@ -209,7 +208,6 @@ export interface SevaWorkspaceContext extends SevaWorkspaceState {
     createRecordQuality?: { focus: () => void };
     programEditor?: { focus: () => void };
     queueViewButton?: HTMLButtonElement;
-    tableContactSheet?: HTMLElement;
     tableEditSheet?: HTMLElement;
     tableEditName?: HTMLInputElement;
     tableEditMobile?: HTMLInputElement;

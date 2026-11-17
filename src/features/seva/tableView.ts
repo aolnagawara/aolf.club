@@ -60,30 +60,6 @@ export function createTableViewMethods() {
         ? 'due'
         : 'upcoming';
     },
-    openTableContact(
-      this: SevaWorkspaceContext,
-      lead: Lead,
-      trigger: HTMLElement
-    ): void {
-      this.tableSheetTrigger = trigger;
-      this.tableContactLead = lead;
-      this.$nextTick?.(() => this.$refs?.tableContactSheet?.focus());
-    },
-    closeTableContact(this: SevaWorkspaceContext): void {
-      if (!this.tableContactLead) return;
-      this.tableContactLead = null;
-      this.restoreTableSheetFocus();
-    },
-    runTableContactAction(
-      this: SevaWorkspaceContext,
-      action: 'call' | 'whatsapp'
-    ): void {
-      const lead = this.tableContactLead;
-      if (!lead) return;
-      this.closeTableContact();
-      if (action === 'call') this.dialLead(lead);
-      else void this.openWhatsappForLead(lead);
-    },
     openLeadEdit(
       this: SevaWorkspaceContext,
       lead: Lead,
