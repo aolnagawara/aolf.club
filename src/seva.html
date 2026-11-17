@@ -780,8 +780,8 @@
                             <button
                               x-show="!isSelectionMode()"
                               type="button"
-                              class="lead-row-action text-lg"
-                              :aria-label="lead.name + ': ' + getQualityFieldLabel() + ' — ' + lead.quality"
+                              class="lead-row-action text-lg text-slate-600"
+                              :aria-label="lead.name + ': ' + getQualityFieldLabel() + ' — ' + (lead.quality === getQualityFieldLabel() ? 'Unset' : lead.quality)"
                               @click="openOptionSheet('quality', lead)"
                             >
                               <span

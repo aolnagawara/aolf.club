@@ -46,6 +46,8 @@ export function createTableViewMethods() {
       }
     },
     getTableQualityIcon(this: SevaWorkspaceContext, quality: string): string {
+      if (!quality.trim() || quality === this.getQualityFieldLabel())
+        return '—';
       const icon = this.getQualityMeta(quality).icon;
       return icon === DEFAULT_QUALITY_META_MAP[quality]?.icon
         ? TABLE_QUALITY_ICONS[quality] || icon
