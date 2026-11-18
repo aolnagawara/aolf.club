@@ -108,6 +108,8 @@ export interface SevaWorkspaceState {
   bootstrapGeneration: number;
   leadSort: string;
   leadQueueView: LeadQueueView;
+  highlightedLeadId: string;
+  expandedLeadNotes: Set<string>;
   tableEditDraft: Lead | null;
   isTableEditSaving: boolean;
   tableEditError: string;

@@ -383,6 +383,7 @@ export function createAuthAndBootstrapMethods() {
 
       this.leadSort = 'added-desc';
       this.leadQueueView = 'cards';
+      this.resetTableInteraction();
       this.tableEditDraft = null;
       this.tableEditError = '';
       this.tableSheetTrigger = null;

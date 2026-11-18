@@ -38,12 +38,60 @@ export function createTableViewMethods() {
       if (view === this.leadQueueView || !(await this.flushPendingSaves()))
         return;
       this.leadQueueView = view;
+      this.resetTableInteraction();
       this.cancelCardLongPress();
       try {
         window.localStorage?.setItem(viewStorageKey(this.volunteerEmail), view);
       } catch {
         // Keep the current preference for this session.
       }
+    },
+    resetTableInteraction(this: SevaWorkspaceContext): void {
+      this.highlightedLeadId = '';
+      this.expandedLeadNotes = new Set();
+    },
+    handleTableLeadClick(
+      this: SevaWorkspaceContext,
+      event: MouseEvent,
+      lead: Lead
+    ): void {
+      this.handleCardClick(event, lead);
+      if (!event.defaultPrevented && !this.isSelectionMode()) {
+        this.highlightedLeadId = this.getLeadKey(lead);
+      }
+    },
+    visibleLeadsWithNotes(this: SevaWorkspaceContext): Lead[] {
+      return this.visibleLeads().filter((lead: Lead) => lead.notes.trim());
+    },
+    hasVisibleLeadNotes(this: SevaWorkspaceContext): boolean {
+      return this.visibleLeadsWithNotes().length > 0;
+    },
+    isLeadNoteExpanded(this: SevaWorkspaceContext, lead: Lead): boolean {
+      return this.expandedLeadNotes.has(this.getLeadKey(lead));
+    },
+    toggleLeadNotes(this: SevaWorkspaceContext, lead: Lead): void {
+      const key = this.getLeadKey(lead);
+      const next = new Set(this.expandedLeadNotes);
+      if (!lead.notes.trim() || next.has(key)) next.delete(key);
+      else next.add(key);
+      this.expandedLeadNotes = next;
+    },
+    areAllVisibleNotesExpanded(this: SevaWorkspaceContext): boolean {
+      const leads = this.visibleLeadsWithNotes() as Lead[];
+      return (
+        leads.length > 0 && leads.every((lead) => this.isLeadNoteExpanded(lead))
+      );
+    },
+    toggleAllVisibleNotes(this: SevaWorkspaceContext): void {
+      const leads = this.visibleLeadsWithNotes() as Lead[];
+      const collapse = leads.every((lead) => this.isLeadNoteExpanded(lead));
+      const next = new Set(this.expandedLeadNotes);
+      for (const lead of leads) {
+        const key = this.getLeadKey(lead);
+        if (collapse) next.delete(key);
+        else next.add(key);
+      }
+      this.expandedLeadNotes = next;
     },
     getTableQualityIcon(this: SevaWorkspaceContext, quality: string): string {
       if (!quality.trim() || quality === this.getQualityFieldLabel())
@@ -128,6 +176,8 @@ export function createTableViewMethods() {
       } finally {
         this.isTableEditSaving = false;
       }
+      if (!lead.notes.trim() && this.isLeadNoteExpanded(lead))
+        this.toggleLeadNotes(lead);
       this.closeLeadEdit();
     },
     discardTableLeadChanges(this: SevaWorkspaceContext): void {

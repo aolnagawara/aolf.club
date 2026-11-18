@@ -37,6 +37,8 @@ export function createSevaWorkspaceInitialState(): SevaWorkspaceState {
     bootstrapGeneration: 0,
     leadSort: 'added-desc',
     leadQueueView: 'cards',
+    highlightedLeadId: '',
+    expandedLeadNotes: new Set<string>(),
     tableEditDraft: null,
     isTableEditSaving: false,
     tableEditError: '',

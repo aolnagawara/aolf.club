@@ -720,7 +720,35 @@
                           </span>
                           <span x-show="isSelectionMode()">Select</span>
                         </th>
-                        <th scope="col" class="pl-1 text-left">Name</th>
+                        <th
+                          scope="col"
+                          class="pl-1 text-left"
+                          aria-label="Name"
+                        >
+                          <div class="flex items-center justify-between">
+                            <span>Name</span>
+                            <button
+                              type="button"
+                              class="inline-flex h-8 w-6 shrink-0 items-center justify-center rounded-md text-indigo-700 active:bg-indigo-50 disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-indigo-500"
+                              :aria-label="areAllVisibleNotesExpanded() ? 'Collapse all notes' : 'Expand all notes'"
+                              :disabled="!hasVisibleLeadNotes()"
+                              @click="toggleAllVisibleNotes()"
+                            >
+                              <i
+                                data-lucide="notebook-text"
+                                x-show="!areAllVisibleNotesExpanded()"
+                                class="h-4 w-4"
+                                aria-hidden="true"
+                              ></i>
+                              <i
+                                data-lucide="book-open-text"
+                                x-show="areAllVisibleNotesExpanded()"
+                                class="h-4 w-4"
+                                aria-hidden="true"
+                              ></i>
+                            </button>
+                          </div>
+                        </th>
                         <th scope="col">
                           <i
                             data-lucide="phone"
@@ -762,18 +790,16 @@
                       :key="getLeadKey(lead)"
                     >
                       <tbody
-                        x-data="{ notesExpanded: false }"
                         x-id="['lead-notes']"
-                        x-effect="if (!lead.notes.trim()) notesExpanded = false"
                         class="lead-table-row border-t border-slate-200"
-                        :class="isLeadSelected(lead) && 'bg-indigo-50'"
+                        :class="isLeadSelected(lead) ? 'bg-indigo-100' : (highlightedLeadId === getLeadKey(lead) ? 'bg-indigo-50' : '')"
                         :data-card-id="getLeadKey(lead)"
                         @pointerdown="handleCardPointerDown($event, lead)"
                         @pointermove="handleCardPointerMove($event)"
                         @pointerup="cancelCardLongPress()"
                         @pointerleave="cancelCardLongPress()"
                         @pointercancel="cancelCardLongPress()"
-                        @click.capture="handleCardClick($event, lead)"
+                        @click.capture="handleTableLeadClick($event, lead)"
                         @contextmenu.prevent
                       >
                         <tr class="text-center">
@@ -829,12 +855,12 @@
                                 x-show="lead.notes.trim()"
                                 type="button"
                                 class="inline-flex min-h-[44px] w-6 shrink-0 items-center justify-center rounded-md active:bg-slate-100 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-indigo-500"
-                                :class="notesExpanded ? 'text-indigo-700' : 'text-slate-600'"
+                                :class="isLeadNoteExpanded(lead) ? 'text-indigo-700' : 'text-slate-600'"
                                 :tabindex="isSelectionMode() ? -1 : 0"
                                 :aria-label="'Notes for ' + lead.name"
-                                :aria-expanded="notesExpanded"
+                                :aria-expanded="isLeadNoteExpanded(lead)"
                                 :aria-controls="$id('lead-notes')"
-                                @click="notesExpanded = !notesExpanded"
+                                @click="toggleLeadNotes(lead)"
                               >
                                 <i
                                   data-lucide="sticky-note"
@@ -924,7 +950,7 @@
                         </tr>
                         <tr
                           :id="$id('lead-notes')"
-                          x-show="notesExpanded && lead.notes.trim()"
+                          x-show="isLeadNoteExpanded(lead) && lead.notes.trim()"
                         >
                           <td colspan="6">
                             <p

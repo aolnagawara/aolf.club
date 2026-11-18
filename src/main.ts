@@ -2,6 +2,7 @@ import Alpine from 'alpinejs';
 import { appRuntime } from './services/appRuntime';
 import {
   ArrowDownUp,
+  BookOpenText,
   Calendar,
   CalendarCheck,
   CalendarClock,
@@ -10,6 +11,7 @@ import {
   ExternalLink,
   FolderInput,
   LayoutGrid,
+  NotebookText,
   Paperclip,
   Pencil,
   Phone,
@@ -54,6 +56,7 @@ async function bootstrap() {
   createIcons({
     icons: {
       ArrowDownUp,
+      BookOpenText,
       Calendar,
       CalendarCheck,
       CalendarClock,
@@ -62,6 +65,7 @@ async function bootstrap() {
       ExternalLink,
       FolderInput,
       LayoutGrid,
+      NotebookText,
       Paperclip,
       Pencil,
       Phone,
