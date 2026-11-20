@@ -132,9 +132,6 @@ function resolveAssigneeEmail(
   }
   const requested =
     normalizeEmail(assigneeEmail || '') || normalizeEmail(user.email);
-  if (!isUserAllowed(requested)) {
-    throw new Error('VOLUNTEER_NOT_ALLOWED');
-  }
   return requested;
 }
 
@@ -206,9 +203,6 @@ export async function updateLeadForUser(
   const targetVolunteerEmail = parsed.assignedVolunteerEmail
     ? normalizeEmail(parsed.assignedVolunteerEmail)
     : undefined;
-  if (targetVolunteerEmail && !isUserAllowed(targetVolunteerEmail)) {
-    throw new Error('VOLUNTEER_NOT_ALLOWED');
-  }
   const index = store.leads.findIndex(
     (lead) => lead.id === parsed.id && lead.campaignType === parsed.campaignType
   );
@@ -217,25 +211,11 @@ export async function updateLeadForUser(
     throw new Error('Lead not found.');
   }
 
-  const sessionEmail = normalizeEmail(user.email);
   const currentAssignee = normalizeEmail(
     store.leads[index].assignedVolunteerEmail
   );
-  const reassigningToAnotherAllowedVolunteer =
-    Boolean(targetVolunteerEmail) &&
-    targetVolunteerEmail !== currentAssignee &&
-    isUserAllowed(currentAssignee);
-  if (
-    currentAssignee !== sessionEmail &&
-    !reassigningToAnotherAllowedVolunteer
-  ) {
-    throw new Error('FORBIDDEN_LEAD_ASSIGNMENT');
-  }
 
   if (parsed.mobile !== undefined) {
-    if (currentAssignee !== sessionEmail) {
-      throw new Error('FORBIDDEN_LEAD_ASSIGNMENT');
-    }
     if (
       parsed.campaignType === 'Leads' &&
       parsed.mobile !== normalizeIndianMobile(store.leads[index].mobile) &&
@@ -460,9 +440,6 @@ export async function deleteLeadForUser(
   );
   if (index < 0) {
     throw new Error('Lead not found.');
-  }
-  if (!isAssignedToUser(store.leads[index], String(user.email || ''))) {
-    throw new Error('FORBIDDEN_LEAD_ASSIGNMENT');
   }
   store.leads.splice(index, 1);
   return DeleteLeadResponseSchema.parse({

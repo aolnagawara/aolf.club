@@ -55,12 +55,6 @@ export class MockLeadRepository implements LeadRepository {
     )
       .trim()
       .toLowerCase();
-    const allowed = (mockBootstrapData.config.allowedUsers || []).map((email) =>
-      email.toLowerCase()
-    );
-    if (allowed.length && !allowed.includes(requested)) {
-      throw new Error('VOLUNTEER_NOT_ALLOWED');
-    }
     return requested;
   }
 
@@ -172,14 +166,6 @@ export class MockLeadRepository implements LeadRepository {
 
   async updateLead(payload: UpdateLeadRequest): Promise<UpdateLeadResponse> {
     const parsed = UpdateLeadRequestSchema.parse(payload);
-    if (
-      parsed.assignedVolunteerEmail &&
-      !(mockBootstrapData.config.allowedUsers || []).includes(
-        parsed.assignedVolunteerEmail.toLowerCase()
-      )
-    ) {
-      throw new Error('VOLUNTEER_NOT_ALLOWED');
-    }
     const index = this.leads.findIndex(
       (lead) =>
         lead.id === parsed.id && lead.campaignType === parsed.campaignType
@@ -191,30 +177,14 @@ export class MockLeadRepository implements LeadRepository {
       );
     }
 
-    const sessionEmail = mockBootstrapData.user.email.toLowerCase();
     const currentAssignee = this.leads[index].assignedVolunteerEmail
       .trim()
       .toLowerCase();
-    const allowed = new Set(
-      (mockBootstrapData.config.allowedUsers || []).map((email) =>
-        email.toLowerCase()
-      )
-    );
     const targetVolunteerEmail = parsed.assignedVolunteerEmail
       ? parsed.assignedVolunteerEmail.toLowerCase()
       : '';
-    const reassigning =
-      Boolean(targetVolunteerEmail) &&
-      targetVolunteerEmail !== currentAssignee &&
-      allowed.has(currentAssignee);
-    if (currentAssignee !== sessionEmail && !reassigning) {
-      throw new Error('FORBIDDEN_LEAD_ASSIGNMENT');
-    }
 
     if (parsed.mobile !== undefined) {
-      if (currentAssignee !== sessionEmail) {
-        throw new Error('FORBIDDEN_LEAD_ASSIGNMENT');
-      }
       if (
         parsed.campaignType === 'Leads' &&
         parsed.mobile !== normalizeIndianMobile(this.leads[index].mobile) &&

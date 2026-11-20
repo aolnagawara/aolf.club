@@ -652,15 +652,11 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
   }
 
   function resolveAssigneeEmail(
-    snapshot: MetadataSnapshot,
     user: SessionUser,
     assigneeEmail?: string | null
   ): string {
     const requested =
       normalizeEmail(assigneeEmail || '') || normalizeEmail(user.email);
-    if (!snapshot.allowedUsers.has(requested)) {
-      throw new Error('VOLUNTEER_NOT_ALLOWED');
-    }
     return requested;
   }
 
@@ -719,7 +715,7 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
         ? null
         : selectCampaign(snapshot, campaignId);
       if (campaign?.type !== 'Members')
-        resolveAssigneeEmail(snapshot, user, assigneeEmail);
+        resolveAssigneeEmail(user, assigneeEmail);
       return toBootstrapResponse(
         user,
         snapshot,
@@ -732,7 +728,7 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
         user,
         snapshot,
         operation,
-        resolveAssigneeEmail(snapshot, user, assigneeEmail)
+        resolveAssigneeEmail(user, assigneeEmail)
       );
     }
 
@@ -740,7 +736,7 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
     const ownerEmail =
       selectedCampaign.type === 'Members'
         ? normalizeEmail(user.email)
-        : resolveAssigneeEmail(snapshot, user, assigneeEmail);
+        : resolveAssigneeEmail(user, assigneeEmail);
     const layout = getSheetLayout();
     const range =
       selectedCampaign.type === 'Members'
@@ -918,7 +914,6 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
       throw new Error('Lead not found.');
     }
 
-    const sessionEmail = normalizeEmail(user.email);
     const currentAssignee = normalizeEmail(
       getCell(target.values, columns.assignedVolunteerEmail)
     );
@@ -926,27 +921,8 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
       payload.assignedVolunteerEmail === undefined
         ? undefined
         : normalizeEmail(payload.assignedVolunteerEmail);
-    if (
-      targetVolunteerEmail !== undefined &&
-      !snapshot.allowedUsers.has(targetVolunteerEmail)
-    ) {
-      throw new Error('VOLUNTEER_NOT_ALLOWED');
-    }
-    const reassigningToAnotherAllowedVolunteer =
-      targetVolunteerEmail !== undefined &&
-      targetVolunteerEmail !== currentAssignee &&
-      snapshot.allowedUsers.has(currentAssignee);
-    if (
-      currentAssignee !== sessionEmail &&
-      !reassigningToAnotherAllowedVolunteer
-    ) {
-      throw new Error('FORBIDDEN_LEAD_ASSIGNMENT');
-    }
 
     if (payload.mobile !== undefined) {
-      if (currentAssignee !== sessionEmail) {
-        throw new Error('FORBIDDEN_LEAD_ASSIGNMENT');
-      }
       if (columns.mobile < 0) {
         throw new Error('Lead sheet is missing a mobile column.');
       }
@@ -1283,13 +1259,6 @@ export function createSheetsStore(dependencies: SheetsStoreDependencies = {}) {
     );
     if (rowIndex < 0) {
       throw new Error('Lead not found.');
-    }
-    if (
-      normalizeEmail(
-        getCell(rows[rowIndex], columns.assignedVolunteerEmail)
-      ) !== normalizeEmail(user.email)
-    ) {
-      throw new Error('FORBIDDEN_LEAD_ASSIGNMENT');
     }
     const rowNumber = rowIndex + 1;
     await deleteSheetRow('data', getTabName(baseRange), rowNumber, operation);

@@ -380,7 +380,7 @@ describe('Sheets store campaign and access scoping', () => {
     ]);
   });
 
-  it('rejects an assignee who is not on the allowed list', async () => {
+  it('allows filtering leads assigned to an email outside the current volunteer list', async () => {
     const fixture = createFixture([]);
 
     await expect(
@@ -389,7 +389,7 @@ describe('Sheets store campaign and access scoping', () => {
         CAMPAIGN_A,
         'stranger@example.com'
       )
-    ).rejects.toThrow('VOLUNTEER_NOT_ALLOWED');
+    ).resolves.toMatchObject({ allowed: true });
   });
 
   it('assigns matching members in Sheet order without sorting candidates', async () => {
@@ -651,7 +651,49 @@ describe('Sheets store campaign and access scoping', () => {
     });
   });
 
-  it('reassigns a stable-id record only to a currently allowed volunteer', async () => {
+  it('allows mobile changes and deletion after another volunteer receives a transfer', async () => {
+    const fixture = createFixture(
+      [
+        [
+          'shared-id',
+          'Shared lead',
+          'Warm',
+          '',
+          '',
+          'Response',
+          '',
+          CAMPAIGN_A,
+          'Leads',
+          OTHER_VOLUNTEER_EMAIL,
+          '',
+          '',
+          '9876543210'
+        ]
+      ],
+      [...LEAD_HEADERS, 'mobile']
+    );
+    await expect(
+      fixture.store.updateLeadForAuthorizedUser(USER, {
+        id: 'shared-id',
+        campaignId: CAMPAIGN_A,
+        campaignType: 'Leads',
+        mobile: '9876543212'
+      })
+    ).resolves.toMatchObject({ allowed: true });
+    expect(fixture.updateSheetValuesBatch.mock.calls[0][1]).toContainEqual({
+      range: 'Leads!M2',
+      values: [['9876543212']]
+    });
+    await expect(
+      fixture.store.deleteLeadForAuthorizedUser(USER, {
+        id: 'shared-id',
+        campaignType: 'Leads'
+      })
+    ).resolves.toMatchObject({ allowed: true });
+    expect(fixture.deleteSheetRow).toHaveBeenCalled();
+  });
+
+  it('reassigns a stable-id record without using the destination as an access check', async () => {
     const fixture = createFixture([
       [
         'stable-reassign-id',
@@ -695,7 +737,7 @@ describe('Sheets store campaign and access scoping', () => {
         campaignType: 'Leads',
         assignedVolunteerEmail: 'not.allowed@example.com'
       })
-    ).rejects.toThrow('VOLUNTEER_NOT_ALLOWED');
+    ).resolves.toMatchObject({ allowed: true });
   });
 
   it('reassigns a lead owned by another allowed volunteer', async () => {
@@ -729,7 +771,7 @@ describe('Sheets store campaign and access scoping', () => {
     });
   });
 
-  it('rejects a field edit on a lead owned by another volunteer', async () => {
+  it('allows a field edit on a lead owned by another volunteer', async () => {
     const fixture = createFixture([
       [
         'stable-other-id',
@@ -750,10 +792,10 @@ describe('Sheets store campaign and access scoping', () => {
         id: 'stable-other-id',
         campaignId: CAMPAIGN_A,
         campaignType: 'Leads',
-        notes: 'Must stay unchanged'
+        notes: 'Shared update'
       })
-    ).rejects.toThrow('FORBIDDEN_LEAD_ASSIGNMENT');
-    expect(fixture.updateSheetValuesBatch).not.toHaveBeenCalled();
+    ).resolves.toMatchObject({ allowed: true });
+    expect(fixture.updateSheetValuesBatch).toHaveBeenCalled();
   });
 
   it('finds a stable id even when its current campaignId differs', async () => {
@@ -808,7 +850,7 @@ describe('Sheets store campaign and access scoping', () => {
     );
   });
 
-  it('rejects updates when assignment is blank instead of treating them as shared', async () => {
+  it('allows updates when assignment is blank', async () => {
     const fixture = createFixture([
       [
         '9876543210',
@@ -829,10 +871,10 @@ describe('Sheets store campaign and access scoping', () => {
         id: '9876543210',
         campaignId: CAMPAIGN_B,
         campaignType: 'Leads',
-        notes: 'Must not be written'
+        notes: 'Shared unassigned update'
       })
-    ).rejects.toThrow('FORBIDDEN_LEAD_ASSIGNMENT');
-    expect(fixture.updateSheetValuesBatch).not.toHaveBeenCalled();
+    ).resolves.toMatchObject({ allowed: true });
+    expect(fixture.updateSheetValuesBatch).toHaveBeenCalled();
   });
 
   it('uses exact ids and maps a dedicated mobile column', async () => {
